@@ -29,7 +29,9 @@ export const updateProject = (id: string, updates: Partial<Project>) => {
 
 export const createProject = (name: string): Project => {
   const projects = getProjects()
-  if (projects.length >= 3) throw new Error('Maximum of 3 projects allowed')
+  // Limit handled in UI now based on plan, but keep this fallback check safe
+  if (projects.length >= 100) throw new Error('Maximum absolute limit reached')
+
   const newProject: Project = {
     id: crypto.randomUUID(),
     name,

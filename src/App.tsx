@@ -1,12 +1,22 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers */
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Index from './pages/Index'
 import Editor from './pages/Editor'
+import Login from './pages/Login'
+import Profile from './pages/Profile'
+import Billing from './pages/Billing'
+import Analytics from './pages/Analytics'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import useAuthStore from './stores/useAuthStore'
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuthStore()
+  if (!user) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
 
 const App = () => (
   <BrowserRouter
@@ -16,9 +26,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <Routes>
-        <Route element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<Index />} />
           <Route path="/editor/:id" element={<Editor />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

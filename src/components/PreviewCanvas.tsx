@@ -33,12 +33,16 @@ export function PreviewCanvas({ project }: { project: Project }) {
       {project.elements.map((el) => (
         <div
           key={el.id}
-          className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out"
+          className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out z-10"
           style={{ left: `${el.x}%`, top: `${el.y}%` }}
         >
-          {el.type === 'text' ? (
+          {el.type === 'text' || el.type === 'caption' ? (
             <span
-              className="font-bold text-3xl drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] whitespace-nowrap"
+              className={cn(
+                'font-bold text-3xl drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] whitespace-nowrap',
+                el.type === 'caption' &&
+                  'bg-black/60 px-4 py-1.5 rounded-lg text-[22px] font-black border border-white/10',
+              )}
               style={{ color: el.color || '#ffffff' }}
             >
               {el.content || 'Add Text'}
@@ -55,7 +59,7 @@ export function PreviewCanvas({ project }: { project: Project }) {
       ))}
 
       {/* Safe zone overlay */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-50" />
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none opacity-50 z-0" />
     </div>
   )
 }

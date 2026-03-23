@@ -3,7 +3,7 @@ export type AspectRatio = '9:16' | '1:1' | '4:5'
 
 export interface ProjectElement {
   id: string
-  type: 'text' | 'banner'
+  type: 'text' | 'banner' | 'caption'
   content: string
   x: number
   y: number
@@ -23,4 +23,24 @@ export interface Project {
   aspectRatio: AspectRatio
   captions: Record<Platform, string>
   createdAt: number
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  plan: 'free' | 'pro'
+  linkedAccounts: {
+    instagram?: string
+    tiktok?: string
+    facebook?: string
+  }
+}
+
+export interface Asset {
+  id: string
+  name: string
+  type: 'banner' | 'cta'
+  bgColor: string
+  content: string
 }

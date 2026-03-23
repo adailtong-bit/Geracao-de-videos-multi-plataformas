@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
+import useAuthStore from '@/stores/useAuthStore'
 import { Send, AlertTriangle, Instagram, Facebook, Share2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 interface Props {
   project: Project
@@ -14,6 +16,7 @@ interface Props {
 
 export function PublishPanel({ project, update }: Props) {
   const { toast } = useToast()
+  const { user } = useAuthStore()
   const duration = project.trimEnd - project.trimStart
 
   const togglePlatform = (p: Platform) => {
@@ -28,20 +31,44 @@ export function PublishPanel({ project, update }: Props) {
   }
 
   const handlePublish = () => {
+    if (user?.plan !== 'pro') {
+      toast({
+        title: 'Pro Feature Required',
+        description:
+          'Direct API publishing is exclusively available on the Pro plan.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const unlinked = project.targetPlatforms.filter(
+      (p) => !user?.linkedAccounts?.[p],
+    )
+    if (unlinked.length > 0) {
+      toast({
+        title: 'Accounts not connected',
+        description: `Please connect ${unlinked.join(', ')} in your profile settings.`,
+        variant: 'destructive',
+      })
+      return
+    }
+
     toast({
       title: 'Publishing Video',
-      description: `Optimizing and sending to ${project.targetPlatforms.length} platforms...`,
+      description: `Pushing to ${project.targetPlatforms.length} platforms via API...`,
     })
     setTimeout(() => {
       toast({
         title: 'Success! 🚀',
-        description: 'Video published successfully to all selected platforms.',
+        description:
+          'Video published successfully to all selected feeds/reels.',
       })
     }, 2500)
   }
 
   const exceedsInsta =
     duration > 90 && project.targetPlatforms.includes('instagram')
+  const isPro = user?.plan === 'pro'
 
   return (
     <div className="space-y-8 animate-fade-in-up">
@@ -57,7 +84,25 @@ export function PublishPanel({ project, update }: Props) {
           <AlertDescription className="mt-2 text-sm">
             Instagram Reels limit is <strong>90 seconds</strong>. Your current
             edit is <strong>{duration}s</strong>. Trim the video to publish
-            successfully on Instagram.
+            successfully.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!isPro && (
+        <Alert className="bg-primary/5 border-primary shadow-subtle">
+          <Share2 className="h-5 w-5 text-primary" />
+          <AlertTitle className="font-bold">
+            Unlock Direct Publishing
+          </AlertTitle>
+          <AlertDescription className="mt-2 text-sm">
+            Upgrade to Pro to send edited videos directly to your Instagram,
+            TikTok, and Facebook feeds via API.
+            <div className="mt-3">
+              <Button asChild size="sm">
+                <Link to="/billing">Upgrade Now</Link>
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -67,35 +112,43 @@ export function PublishPanel({ project, update }: Props) {
           <Share2 className="w-5 h-5 text-primary" /> Multi-Platform Routing
         </h3>
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-subtle">
-          {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => (
-            <div
-              key={p}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <Label
-                className="capitalize cursor-pointer flex items-center gap-3 text-base"
-                htmlFor={`switch-${p}`}
+          {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => {
+            const isConnected = !!user?.linkedAccounts?.[p]
+            return (
+              <div
+                key={p}
+                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
               >
-                {p === 'instagram' && (
-                  <Instagram className="w-5 h-5 text-pink-600" />
-                )}
-                {p === 'facebook' && (
-                  <Facebook className="w-5 h-5 text-blue-600" />
-                )}
-                {p === 'tiktok' && (
-                  <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
-                    t
-                  </div>
-                )}
-                {p}
-              </Label>
-              <Switch
-                id={`switch-${p}`}
-                checked={project.targetPlatforms.includes(p)}
-                onCheckedChange={() => togglePlatform(p)}
-              />
-            </div>
-          ))}
+                <Label
+                  className="capitalize cursor-pointer flex items-center gap-3 text-base"
+                  htmlFor={`switch-${p}`}
+                >
+                  {p === 'instagram' && (
+                    <Instagram className="w-5 h-5 text-pink-600" />
+                  )}
+                  {p === 'facebook' && (
+                    <Facebook className="w-5 h-5 text-blue-600" />
+                  )}
+                  {p === 'tiktok' && (
+                    <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                      t
+                    </div>
+                  )}
+                  {p}
+                  {!isConnected && (
+                    <span className="text-[10px] font-normal px-2 py-0.5 bg-muted rounded-full">
+                      Not linked
+                    </span>
+                  )}
+                </Label>
+                <Switch
+                  id={`switch-${p}`}
+                  checked={project.targetPlatforms.includes(p)}
+                  onCheckedChange={() => togglePlatform(p)}
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
 

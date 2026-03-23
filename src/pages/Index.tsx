@@ -13,14 +13,26 @@ import {
 } from '@/components/ui/card'
 import { Plus, Video, Trash2, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Index() {
   const { projects, addProject, removeProject } = useProjects()
+  const { user } = useAuthStore()
   const [newProjectName, setNewProjectName] = useState('')
   const { toast } = useToast()
 
+  const maxProjects = user?.plan === 'pro' ? Infinity : 3
+
   const handleCreate = () => {
     if (!newProjectName.trim()) return
+    if (projects.length >= maxProjects) {
+      toast({
+        title: 'Upgrade Required',
+        description: 'You have reached the free plan limit.',
+        variant: 'destructive',
+      })
+      return
+    }
     try {
       addProject(newProjectName)
       setNewProjectName('')
@@ -31,10 +43,10 @@ export default function Index() {
   }
 
   return (
-    <div className="container max-w-5xl mx-auto py-12 px-4 animate-fade-in-up">
+    <div className="p-8 max-w-6xl mx-auto animate-fade-in-up">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
             My Projects
           </h1>
           <p className="text-muted-foreground">
@@ -50,7 +62,7 @@ export default function Index() {
             className="flex flex-col shadow-subtle hover:shadow-elevation transition-all"
           >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Video className="w-5 h-5 text-primary" />
                 <span className="truncate">{p.name}</span>
               </CardTitle>
@@ -79,8 +91,8 @@ export default function Index() {
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
-              <Button asChild className="gap-2">
-                <Link to={`/editor/${p.id}`} target="_blank">
+              <Button asChild className="gap-2" size="sm">
+                <Link to={`/editor/${p.id}`}>
                   Open Editor <ExternalLink className="w-4 h-4" />
                 </Link>
               </Button>
@@ -88,12 +100,14 @@ export default function Index() {
           </Card>
         ))}
 
-        {projects.length < 3 && (
+        {projects.length < maxProjects && (
           <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
             <CardHeader>
               <CardTitle className="text-xl">New Project</CardTitle>
               <CardDescription>
-                You can work on up to 3 projects at once.
+                {user?.plan === 'pro'
+                  ? 'Create unlimited projects.'
+                  : 'You can work on up to 3 projects at once.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="w-full space-y-4 pt-4">
@@ -115,13 +129,14 @@ export default function Index() {
           </Card>
         )}
 
-        {projects.length >= 3 && (
-          <Card className="border-dashed flex flex-col items-center justify-center p-6 text-center bg-muted/50 opacity-70">
-            <p className="text-sm text-muted-foreground">
-              Maximum of 3 active projects reached.
-              <br />
-              Delete one to create a new project.
+        {projects.length >= maxProjects && (
+          <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center bg-muted/50">
+            <p className="text-sm text-muted-foreground mb-4">
+              Maximum active projects reached on the free plan.
             </p>
+            <Button asChild variant="outline">
+              <Link to="/billing">Upgrade to Pro</Link>
+            </Button>
           </Card>
         )}
       </div>

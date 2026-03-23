@@ -4,7 +4,8 @@ import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Type, Square, Trash2, GripHorizontal } from 'lucide-react'
+import { Type, Square, Trash2, GripHorizontal, Wand2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface Props {
   project: Project
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function OverlaysPanel({ project, update }: Props) {
+  const { toast } = useToast()
+
   const addElement = (type: 'text' | 'banner') => {
     const el: ProjectElement = {
       id: crypto.randomUUID(),
@@ -23,6 +26,46 @@ export function OverlaysPanel({ project, update }: Props) {
       bgColor: '#e11d48',
     }
     update({ elements: [...project.elements, el] })
+  }
+
+  const handleGenerateCaptions = () => {
+    if (!project.videoUrl) {
+      toast({
+        title: 'Upload a video first',
+        description: 'Auto-captions require video audio.',
+        variant: 'destructive',
+      })
+      return
+    }
+    toast({
+      title: 'Analyzing audio...',
+      description: 'Generating smart captions.',
+    })
+
+    setTimeout(() => {
+      update({
+        elements: [
+          ...project.elements,
+          {
+            id: crypto.randomUUID(),
+            type: 'caption',
+            content: 'Welcome back guys!',
+            x: 50,
+            y: 75,
+            color: '#ffffff',
+          },
+          {
+            id: crypto.randomUUID(),
+            type: 'caption',
+            content: 'Today we will explore...',
+            x: 50,
+            y: 75,
+            color: '#facc15',
+          },
+        ],
+      })
+      toast({ title: 'Captions generated successfully!' })
+    }, 2000)
   }
 
   const updateElement = (id: string, elUpdates: Partial<ProjectElement>) => {
@@ -39,30 +82,35 @@ export function OverlaysPanel({ project, update }: Props) {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Button
           onClick={() => addElement('text')}
-          className="flex-1 h-12 shadow-subtle"
+          className="flex-1 shadow-subtle"
           variant="secondary"
         >
-          <Type className="w-4 h-4 mr-2" /> Add Text
+          <Type className="w-4 h-4 mr-2" /> Text
         </Button>
         <Button
           onClick={() => addElement('banner')}
-          className="flex-1 h-12 shadow-subtle"
+          className="flex-1 shadow-subtle"
           variant="secondary"
         >
-          <Square className="w-4 h-4 mr-2" /> Add CTA Banner
+          <Square className="w-4 h-4 mr-2" /> Banner
         </Button>
       </div>
 
-      <div className="space-y-4">
+      <Button
+        onClick={handleGenerateCaptions}
+        className="w-full h-12 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 transition-all hover:scale-[1.02]"
+      >
+        <Wand2 className="w-4 h-4 mr-2" /> Auto-Generate Captions
+      </Button>
+
+      <div className="space-y-4 mt-8">
         {project.elements.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground border border-dashed rounded-xl bg-background/50">
+          <div className="text-center py-12 text-muted-foreground border border-dashed rounded-xl bg-background/50">
             <p>No overlays added yet.</p>
-            <p className="text-sm mt-1">
-              Add text or banners to engage your audience.
-            </p>
+            <p className="text-sm mt-1">Add text, banners or auto-captions.</p>
           </div>
         ) : (
           project.elements.map((el, i) => (
@@ -71,14 +119,16 @@ export function OverlaysPanel({ project, update }: Props) {
               className="relative overflow-hidden shadow-subtle border-l-4"
               style={{
                 borderLeftColor:
-                  el.type === 'text' ? 'hsl(var(--primary))' : el.bgColor,
+                  el.type === 'text' || el.type === 'caption'
+                    ? 'hsl(var(--primary))'
+                    : el.bgColor,
               }}
             >
-              <CardContent className="p-5 space-y-5">
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                    {el.type} Overlay {i + 1}
+                    {el.type} {i + 1}
                   </Label>
                   <Button
                     variant="ghost"
@@ -91,23 +141,19 @@ export function OverlaysPanel({ project, update }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Content
-                  </Label>
                   <Input
                     value={el.content}
                     onChange={(e) =>
                       updateElement(el.id, { content: e.target.value })
                     }
-                    placeholder="Enter text..."
-                    className="font-medium"
+                    className="font-medium h-9"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>X Position</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2 bg-muted/30 p-2 rounded-lg">
+                    <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+                      <span>X Pos</span>
                       <span>{el.x}%</span>
                     </div>
                     <Slider
@@ -116,9 +162,9 @@ export function OverlaysPanel({ project, update }: Props) {
                       onValueChange={([v]) => updateElement(el.id, { x: v })}
                     />
                   </div>
-                  <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>Y Position</span>
+                  <div className="space-y-2 bg-muted/30 p-2 rounded-lg">
+                    <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+                      <span>Y Pos</span>
                       <span>{el.y}%</span>
                     </div>
                     <Slider
@@ -129,20 +175,24 @@ export function OverlaysPanel({ project, update }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-lg w-max">
+                <div className="flex items-center gap-3">
                   <Label className="text-xs font-medium">Color</Label>
                   <Input
                     type="color"
-                    value={el.type === 'text' ? el.color : el.bgColor}
+                    value={
+                      el.type === 'text' || el.type === 'caption'
+                        ? el.color
+                        : el.bgColor
+                    }
                     onChange={(e) =>
                       updateElement(
                         el.id,
-                        el.type === 'text'
+                        el.type === 'text' || el.type === 'caption'
                           ? { color: e.target.value }
                           : { bgColor: e.target.value },
                       )
                     }
-                    className="w-10 h-10 p-1 border-none bg-transparent cursor-pointer rounded-md overflow-hidden"
+                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer rounded-md overflow-hidden"
                   />
                 </div>
               </CardContent>

@@ -6,11 +6,14 @@ import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
+import { AssetsPanel } from '@/components/editor/AssetsPanel'
 import { ArrowLeft, LayoutDashboard, Loader2, Sparkles } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Editor() {
   const { id } = useParams()
   const [project, update] = useProject(id || '')
+  const { user } = useAuthStore()
 
   if (project === null) {
     return (
@@ -62,32 +65,42 @@ export default function Editor() {
             </div>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full text-xs font-medium text-muted-foreground">
-          <Sparkles className="w-3.5 h-3.5" /> Pro Workspace
+        <div className="hidden md:flex items-center gap-4">
+          {user?.plan === 'pro' && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5" /> Pro Workspace
+            </div>
+          )}
         </div>
       </header>
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         <div className="w-full md:w-[480px] border-r bg-muted/5 flex flex-col shrink-0 overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
           <Tabs defaultValue="media" className="flex-1 flex flex-col">
-            <TabsList className="w-full justify-start rounded-none border-b h-14 px-4 bg-background shadow-sm">
+            <TabsList className="w-full justify-start rounded-none border-b h-14 px-2 bg-background shadow-sm overflow-x-auto overflow-y-hidden">
               <TabsTrigger
                 value="media"
-                className="flex-1 data-[state=active]:bg-muted/50"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-muted/50"
               >
                 1. Media
               </TabsTrigger>
               <TabsTrigger
                 value="overlays"
-                className="flex-1 data-[state=active]:bg-muted/50"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-muted/50"
               >
                 2. Elements
               </TabsTrigger>
               <TabsTrigger
-                value="publish"
-                className="flex-1 data-[state=active]:bg-muted/50"
+                value="assets"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-muted/50"
               >
-                3. Publish
+                3. Assets
+              </TabsTrigger>
+              <TabsTrigger
+                value="publish"
+                className="flex-1 min-w-[100px] data-[state=active]:bg-muted/50"
+              >
+                4. Publish
               </TabsTrigger>
             </TabsList>
             <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
@@ -96,6 +109,9 @@ export default function Editor() {
               </TabsContent>
               <TabsContent value="overlays" className="mt-0 outline-none">
                 <OverlaysPanel project={project} update={update} />
+              </TabsContent>
+              <TabsContent value="assets" className="mt-0 outline-none h-full">
+                <AssetsPanel project={project} update={update} />
               </TabsContent>
               <TabsContent value="publish" className="mt-0 outline-none">
                 <PublishPanel project={project} update={update} />
