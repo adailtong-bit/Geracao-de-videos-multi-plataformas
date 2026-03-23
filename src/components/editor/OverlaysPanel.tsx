@@ -95,7 +95,7 @@ export function OverlaysPanel({ project, update }: Props) {
           className="flex-1 shadow-subtle"
           variant="secondary"
         >
-          <Square className="w-4 h-4 mr-2" /> Banner
+          <Square className="w-4 h-4 mr-2" /> CTA Banner
         </Button>
       </div>
 
@@ -128,7 +128,7 @@ export function OverlaysPanel({ project, update }: Props) {
                 <div className="flex items-center justify-between">
                   <Label className="font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                    {el.type} {i + 1}
+                    {el.type === 'banner' ? 'CTA Banner' : el.type} {i + 1}
                   </Label>
                   <Button
                     variant="ghost"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '@/hooks/useProjects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,15 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card'
-import { Plus, Video, Trash2, ExternalLink } from 'lucide-react'
+import {
+  Plus,
+  Video,
+  Trash2,
+  ExternalLink,
+  Facebook,
+  PlaySquare,
+  LayoutTemplate,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 
@@ -20,6 +28,10 @@ export default function Index() {
   const { user } = useAuthStore()
   const [newProjectName, setNewProjectName] = useState('')
   const { toast } = useToast()
+  const navigate = useNavigate()
+
+  const [fbUrl, setFbUrl] = useState('')
+  const [showFbPreview, setShowFbPreview] = useState(false)
 
   const maxProjects = user?.plan === 'pro' ? Infinity : 3
 
@@ -37,6 +49,87 @@ export default function Index() {
       addProject(newProjectName)
       setNewProjectName('')
       toast({ title: 'Project created successfully!' })
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' })
+    }
+  }
+
+  const handleFbUrlChange = (val: string) => {
+    setFbUrl(val)
+    if (val.includes('facebook.com') || val.includes('fb.watch')) {
+      setShowFbPreview(true)
+    } else {
+      setShowFbPreview(false)
+    }
+  }
+
+  const handleImportFb = () => {
+    if (!fbUrl.trim()) return
+    if (projects.length >= maxProjects) {
+      toast({
+        title: 'Upgrade Required',
+        description: 'You have reached the free plan limit.',
+        variant: 'destructive',
+      })
+      return
+    }
+    try {
+      const p = addProject('FB Repurpose', {
+        videoUrl:
+          'https://img.usecurling.com/p/800/1200?q=skateboarding&color=blue',
+        videoDuration: 180,
+        trimStart: 0,
+        trimEnd: 180,
+      })
+      setFbUrl('')
+      setShowFbPreview(false)
+      toast({ title: 'Facebook video imported!' })
+      navigate(`/editor/${p.id}`)
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' })
+    }
+  }
+
+  const handleExampleProject = () => {
+    if (projects.length >= maxProjects) {
+      toast({
+        title: 'Upgrade Required',
+        description: 'You have reached the free plan limit.',
+        variant: 'destructive',
+      })
+      return
+    }
+    try {
+      const p = addProject('Demo: FB Repurpose', {
+        videoUrl:
+          'https://img.usecurling.com/p/800/1200?q=parkour&color=orange',
+        videoDuration: 60,
+        trimStart: 10,
+        trimEnd: 45,
+        aspectRatio: '9:16',
+        elements: [
+          {
+            id: crypto.randomUUID(),
+            type: 'text',
+            content: 'Wait for it...',
+            x: 50,
+            y: 20,
+            color: '#ffffff',
+            bgColor: '#000000',
+          },
+          {
+            id: crypto.randomUUID(),
+            type: 'banner',
+            content: 'Follow for more!',
+            x: 50,
+            y: 80,
+            color: '#ffffff',
+            bgColor: '#e11d48',
+          },
+        ],
+      })
+      toast({ title: 'Example loaded!' })
+      navigate(`/editor/${p.id}`)
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
     }
@@ -101,32 +194,94 @@ export default function Index() {
         ))}
 
         {projects.length < maxProjects && (
-          <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
-            <CardHeader>
-              <CardTitle className="text-xl">New Project</CardTitle>
-              <CardDescription>
-                {user?.plan === 'pro'
-                  ? 'Create unlimited projects.'
-                  : 'You can work on up to 3 projects at once.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="w-full space-y-4 pt-4">
-              <Input
-                placeholder="Project Name"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                className="bg-background"
-              />
-              <Button
-                className="w-full"
-                onClick={handleCreate}
-                disabled={!newProjectName.trim()}
-              >
-                <Plus className="w-4 h-4 mr-2" /> Create Project
-              </Button>
-            </CardContent>
-          </Card>
+          <>
+            <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center bg-muted/20 hover:bg-muted/40 transition-colors">
+              <CardHeader>
+                <CardTitle className="text-xl">New Project</CardTitle>
+                <CardDescription>Create a blank workspace.</CardDescription>
+              </CardHeader>
+              <CardContent className="w-full space-y-4 pt-4">
+                <Input
+                  placeholder="Project Name"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  className="bg-background"
+                />
+                <Button
+                  className="w-full"
+                  onClick={handleCreate}
+                  disabled={!newProjectName.trim()}
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Create Blank
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 flex flex-col items-center justify-center p-6 text-center bg-card hover:shadow-md transition-all shadow-subtle border-[#1877F2]/20">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center justify-center gap-2">
+                  <Facebook className="w-5 h-5 text-[#1877F2]" /> Import from
+                  Facebook
+                </CardTitle>
+                <CardDescription>
+                  Repurpose existing Facebook videos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="w-full space-y-4 pt-4">
+                <Input
+                  placeholder="https://facebook.com/watch/?v=..."
+                  value={fbUrl}
+                  onChange={(e) => handleFbUrlChange(e.target.value)}
+                  className="bg-background"
+                />
+                {showFbPreview && (
+                  <div className="bg-muted/50 border rounded-lg p-3 flex gap-3 text-left animate-fade-in shadow-sm">
+                    <div className="w-12 h-12 bg-black rounded overflow-hidden shrink-0">
+                      <img
+                        src="https://img.usecurling.com/p/100/100?q=video&color=blue"
+                        alt="Thumbnail"
+                        className="w-full h-full object-cover opacity-80"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center overflow-hidden">
+                      <h4 className="font-semibold text-xs truncate">
+                        Facebook Video
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        3:00 • Ready to import
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <Button
+                  className="w-full bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
+                  onClick={handleImportFb}
+                  disabled={!fbUrl.trim()}
+                >
+                  <PlaySquare className="w-4 h-4 mr-2" /> Start Editing
+                </Button>
+
+                <div className="relative pt-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Demo Mode
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleExampleProject}
+                >
+                  <LayoutTemplate className="w-4 h-4 mr-2" /> Load Example Video
+                </Button>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {projects.length >= maxProjects && (

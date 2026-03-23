@@ -27,7 +27,10 @@ export const updateProject = (id: string, updates: Partial<Project>) => {
   }
 }
 
-export const createProject = (name: string): Project => {
+export const createProject = (
+  name: string,
+  options?: Partial<Project>,
+): Project => {
   const projects = getProjects()
   // Limit handled in UI now based on plan, but keep this fallback check safe
   if (projects.length >= 100) throw new Error('Maximum absolute limit reached')
@@ -44,6 +47,7 @@ export const createProject = (name: string): Project => {
     aspectRatio: '9:16',
     captions: { instagram: '', tiktok: '', facebook: '' },
     createdAt: Date.now(),
+    ...options,
   }
   projects.push(newProject)
   saveProjects(projects)

@@ -1,15 +1,8 @@
 import { Project } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Upload, Film, Clock, Crop } from 'lucide-react'
+import { Upload, Film, Clock, Crop, Instagram, Facebook } from 'lucide-react'
 
 interface Props {
   project: Project
@@ -47,11 +40,11 @@ export function MediaPanel({ project, update }: Props) {
         ) : (
           <div className="p-5 bg-background rounded-xl border shadow-subtle flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                video_edit_final.mp4
+              <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">
+                {project.name.toLowerCase().replace(' ', '_')}.mp4
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                1080p • 120s duration
+                1080p • {project.videoDuration}s duration
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleFakeUpload}>
@@ -63,7 +56,7 @@ export function MediaPanel({ project, update }: Props) {
 
       <div className="space-y-5">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" /> Trimming
+          <Clock className="w-5 h-5 text-primary" /> Trimming (Cuts)
         </h3>
         <div className="space-y-6 bg-background p-5 rounded-xl border shadow-subtle">
           <div className="flex justify-between text-sm font-medium">
@@ -90,25 +83,38 @@ export function MediaPanel({ project, update }: Props) {
 
       <div className="space-y-5">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Crop className="w-5 h-5 text-primary" /> Platform Format
+          <Crop className="w-5 h-5 text-primary" /> Format Adaptor
         </h3>
-        <div className="space-y-3 bg-background p-5 rounded-xl border shadow-subtle">
-          <Label>Aspect Ratio Preset</Label>
-          <Select
-            value={project.aspectRatio}
-            onValueChange={(v: any) => update({ aspectRatio: v })}
-          >
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder="Select ratio" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="9:16">9:16 (TikTok, Reels, Shorts)</SelectItem>
-              <SelectItem value="1:1">1:1 (Instagram Square)</SelectItem>
-              <SelectItem value="4:5">
-                4:5 (Facebook / Instagram Portrait)
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="space-y-4 bg-background p-5 rounded-xl border shadow-subtle">
+          <Label>Platform Presets</Label>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant={project.aspectRatio === '9:16' ? 'default' : 'outline'}
+              className="flex flex-col h-auto py-3 gap-1 px-1"
+              onClick={() => update({ aspectRatio: '9:16' })}
+            >
+              <Instagram className="w-5 h-5" />
+              <span className="text-xs">Reel</span>
+            </Button>
+            <Button
+              variant={project.aspectRatio === '9:16' ? 'default' : 'outline'}
+              className="flex flex-col h-auto py-3 gap-1 px-1"
+              onClick={() => update({ aspectRatio: '9:16' })}
+            >
+              <div className="w-5 h-5 flex items-center justify-center font-bold text-xs bg-current text-background rounded-sm">
+                t
+              </div>
+              <span className="text-xs">TikTok</span>
+            </Button>
+            <Button
+              variant={project.aspectRatio === '4:5' ? 'default' : 'outline'}
+              className="flex flex-col h-auto py-3 gap-1 px-1"
+              onClick={() => update({ aspectRatio: '4:5' })}
+            >
+              <Facebook className="w-5 h-5" />
+              <span className="text-xs">FB Feed</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

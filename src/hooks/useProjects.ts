@@ -18,8 +18,8 @@ export function useProjects() {
 
   return {
     projects,
-    addProject: (name: string) => {
-      const p = createProject(name)
+    addProject: (name: string, options?: Partial<Project>) => {
+      const p = createProject(name, options)
       return p
     },
     removeProject: deleteProject,
