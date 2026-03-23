@@ -6,15 +6,23 @@ import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
-import { Send, AlertTriangle, Instagram, Facebook, Share2 } from 'lucide-react'
+import {
+  Send,
+  AlertTriangle,
+  Instagram,
+  Facebook,
+  Share2,
+  Eye,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 interface Props {
   project: Project
   update: (updates: Partial<Project>) => void
+  onPreviewClick?: () => void
 }
 
-export function PublishPanel({ project, update }: Props) {
+export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const { toast } = useToast()
   const { user } = useAuthStore()
   const duration = project.trimEnd - project.trimStart
@@ -175,14 +183,25 @@ export function PublishPanel({ project, update }: Props) {
         </div>
       )}
 
-      <Button
-        className="w-full mt-6 h-14 text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
-        size="lg"
-        onClick={handlePublish}
-        disabled={project.targetPlatforms.length === 0 || !project.videoUrl}
-      >
-        <Send className="w-5 h-5 mr-3" /> Publish to Selected
-      </Button>
+      <div className="pt-2 space-y-3">
+        {onPreviewClick && (
+          <Button
+            variant="secondary"
+            className="w-full h-12 text-sm font-semibold"
+            onClick={onPreviewClick}
+          >
+            <Eye className="w-4 h-4 mr-2" /> Preview for Analysis
+          </Button>
+        )}
+        <Button
+          className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
+          size="lg"
+          onClick={handlePublish}
+          disabled={project.targetPlatforms.length === 0 || !project.videoUrl}
+        >
+          <Send className="w-5 h-5 mr-3" /> Publish to Selected
+        </Button>
+      </div>
     </div>
   )
 }

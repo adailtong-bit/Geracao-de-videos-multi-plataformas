@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -7,13 +8,21 @@ import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AssetsPanel } from '@/components/editor/AssetsPanel'
-import { ArrowLeft, LayoutDashboard, Loader2, Sparkles } from 'lucide-react'
+import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
+import {
+  ArrowLeft,
+  LayoutDashboard,
+  Loader2,
+  Sparkles,
+  Eye,
+} from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 
 export default function Editor() {
   const { id } = useParams()
   const [project, update] = useProject(id || '')
   const { user } = useAuthStore()
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
 
   if (project === null) {
     return (
@@ -66,6 +75,14 @@ export default function Editor() {
           </div>
         </div>
         <div className="hidden md:flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPreviewModal(true)}
+            disabled={!project.videoUrl}
+          >
+            <Eye className="w-4 h-4 mr-2" /> Preview for Analysis
+          </Button>
           {user?.plan === 'pro' && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5" /> Pro Workspace
@@ -114,7 +131,11 @@ export default function Editor() {
                 <AssetsPanel project={project} update={update} />
               </TabsContent>
               <TabsContent value="publish" className="mt-0 outline-none">
-                <PublishPanel project={project} update={update} />
+                <PublishPanel
+                  project={project}
+                  update={update}
+                  onPreviewClick={() => setShowPreviewModal(true)}
+                />
               </TabsContent>
             </div>
           </Tabs>
@@ -149,6 +170,12 @@ export default function Editor() {
           )}
         </div>
       </div>
+
+      <PreviewSimulatorModal
+        project={project}
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+      />
     </div>
   )
 }
