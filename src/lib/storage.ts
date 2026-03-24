@@ -18,7 +18,7 @@ export const getProjects = (): Project[] => {
   // Provide fully populated mock data by default so the interface is never blank
   const defaultProject: Project = {
     id: 'mock-project-1',
-    name: 'Projeto de Demonstração',
+    name: 'História com IA',
     videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
     videoDuration: 10,
     trimStart: 0,
@@ -29,33 +29,33 @@ export const getProjects = (): Project[] => {
       {
         id: crypto.randomUUID(),
         start: 0,
-        end: 5,
-        title: 'Como fazer vídeos virais em 2024',
+        end: 10,
+        title: 'Bem-vindo ao Criador de Histórias',
         description:
-          'Dicas essenciais para crescer nas redes sociais! #viral #dicas #crescimento',
-        keywords: ['viral', 'dicas', 'crescimento'],
+          'Gere vídeos incríveis baseados em textos com apenas um clique.',
+        keywords: ['historia', 'ia', 'educacao'],
         subtitles: [
           {
             id: crypto.randomUUID(),
             start: 0,
-            end: 2.5,
-            text: 'Quer saber o segredo?',
+            end: 5,
+            text: 'Bem-vindo ao Criador de Histórias com IA!',
           },
           {
             id: crypto.randomUUID(),
-            start: 2.5,
-            end: 5,
-            text: 'Fique até o final!',
+            start: 5,
+            end: 10,
+            text: 'Digite um texto (ex: Salmo 21) e veja a mágica.',
           },
         ],
       },
     ],
-    targetPlatforms: ['instagram', 'tiktok', 'facebook'],
+    targetPlatforms: ['tiktok', 'instagram'],
     aspectRatio: '9:16',
     captions: {
-      instagram: 'Veja isso! #reels',
-      tiktok: 'Viral! #fyp',
-      facebook: 'Incrível',
+      instagram: 'Nova história gerada com IA! #reels',
+      tiktok: 'Criado automaticamente #fyp',
+      facebook: 'Vídeo educativo.',
     },
     createdAt: Date.now(),
     drafts: [],
@@ -66,7 +66,7 @@ export const getProjects = (): Project[] => {
   defaultProject.drafts = [
     {
       id: defaultDraftId,
-      name: 'Como fazer vídeos virais em 2024',
+      name: 'Bem-vindo ao Criador',
       createdAt: Date.now(),
       snapshot: {
         videoUrl: defaultProject.videoUrl,
@@ -119,7 +119,7 @@ export const createProject = (
     trimEnd: 10,
     cuts: [],
     elements: [],
-    targetPlatforms: ['instagram', 'tiktok', 'facebook'],
+    targetPlatforms: ['tiktok', 'instagram'],
     aspectRatio: '9:16',
     captions: { instagram: '', tiktok: '', facebook: '' },
     createdAt: Date.now(),

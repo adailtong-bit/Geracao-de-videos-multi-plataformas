@@ -1,16 +1,6 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
-import {
-  Link as LinkIcon,
-  Heart,
-  MessageCircle,
-  Share2,
-  Bookmark,
-  Music,
-  Play,
-  Pause,
-  Wand2,
-} from 'lucide-react'
+import { Wand2, Play, Pause } from 'lucide-react'
 import { useEffect, useRef, useMemo } from 'react'
 import {
   usePlayerControls,
@@ -42,29 +32,17 @@ function SubtitleOverlay({ project }: { project: Project }) {
 
   if (!currentSubtitle) return null
 
-  const animClass =
-    project.globalCaptionStyle === 'pop-up'
-      ? 'animate-caption-pop-up'
-      : project.globalCaptionStyle === 'highlight'
-        ? 'animate-caption-highlight'
-        : ''
-
   return (
-    <div className="absolute bottom-10 sm:bottom-12 left-1/2 -translate-x-1/2 z-40 text-center w-[90%] sm:w-[80%] pointer-events-none transition-all duration-75 flex flex-col justify-end items-center pb-4">
+    <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 z-40 text-center w-[90%] sm:w-[85%] pointer-events-none transition-all duration-150 flex flex-col justify-end items-center">
       <span
         key={currentSubtitle.id}
-        className={cn(
-          'text-white px-4 py-2 text-lg sm:text-xl font-bold uppercase tracking-wide leading-snug inline-block transform shadow-lg',
-          animClass,
-        )}
+        className="text-white px-5 py-2.5 text-lg sm:text-2xl font-bold tracking-wide leading-snug inline-block transform shadow-xl animate-fade-in-up"
         style={{
-          color:
-            project.globalCaptionStyle === 'highlight' ? '#ffffff' : '#facc15',
-          backgroundColor: 'rgba(0,0,0,0.65)',
-          borderRadius: '0.5rem',
-          backdropFilter: 'blur(4px)',
-          textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
-          border: '1px solid rgba(255,255,255,0.15)',
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          borderRadius: '0.75rem',
+          backdropFilter: 'blur(8px)',
+          textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
         {currentSubtitle.text}
@@ -91,11 +69,9 @@ function PlaybackController({ project }: { project: Project }) {
 
 export function PreviewCanvas({
   project,
-  showSafeZones = false,
   isGenerating = false,
 }: {
   project: Project
-  showSafeZones?: boolean
   isGenerating?: boolean
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
@@ -218,17 +194,17 @@ export function PreviewCanvas({
             )}
 
             {!isPlaying && (
-              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-all pointer-events-none">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/95 text-primary-foreground rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-transform scale-95 group-hover:scale-100">
-                  <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 sm:ml-2 fill-current drop-shadow-md" />
+              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-all pointer-events-none">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-transform scale-95 group-hover:scale-100">
+                  <Play className="w-10 h-10 sm:w-12 sm:h-12 ml-2 fill-current drop-shadow-md" />
                 </div>
               </div>
             )}
 
             {isPlaying && (
               <div className="absolute inset-0 z-40 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/20 transition-all pointer-events-none">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-black/60 text-white/90 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm transition-transform scale-95 group-hover:scale-100 border border-white/10">
-                  <Pause className="w-8 h-8 sm:w-10 sm:h-10 fill-current drop-shadow-md" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-black/60 text-white/90 rounded-full flex items-center justify-center shadow-xl backdrop-blur-sm transition-transform scale-95 group-hover:scale-100 border border-white/10">
+                  <Pause className="w-10 h-10 sm:w-12 sm:h-12 fill-current drop-shadow-md" />
                 </div>
               </div>
             )}
@@ -241,11 +217,11 @@ export function PreviewCanvas({
               </div>
               <div>
                 <span className="block text-zinc-200 font-semibold text-base sm:text-lg mb-1.5">
-                  Start creating with AI Storyteller
+                  Comece a criar com IA
                 </span>
                 <span className="block text-xs sm:text-sm max-w-[250px] text-zinc-400 leading-relaxed mx-auto">
-                  Vá para a aba <strong>Criar c/ IA</strong> para gerar sua
-                  primeira história e carregá-la dinamicamente.
+                  Gere sua primeira história na barra lateral para carregar o
+                  vídeo.
                 </span>
               </div>
             </div>
@@ -253,112 +229,6 @@ export function PreviewCanvas({
         )}
 
         <SubtitleOverlay project={project} />
-
-        {project.elements.map((el) => {
-          const isAnimated =
-            el.type === 'caption' &&
-            el.animationStyle &&
-            el.animationStyle !== 'none'
-          const animClass =
-            el.animationStyle === 'pop-up'
-              ? 'animate-caption-pop-up'
-              : el.animationStyle === 'highlight'
-                ? 'animate-caption-highlight'
-                : ''
-
-          return (
-            <div
-              key={el.id}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out z-50 cursor-default"
-              style={{ left: `${el.x}%`, top: `${el.y}%` }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {el.type === 'text' || el.type === 'caption' ? (
-                <span
-                  key={isPlaying ? el.id : `static-${el.id}`}
-                  className={cn(
-                    'font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-nowrap text-lg sm:text-xl md:text-2xl',
-                    el.type === 'caption' &&
-                      'bg-black/70 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold border border-white/10 backdrop-blur-sm',
-                    isAnimated && animClass,
-                  )}
-                  style={{
-                    color:
-                      el.animationStyle === 'highlight'
-                        ? '#ffffff'
-                        : el.color || '#ffffff',
-                  }}
-                >
-                  {el.content || 'Texto'}
-                </span>
-              ) : (
-                <div
-                  className="text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-bold text-sm sm:text-lg whitespace-nowrap shadow-[0_6px_12px_rgba(0,0,0,0.4)] border border-white/20"
-                  style={{ backgroundColor: el.bgColor || '#e11d48' }}
-                >
-                  {el.content || 'Banner'}
-                </div>
-              )}
-            </div>
-          )
-        })}
-
-        {showSafeZones && project.videoUrl && (
-          <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-end text-white p-4 pb-6 bg-gradient-to-t from-black/60 via-transparent to-black/30">
-            <div className="absolute top-4 left-4 right-4 flex justify-between items-center opacity-80">
-              <span className="text-sm font-bold drop-shadow">
-                Following | For You
-              </span>
-              <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm" />
-            </div>
-
-            <div className="flex items-end justify-between w-full opacity-90">
-              <div className="space-y-3 w-2/3">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 overflow-hidden">
-                    <img
-                      src="https://img.usecurling.com/ppl/thumbnail?seed=1"
-                      alt="User"
-                    />
-                  </div>
-                  <span className="font-bold text-sm drop-shadow">
-                    @creator
-                  </span>
-                </div>
-                <div className="h-4 w-3/4 bg-white/20 backdrop-blur-sm rounded drop-shadow" />
-                <div className="h-4 w-1/2 bg-white/20 backdrop-blur-sm rounded drop-shadow" />
-                <div className="flex items-center gap-2 text-xs font-semibold drop-shadow mt-1">
-                  <Music className="w-3 h-3" /> Original Sound
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-4 pb-2">
-                <div className="flex flex-col items-center gap-1">
-                  <Heart className="w-7 h-7 drop-shadow-md fill-white" />
-                  <span className="text-[10px] font-medium">1.2M</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <MessageCircle className="w-7 h-7 drop-shadow-md fill-white" />
-                  <span className="text-[10px] font-medium">10K</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Bookmark className="w-7 h-7 drop-shadow-md fill-white" />
-                  <span className="text-[10px] font-medium">50K</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Share2 className="w-7 h-7 drop-shadow-md" />
-                  <span className="text-[10px] font-medium">Share</span>
-                </div>
-                <div className="w-9 h-9 mt-2 rounded-full bg-black/50 border-2 border-white/80 p-1 animate-[spin_4s_linear_infinite]">
-                  <div className="w-full h-full rounded-full bg-white/40" />
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-red-500/80 text-white text-xs font-bold rounded-full uppercase tracking-widest backdrop-blur-sm border border-white/20 shadow-lg">
-              Safe Zone Preview
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

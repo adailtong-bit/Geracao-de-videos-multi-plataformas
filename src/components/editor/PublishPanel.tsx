@@ -6,12 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 import {
   Send,
-  AlertTriangle,
   Instagram,
   Facebook,
   Share2,
@@ -27,10 +25,9 @@ import {
 interface Props {
   project: Project
   update: (updates: Partial<Project>) => void
-  onPreviewClick?: () => void
 }
 
-export function PublishPanel({ project, update, onPreviewClick }: Props) {
+export function PublishPanel({ project, update }: Props) {
   const { toast } = useToast()
   const { user, updateUser } = useAuthStore()
 
@@ -48,9 +45,6 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const [viewDate, setViewDate] = useState<Date | undefined>(new Date())
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
 
-  const totalCuts =
-    project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
-  const duration = totalCuts > 0 ? totalCuts : project.videoDuration || 0
   const isPro = user?.plan === 'pro'
   const isPublishing = Object.values(statuses).includes('uploading')
 
@@ -77,8 +71,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const handleGenerateAICaptions = () => {
     setIsGeneratingAi(true)
     setTimeout(() => {
-      const hashtags = '#viral #dicas #curiosidades #fyp #foryou #trends'
-      const text = `Você não vai acreditar no que descobrimos hoje! 😱🔥 Assista até o final para ver o segredo revelado que poucas pessoas conhecem.\n\n${hashtags}`
+      const text = `Confira essa incrível história narrada! ✨ Assista até o final.\n\n#viral #historia #conhecimento #fyp`
       update({
         captions: {
           tiktok: text,
@@ -87,7 +80,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         },
       })
       setIsGeneratingAi(false)
-      toast({ title: 'Copy e Hashtags geradas com IA!' })
+      toast({ title: 'Legendas geradas com IA!' })
     }, 2000)
   }
 
@@ -182,29 +175,12 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
-      {duration > 90 && project.targetPlatforms.includes('instagram') && (
-        <Alert
-          variant="destructive"
-          className="border-2 shadow-sm bg-destructive/5"
-        >
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle className="font-bold">
-            Aviso de Duração (Reels)
-          </AlertTitle>
-          <AlertDescription className="text-sm">
-            O limite do Instagram Reels é 90s. Seu vídeo tem{' '}
-            {Math.round(duration)}s.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="space-y-4 bg-background p-5 rounded-xl border shadow-sm">
         <h3 className="font-semibold text-base flex items-center gap-2">
           <LinkIcon className="w-5 h-5 text-blue-500" /> Contas Sociais
         </h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Conecte suas contas para publicar ou agendar diretamente pelo
-          aplicativo, sem precisar baixar o vídeo.
+          Conecte suas contas para publicar ou agendar diretamente.
         </p>
         <div className="grid grid-cols-1 gap-3">
           {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => {
@@ -250,7 +226,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
 
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Share2 className="w-5 h-5 text-primary" /> Roteamento Multiplataforma
+          <Share2 className="w-5 h-5 text-primary" /> Plataformas de Destino
         </h3>
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
           {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => (
@@ -304,7 +280,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
               ) : (
                 <Sparkles className="w-4 h-4 mr-2" />
               )}
-              AI Copywriter
+              Sugerir Textos
             </Button>
           </div>
           {project.targetPlatforms.map((p) => (
@@ -317,14 +293,14 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
                 Post {p}
               </Label>
               <Textarea
-                placeholder={`Escreva uma legenda engajadora para ${p}...`}
+                placeholder={`Escreva uma legenda para ${p}...`}
                 value={project.captions[p] || ''}
                 onChange={(e) =>
                   update({
                     captions: { ...project.captions, [p]: e.target.value },
                   })
                 }
-                className="resize-none h-28 mt-2 border-muted text-sm"
+                className="resize-none h-24 mt-2 border-muted text-sm"
               />
             </div>
           ))}
@@ -382,16 +358,15 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           ) : null}
           {publishMode === 'now'
             ? isPublishing
-              ? 'Exportando & Publicando...'
-              : 'Publicar Direto nas Redes'
+              ? 'Publicando...'
+              : 'Publicar nas Redes'
             : 'Agendar Posts'}
         </Button>
       </div>
 
       <div className="space-y-4 pt-4 border-t">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-primary" /> Calendário de
-          Publicações
+          <CalendarIcon className="w-5 h-5 text-primary" /> Calendário
         </h3>
         <div className="bg-background p-4 rounded-xl border shadow-sm">
           <Calendar
@@ -410,7 +385,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           <div className="mt-4 space-y-2 border-t pt-4 min-h-[80px]">
             {postsOnViewDate.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum post agendado para este dia.
+                Nenhum post agendado.
               </p>
             ) : (
               postsOnViewDate.map((post) => (

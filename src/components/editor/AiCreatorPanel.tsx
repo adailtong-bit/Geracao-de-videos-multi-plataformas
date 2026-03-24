@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -20,15 +19,13 @@ import {
 } from '@/components/ui/tooltip'
 import {
   Wand2,
-  Image as ImageIcon,
   Play,
   Hash,
   FileText,
   RefreshCcw,
   Mic,
-  LayoutTemplate,
   HelpCircle,
-  Video,
+  Send,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -37,7 +34,6 @@ interface Props {
   project: Project
   update: (updates: Partial<Project>) => void
   onNext: () => void
-  onPreview: () => void
   onStatusChange?: (status: 'idle' | 'generating' | 'success') => void
 }
 
@@ -57,12 +53,10 @@ export function AiCreatorPanel({
   project,
   update,
   onNext,
-  onPreview,
   onStatusChange,
 }: Props) {
   const [prompt, setPrompt] = useState('')
   const [voice, setVoice] = useState('documentary')
-  const [template, setTemplate] = useState('mystery')
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
   )
@@ -75,7 +69,8 @@ export function AiCreatorPanel({
     if (!prompt.trim()) {
       return toast({
         title: 'Faltando informações',
-        description: 'Por favor, descreva sua ideia de vídeo primeiro.',
+        description:
+          'Por favor, descreva o texto ou tema da sua história primeiro.',
         variant: 'destructive',
       })
     }
@@ -83,12 +78,12 @@ export function AiCreatorPanel({
     setStatus('generating')
     if (onStatusChange) onStatusChange('generating')
     setProgress(0)
-    setStatusText('Analisando seu prompt...')
+    setStatusText('Analisando seu texto...')
 
     const steps = [
-      { p: 25, t: 'Escrevendo roteiro viral...' },
-      { p: 50, t: 'Gerando imagens fotorealistas...' },
-      { p: 75, t: 'Ajustando tom de voz e ritmo...' },
+      { p: 25, t: 'Gerando narrativa...' },
+      { p: 50, t: 'Buscando imagens e referências visuais...' },
+      { p: 75, t: 'Sincronizando áudio e texto...' },
       { p: 100, t: 'Finalizando vídeo...' },
     ]
 
@@ -106,90 +101,69 @@ export function AiCreatorPanel({
   }
 
   const finishGeneration = () => {
-    const isSalmo21 =
-      prompt.toLowerCase().includes('salmo 21') ||
-      prompt.toLowerCase().includes('psalm 21')
+    const textLower = prompt.toLowerCase()
+    const isBiblical =
+      textLower.includes('salmo') ||
+      textLower.includes('psalm') ||
+      textLower.includes('deus')
 
     let generatedResult: GeneratedResult
 
-    if (isSalmo21) {
+    if (isBiblical) {
       generatedResult = {
-        title: 'Salmo 21 - A Alegria e a Força do Rei',
+        title: 'Salmo 21 - A Força e Alegria',
         description:
-          'Uma mensagem poderosa de fé, vitória e bênçãos baseada no Salmo 21. #salmo21 #fe #biblia #deus',
-        hashtags: '#salmo21 #fe #biblia #deus #vitoria #reflexao',
+          'Uma leitura inspiradora do Salmo 21, refletindo sobre vitória e fé. #salmo21 #fe #biblia #deus',
+        hashtags: '#salmo21 #fe #biblia #vitoria',
         scenes: [
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=ancient%20king%20praying&seed=s21_1`,
+            imageUrl: `https://img.usecurling.com/p/400/700?q=ancient%20king%20praying&seed=1`,
             text: 'O rei se alegra na tua força, ó Senhor!',
           },
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=glowing%20gold%20crown&seed=s21_2`,
+            imageUrl: `https://img.usecurling.com/p/400/700?q=glowing%20gold%20crown&seed=2`,
             text: 'Puseste em sua cabeça uma coroa de ouro puro.',
           },
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=sunlight%20breaking%20clouds&seed=s21_3`,
+            imageUrl: `https://img.usecurling.com/p/400/700?q=sunlight%20breaking%20clouds&seed=3`,
             text: 'A vida ele te pediu, e tu lha deste.',
           },
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=majestic%20sky%20glory&seed=s21_4`,
+            imageUrl: `https://img.usecurling.com/p/400/700?q=majestic%20sky%20glory&seed=4`,
             text: 'Grande é a sua glória pelo teu socorro.',
           },
         ],
       }
     } else {
       const words = prompt.split(' ').filter((w) => w.length > 3)
-      const keyword = words.length > 0 ? encodeURIComponent(words[0]) : 'epic'
-
-      const templateThemes: Record<
-        string,
-        { title: string; text1: string; text2: string }
-      > = {
-        mystery: {
-          title: 'O Segredo Oculto:',
-          text1: 'Tudo começou quando descobrimos algo incrível.',
-          text2: 'Durante anos, isso foi escondido de todos nós.',
-        },
-        curiosities: {
-          title: 'Você Sabia disso?',
-          text1: 'Fatos incríveis que vão explodir sua mente!',
-          text2: 'Muitas pessoas passam a vida inteira sem saber disso.',
-        },
-        motivational: {
-          title: 'Sua Dose de Inspiração',
-          text1: 'O sucesso é construído dia após dia.',
-          text2: 'Não desista quando a estrada ficar difícil.',
-        },
-      }
-
-      const t = templateThemes[template] || templateThemes.mystery
+      const keyword =
+        words.length > 0 ? encodeURIComponent(words[0]) : 'educational'
 
       generatedResult = {
-        title: `${t.title} ${prompt.slice(0, 15)}...`,
-        description: `Vídeo gerado com IA usando estilo "${template}" e tom de voz de ${voice}.`,
-        hashtags: `#viral #${template} #ia`,
+        title: `História: ${prompt.slice(0, 15)}...`,
+        description: `Vídeo narrado gerado com IA. Tema: ${prompt.slice(0, 20)}.`,
+        hashtags: `#educacao #historia #ia`,
         scenes: [
           {
             imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=1`,
-            text: t.text1,
+            text: 'O início de tudo é marcado por grandes descobertas.',
           },
           {
             imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=2`,
-            text: t.text2,
+            text: 'Pequenos detalhes muitas vezes passam despercebidos.',
           },
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=cinematic&seed=3`,
-            text: 'Mas agora, a verdade finalmente apareceu.',
+            imageUrl: `https://img.usecurling.com/p/400/700?q=learning&seed=3`,
+            text: 'Mas a verdade se revela para quem procura.',
           },
           {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=shocked&seed=4`,
-            text: 'Curta e siga para descobrir mais!',
+            imageUrl: `https://img.usecurling.com/p/400/700?q=success&seed=4`,
+            text: 'Compartilhe esse conhecimento com outras pessoas.',
           },
         ],
       }
     }
 
-    // Automatically load the newly generated content as a Draft
     const sceneDuration = 4
     const totalDuration = generatedResult.scenes.length * sceneDuration
 
@@ -236,14 +210,13 @@ export function AiCreatorPanel({
           instagram: captionText,
           facebook: captionText,
         },
-        elements: [],
+        elements: [], // Ensure clean elements
         cuts: [],
         sfx: [],
         audioTrack: null,
       },
     }
 
-    // Apply draft immediately
     update({
       ...newDraft.snapshot,
       drafts: [...(project.drafts || []), newDraft],
@@ -253,7 +226,7 @@ export function AiCreatorPanel({
     setResult(generatedResult)
     setStatus('success')
     if (onStatusChange) onStatusChange('success')
-    toast({ title: 'História gerada e carregada no Editor!' })
+    toast({ title: 'História gerada e carregada no player!' })
   }
 
   if (status === 'generating') {
@@ -263,7 +236,7 @@ export function AiCreatorPanel({
           <Wand2 className="w-8 h-8 text-blue-500" />
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">Criando sua obra-prima</h3>
+          <h3 className="font-bold text-lg">Criando sua história</h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -288,7 +261,7 @@ export function AiCreatorPanel({
             }}
             className="h-8"
           >
-            <RefreshCcw className="w-4 h-4 mr-2" /> Refazer
+            <RefreshCcw className="w-4 h-4 mr-2" /> Nova Ideia
           </Button>
         </div>
 
@@ -299,7 +272,7 @@ export function AiCreatorPanel({
           <p className="font-medium text-foreground text-sm">{result.title}</p>
 
           <h4 className="font-bold flex items-center gap-2 text-sm mt-4">
-            <Hash className="w-4 h-4 text-primary" /> Hashtags Otimizadas
+            <Hash className="w-4 h-4 text-primary" /> Hashtags
           </h4>
           <p className="text-sm text-blue-500 dark:text-blue-400 font-medium">
             {result.hashtags}
@@ -307,7 +280,7 @@ export function AiCreatorPanel({
         </div>
 
         <div className="space-y-3">
-          <Label className="font-bold">Storyboard (Cenas Geradas)</Label>
+          <Label className="font-bold">Cenas & Legendas</Label>
           <ScrollArea className="h-48 rounded-xl border bg-background">
             <div className="p-3 space-y-3">
               {result.scenes.map((scene, idx) => (
@@ -323,7 +296,7 @@ export function AiCreatorPanel({
                     />
                   </div>
                   <p className="text-sm font-medium leading-tight">
-                    {scene.text}
+                    "{scene.text}"
                   </p>
                 </div>
               ))}
@@ -331,16 +304,9 @@ export function AiCreatorPanel({
           </ScrollArea>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t">
-          <Button
-            variant="secondary"
-            className="w-full font-bold h-12"
-            onClick={onPreview}
-          >
-            <Play className="w-4 h-4 mr-2" /> Ver Preview
-          </Button>
+        <div className="pt-4 border-t">
           <Button className="w-full font-bold h-12 shadow-md" onClick={onNext}>
-            <Video className="w-4 h-4 mr-2" /> Editar Mídia
+            <Send className="w-4 h-4 mr-2" /> Publicar Vídeo
           </Button>
         </div>
       </div>
@@ -351,106 +317,59 @@ export function AiCreatorPanel({
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-blue-500" /> AI Story Generator
+          <Wand2 className="w-5 h-5 text-blue-500" /> Criador de Histórias (IA)
         </h3>
         <p className="text-sm text-muted-foreground">
-          Crie um vídeo viral completo a partir de uma simples ideia. A IA
-          cuidará do roteiro, imagens, áudio e metadados, atualizando o player
-          automaticamente. Tente buscar por "Salmo 21".
+          Crie um vídeo completo a partir de uma referência de texto. A IA gera
+          a narração e busca as imagens de fundo que combinam com o assunto.
         </p>
 
         <div className="space-y-3">
           <Label htmlFor="prompt" className="font-semibold text-sm">
-            Sobre o que é o seu vídeo?
+            Referência de Texto ou Tema
           </Label>
           <Textarea
             id="prompt"
-            placeholder="Ex: Conte uma história sobre o mistério das pirâmides... ou Salmo 21"
+            placeholder="Ex: 'Salmo 21' ou 'A história das estrelas cadentes'"
             className="min-h-[100px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <Mic className="w-4 h-4 text-primary" /> Narrador (Voz)
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>A voz da IA que irá narrar seu vídeo.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Select value={voice} onValueChange={setVoice}>
-              <SelectTrigger className="w-full bg-background/50 h-10">
-                <SelectValue placeholder="Selecione a voz" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="documentary">
-                  Locutor de Documentário
-                </SelectItem>
-                <SelectItem value="enthusiastic">Voz Entusiasmada</SelectItem>
-                <SelectItem value="suspense">Tom de Suspense</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <LayoutTemplate className="w-4 h-4 text-primary" /> Template
-                Pronto
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>A estrutura de conteúdo do seu formato de vídeo.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Select value={template} onValueChange={setTemplate}>
-              <SelectTrigger className="w-full bg-background/50 h-10">
-                <SelectValue placeholder="Selecione o template" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mystery">Mistério</SelectItem>
-                <SelectItem value="curiosities">Curiosidades</SelectItem>
-                <SelectItem value="motivational">Motivacional</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
         <div className="space-y-3">
-          <Label className="font-semibold text-sm">Estilo Visual</Label>
-          <div className="p-3 bg-muted rounded-md border flex items-center justify-between cursor-not-allowed opacity-80">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Realista /
-              Cinemático
-            </div>
-            <Badge variant="outline" className="text-[10px] bg-background">
-              Bloqueado (Melhor Engajamento)
-            </Badge>
+          <div className="flex items-center justify-between">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Mic className="w-4 h-4 text-primary" /> Estilo da Narração
+            </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>A voz e o tom que a IA utilizará para ler o texto.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
+          <Select value={voice} onValueChange={setVoice}>
+            <SelectTrigger className="w-full bg-background/50 h-10">
+              <SelectValue placeholder="Selecione a voz" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="documentary">Calmo e Reflexivo</SelectItem>
+              <SelectItem value="enthusiastic">Voz Entusiasmada</SelectItem>
+              <SelectItem value="suspense">Sério / Documentário</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Button
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-4"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Gerar Nova História
+          <Wand2 className="w-5 h-5 mr-2" /> Gerar Vídeo
         </Button>
       </div>
     </div>
