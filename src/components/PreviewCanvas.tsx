@@ -336,9 +336,9 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-6 left-0 right-0 z-30 px-6 pointer-events-none flex justify-center animate-fade-in-up"
+                    className="absolute bottom-4 left-0 right-0 z-30 px-6 pointer-events-none flex justify-center animate-fade-in-up pb-safe"
                   >
-                    <span className="bg-black/50 text-white/90 font-medium text-xs sm:text-sm px-3 py-1.5 rounded-md backdrop-blur-md shadow-sm text-center max-w-[85%] leading-snug text-balance">
+                    <span className="bg-black/60 text-white/90 font-medium text-[11px] sm:text-xs px-2.5 py-1 rounded backdrop-blur-md shadow-sm text-center max-w-[85%] leading-snug text-balance border border-white/10 tracking-wide">
                       {activeSub.text}
                     </span>
                   </div>

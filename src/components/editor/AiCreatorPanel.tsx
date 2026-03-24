@@ -8,6 +8,7 @@ import {
   VoiceProfile,
   VisualStyle,
   Mood,
+  CutSegment,
 } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,6 +38,7 @@ import {
   Activity,
   EyeOff,
   Globe,
+  Clock,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -119,6 +121,7 @@ export function AiCreatorPanel({
   )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [targetDuration, setTargetDuration] = useState<number>(30)
   const [language, setLanguage] = useState<Language>(
     project.language || 'pt-BR',
   )
@@ -147,7 +150,7 @@ export function AiCreatorPanel({
     if (sourceType === 'video' && !videoUrl.trim()) {
       return toast({
         title: 'Faltando informações',
-        description: 'Cole a URL do vídeo primeiro.',
+        description: 'Cole a URL do vídeo completo primeiro.',
         variant: 'destructive',
       })
     }
@@ -159,7 +162,7 @@ export function AiCreatorPanel({
     setStatusText(
       sourceType === 'text'
         ? 'Extraindo contexto semântico...'
-        : 'Processando mídia e extraindo transcrição...',
+        : 'Analisando vídeo completo para extrair os melhores cortes...',
     )
 
     const steps = [
@@ -205,7 +208,7 @@ export function AiCreatorPanel({
     if (clauses.length === 0) clauses.push(rawText)
 
     let currentStartTime = 0
-    const scenes = clauses.map((text, i) => {
+    let scenes = clauses.map((text, i) => {
       const duration = Math.max(2.0, text.length * 0.065)
       const start = currentStartTime
       const end = start + duration
@@ -224,7 +227,44 @@ export function AiCreatorPanel({
       }
     })
 
-    const totalDuration = currentStartTime
+    let totalDuration = currentStartTime
+    let cuts: CutSegment[] = []
+
+    if (sourceType === 'video') {
+      totalDuration = targetDuration
+
+      const allowedClauses = Math.max(1, Math.floor(targetDuration / 3))
+      const selectedClauses = clauses.slice(0, allowedClauses)
+
+      currentStartTime = 0
+      scenes = selectedClauses.map((text, i) => {
+        const duration = targetDuration / selectedClauses.length
+        const start = currentStartTime
+        const end = start + duration
+        currentStartTime = end
+
+        const query = encodeURIComponent(
+          extractEnglishVisualKeyword(text, visualStyle),
+        )
+
+        return {
+          id: crypto.randomUUID(),
+          text,
+          start,
+          end,
+          imageUrl: `https://img.usecurling.com/p/800/1200?q=${query}&dpr=2&seed=${i + Date.now()}`,
+        }
+      })
+
+      cuts = [
+        { id: crypto.randomUUID(), start: 10, end: 10 + targetDuration * 0.6 },
+        {
+          id: crypto.randomUUID(),
+          start: 150,
+          end: 150 + targetDuration * 0.4,
+        },
+      ]
+    }
 
     const bRolls: BRoll[] = scenes.map((s) => ({
       id: crypto.randomUUID(),
@@ -261,7 +301,7 @@ export function AiCreatorPanel({
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
     const underlyingVideo =
       sourceType === 'video'
-        ? 'https://www.w3schools.com/html/mov_bbb.mp4'
+        ? videoUrl || 'https://www.w3schools.com/html/mov_bbb.mp4'
         : null
 
     const newDraft: Draft = {
@@ -273,13 +313,13 @@ export function AiCreatorPanel({
         videoDuration: totalDuration,
         bRolls,
         aiClips,
+        cuts,
         captions: {
           tiktok: captionText,
           instagram: captionText,
           facebook: captionText,
         },
         elements: [],
-        cuts: [],
         sfx: [],
         audioTrack: {
           id: crypto.randomUUID(),
@@ -304,7 +344,7 @@ export function AiCreatorPanel({
     setResult(generatedResult)
     setStatus('success')
     if (onStatusChange) onStatusChange('success')
-    toast({ title: 'Processamento Oratório Concluído!' })
+    toast({ title: 'Processamento de Mídia Concluído!' })
   }
 
   if (status === 'generating') {
@@ -405,14 +445,42 @@ export function AiCreatorPanel({
             />
           </TabsContent>
 
-          <TabsContent value="video" className="space-y-3 mt-0">
-            <Label className="font-semibold text-sm">URL do Vídeo</Label>
-            <Input
-              placeholder="YouTube, TikTok ou Instagram..."
-              className="bg-background/50 h-11"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-            />
+          <TabsContent value="video" className="space-y-4 mt-0">
+            <div className="space-y-2">
+              <Label className="font-semibold text-sm">
+                Link do Vídeo Completo
+              </Label>
+              <Input
+                placeholder="Ex: Link do YouTube, Podcast longo..."
+                className="bg-background/50 h-11"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                A IA analisará o vídeo completo e extrairá automaticamente os
+                melhores cortes de acordo com a duração escolhida.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" /> Duração Alvo do Corte
+                (Highlights)
+              </Label>
+              <Select
+                value={String(targetDuration)}
+                onValueChange={(v) => setTargetDuration(Number(v))}
+              >
+                <SelectTrigger className="bg-background/50 h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">Curto (15 Segundos)</SelectItem>
+                  <SelectItem value="30">Padrão (30 Segundos)</SelectItem>
+                  <SelectItem value="60">Médio (60 Segundos)</SelectItem>
+                  <SelectItem value="90">Longo (90 Segundos)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-3 mt-0">
