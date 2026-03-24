@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
+import { Skeleton } from '@/components/ui/skeleton'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
@@ -17,7 +18,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
-  Loader2,
   Eye,
   Save,
   Download,
@@ -190,15 +190,19 @@ export default function Editor() {
 
   if (project === null) {
     return (
-      <div className="flex h-screen items-center justify-center flex-col gap-6 bg-muted/20">
-        <div className="text-center space-y-2">
+      <div className="flex h-screen items-center justify-center flex-col gap-6 bg-muted/20 p-4">
+        <div className="text-center space-y-3 max-w-md">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-8 h-8 text-destructive" />
+          </div>
           <h2 className="text-3xl font-bold">Projeto Não Encontrado</h2>
           <p className="text-muted-foreground">
-            O projeto que você está procurando não existe ou foi excluído.
+            O projeto que você está procurando não existe, falhou ao carregar ou
+            foi excluído.
           </p>
         </div>
         <Button asChild size="lg">
-          <Link to="/">Voltar ao Dashboard</Link>
+          <Link to="/">Go Back</Link>
         </Button>
       </div>
     )
@@ -206,8 +210,37 @@ export default function Editor() {
 
   if (project === undefined) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
+        <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-8 h-8 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-2 w-20" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-24 hidden sm:block" />
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+        </header>
+
+        <div className="flex-1 flex overflow-hidden min-h-0 w-full">
+          <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 p-4 space-y-6">
+            <div className="flex gap-2">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+            </div>
+            <Skeleton className="h-[200px] w-full" />
+            <Skeleton className="h-[300px] w-full" />
+          </div>
+
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative p-4 md:p-8">
+            <Skeleton className="w-full h-full rounded-2xl" />
+          </div>
+        </div>
       </div>
     )
   }

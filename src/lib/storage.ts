@@ -5,10 +5,59 @@ const KEY = 'multiproject_projects'
 export const getProjects = (): Project[] => {
   try {
     const data = localStorage.getItem(KEY)
-    return data ? JSON.parse(data) : []
-  } catch {
-    return []
+    if (data) {
+      const parsed = JSON.parse(data)
+      if (parsed.length > 0) return parsed
+    }
+  } catch {}
+
+  // Provide fully populated mock data by default so the interface is never blank
+  const defaultProject: Project = {
+    id: 'mock-project-1',
+    name: 'Projeto de Demonstração',
+    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    videoDuration: 10,
+    trimStart: 0,
+    trimEnd: 10,
+    cuts: [],
+    elements: [],
+    aiClips: [
+      {
+        id: crypto.randomUUID(),
+        start: 0,
+        end: 5,
+        title: 'Como fazer vídeos virais em 2024',
+        description:
+          'Dicas essenciais para crescer nas redes sociais! #viral #dicas #crescimento',
+        keywords: ['viral', 'dicas', 'crescimento'],
+        subtitles: [
+          {
+            id: crypto.randomUUID(),
+            start: 0,
+            end: 2.5,
+            text: 'Quer saber o segredo?',
+          },
+          {
+            id: crypto.randomUUID(),
+            start: 2.5,
+            end: 5,
+            text: 'Fique até o final!',
+          },
+        ],
+      },
+    ],
+    targetPlatforms: ['instagram', 'tiktok', 'facebook'],
+    aspectRatio: '9:16',
+    captions: {
+      instagram: 'Veja isso! #reels',
+      tiktok: 'Viral! #fyp',
+      facebook: 'Incrível',
+    },
+    createdAt: Date.now(),
   }
+
+  localStorage.setItem(KEY, JSON.stringify([defaultProject]))
+  return [defaultProject]
 }
 
 export const saveProjects = (projects: Project[]) => {
@@ -37,10 +86,10 @@ export const createProject = (
   const newProject: Project = {
     id: crypto.randomUUID(),
     name,
-    videoUrl: null,
-    videoDuration: 120,
+    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    videoDuration: 10,
     trimStart: 0,
-    trimEnd: 120,
+    trimEnd: 10,
     cuts: [],
     elements: [],
     targetPlatforms: ['instagram', 'tiktok', 'facebook'],

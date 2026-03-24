@@ -2,13 +2,7 @@ import { useState } from 'react'
 import { Project, AiClip } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -113,7 +107,7 @@ export function AiClipsPanel({ project, update }: Props) {
           },
         ],
       })
-      toast({ title: 'Clipes gerados com sucesso!' })
+      toast({ title: 'Smart-Clips gerados com sucesso!' })
     }, 3000)
   }
 
@@ -149,22 +143,39 @@ export function AiClipsPanel({ project, update }: Props) {
           automaticamente para você publicar.
         </p>
         <div className="space-y-3 pt-2">
-          <Label>Duração Máxima</Label>
-          <Select
+          <Label className="font-semibold">Duração do Smart-Clip</Label>
+          <ToggleGroup
+            type="single"
             value={duration}
-            onValueChange={setDuration}
+            onValueChange={(v) => v && setDuration(v)}
             disabled={isGenerating}
+            className="w-full gap-2"
           >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="15">15s (Shorts rápidos)</SelectItem>
-              <SelectItem value="30">30s (Reels/TikTok ideais)</SelectItem>
-              <SelectItem value="60">60s (Conteúdo Profundo)</SelectItem>
-              <SelectItem value="90">90s (Histórias longas)</SelectItem>
-            </SelectContent>
-          </Select>
+            <ToggleGroupItem
+              value="15"
+              className="flex-1 h-9 bg-muted/50 data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700 dark:data-[state=on]:bg-purple-900/50 dark:data-[state=on]:text-purple-300"
+            >
+              15s
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="30"
+              className="flex-1 h-9 bg-muted/50 data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700 dark:data-[state=on]:bg-purple-900/50 dark:data-[state=on]:text-purple-300"
+            >
+              30s
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="60"
+              className="flex-1 h-9 bg-muted/50 data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700 dark:data-[state=on]:bg-purple-900/50 dark:data-[state=on]:text-purple-300"
+            >
+              60s
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="90"
+              className="flex-1 h-9 bg-muted/50 data-[state=on]:bg-purple-100 data-[state=on]:text-purple-700 dark:data-[state=on]:bg-purple-900/50 dark:data-[state=on]:text-purple-300"
+            >
+              90s
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         {isGenerating ? (
           <div className="space-y-2 pt-4">
@@ -181,7 +192,7 @@ export function AiClipsPanel({ project, update }: Props) {
             className="w-full h-12 mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold"
             onClick={generate}
           >
-            <Wand2 className="w-5 h-5 mr-2" /> Gerar Clipes com IA
+            <Wand2 className="w-5 h-5 mr-2" /> Gerar Smart-Clips
           </Button>
         )}
       </div>
@@ -189,7 +200,7 @@ export function AiClipsPanel({ project, update }: Props) {
       {project.aiClips?.length ? (
         <div className="space-y-4">
           <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-primary" /> Clipes Gerados
+            <Scissors className="w-5 h-5 text-primary" /> Smart-Clips Sugeridos
           </h3>
           <div className="space-y-4">
             {project.aiClips.map((clip, i) => (
@@ -200,10 +211,10 @@ export function AiClipsPanel({ project, update }: Props) {
                 <div className="bg-muted/30 px-4 py-3 border-b flex justify-between items-center">
                   <div className="flex gap-2 items-center">
                     <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-md">
-                      Clipe {i + 1}
+                      Smart-Clip {i + 1}
                     </span>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {clip.start.toFixed(1)}s - {clip.end.toFixed(1)}s
+                    <span className="text-xs font-medium text-muted-foreground flex items-center">
+                      ⏱ {clip.start.toFixed(1)}s - {clip.end.toFixed(1)}s
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -227,7 +238,7 @@ export function AiClipsPanel({ project, update }: Props) {
                 <CardContent className="p-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1">
+                      <Label className="text-xs flex items-center gap-1 font-semibold">
                         <Settings2 className="w-3.5 h-3.5" /> Início (s)
                       </Label>
                       <Input
@@ -241,7 +252,7 @@ export function AiClipsPanel({ project, update }: Props) {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1">
+                      <Label className="text-xs flex items-center gap-1 font-semibold">
                         <Settings2 className="w-3.5 h-3.5" /> Fim (s)
                       </Label>
                       <Input
@@ -255,39 +266,42 @@ export function AiClipsPanel({ project, update }: Props) {
                       />
                     </div>
                   </div>
-                  <div className="space-y-3 bg-muted/10 p-3 rounded-lg border">
-                    <h4 className="text-sm font-semibold flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-500" />{' '}
-                      Otimização SEO
+
+                  <div className="space-y-4 bg-muted/10 p-4 rounded-xl border border-muted/50">
+                    <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                      <Sparkles className="w-4 h-4 text-purple-500" /> SEO &
+                      Metadata Panel
                     </h4>
                     <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" /> Título Sugerido
+                      <Label className="text-xs flex items-center gap-1 font-semibold">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />{' '}
+                        Video Title
                       </Label>
                       <Input
                         value={clip.title}
                         onChange={(e) =>
                           updateClip(clip.id, { title: e.target.value })
                         }
-                        className="h-8 text-sm font-medium"
+                        className="h-9 text-sm font-medium"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" /> Descrição Otimizada
+                      <Label className="text-xs flex items-center gap-1 font-semibold">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground" />{' '}
+                        Description
                       </Label>
                       <Textarea
                         value={clip.description}
                         onChange={(e) =>
                           updateClip(clip.id, { description: e.target.value })
                         }
-                        className="min-h-[60px] resize-none text-sm"
+                        className="min-h-[70px] resize-none text-sm"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1">
-                        <Hash className="w-3.5 h-3.5" /> Tags (separadas por
-                        vírgula)
+                      <Label className="text-xs flex items-center gap-1 font-semibold">
+                        <Hash className="w-3.5 h-3.5 text-muted-foreground" />{' '}
+                        Tags/Hashtags
                       </Label>
                       <Input
                         value={clip.keywords.join(', ')}
@@ -298,7 +312,7 @@ export function AiClipsPanel({ project, update }: Props) {
                               .map((k) => k.trim()),
                           })
                         }
-                        className="h-8 text-sm"
+                        className="h-9 text-sm text-blue-600 dark:text-blue-400 font-medium"
                       />
                     </div>
                   </div>
