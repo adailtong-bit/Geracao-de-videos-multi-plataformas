@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Project, Platform } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +14,8 @@ import {
   Facebook,
   Share2,
   Eye,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -25,6 +28,14 @@ interface Props {
 export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const { toast } = useToast()
   const { user } = useAuthStore()
+
+  const [statuses, setStatuses] = useState<
+    Record<Platform, 'ready' | 'uploading' | 'published'>
+  >({
+    tiktok: 'ready',
+    instagram: 'ready',
+    facebook: 'ready',
+  })
 
   const totalCutsDuration =
     project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
@@ -66,22 +77,36 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
       return
     }
 
+    const newStatuses = { ...statuses }
+    project.targetPlatforms.forEach((p) => {
+      newStatuses[p] = 'uploading'
+    })
+    setStatuses(newStatuses)
+
     toast({
       title: 'Publicando Vídeo',
       description: `Enviando para ${project.targetPlatforms.length} plataformas via API...`,
     })
+
     setTimeout(() => {
+      const finalStatuses = { ...newStatuses }
+      project.targetPlatforms.forEach((p) => {
+        finalStatuses[p] = 'published'
+      })
+      setStatuses(finalStatuses)
+
       toast({
         title: 'Sucesso! 🚀',
         description:
           'Vídeo publicado com sucesso em todas as plataformas selecionadas.',
       })
-    }, 2500)
+    }, 3000)
   }
 
   const exceedsInsta =
     duration > 90 && project.targetPlatforms.includes('instagram')
   const isPro = user?.plan === 'pro'
+  const isPublishing = Object.values(statuses).includes('uploading')
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
@@ -127,37 +152,56 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
           {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => {
             const isConnected = !!user?.linkedAccounts?.[p]
+            const status = statuses[p]
             return (
               <div
                 key={p}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
               >
-                <Label
-                  className="capitalize cursor-pointer flex items-center gap-3 text-base"
-                  htmlFor={`switch-${p}`}
-                >
-                  {p === 'instagram' && (
-                    <Instagram className="w-5 h-5 text-pink-600" />
-                  )}
-                  {p === 'facebook' && (
-                    <Facebook className="w-5 h-5 text-blue-600" />
-                  )}
-                  {p === 'tiktok' && (
-                    <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
-                      t
-                    </div>
-                  )}
-                  {p}
+                <div className="flex items-center gap-3">
+                  <Label
+                    className="capitalize cursor-pointer flex items-center gap-3 text-base"
+                    htmlFor={`switch-${p}`}
+                  >
+                    {p === 'instagram' && (
+                      <Instagram className="w-5 h-5 text-pink-600" />
+                    )}
+                    {p === 'facebook' && (
+                      <Facebook className="w-5 h-5 text-blue-600" />
+                    )}
+                    {p === 'tiktok' && (
+                      <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                        t
+                      </div>
+                    )}
+                    {p}
+                  </Label>
                   {!isConnected && (
                     <span className="text-[10px] font-normal px-2 py-0.5 bg-muted rounded-full">
                       Não vinculado
                     </span>
                   )}
-                </Label>
+                  {isConnected && status === 'ready' && (
+                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                      Pronto
+                    </span>
+                  )}
+                  {isConnected && status === 'uploading' && (
+                    <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Enviando...
+                    </span>
+                  )}
+                  {isConnected && status === 'published' && (
+                    <span className="text-[10px] font-semibold text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Publicado
+                    </span>
+                  )}
+                </div>
                 <Switch
                   id={`switch-${p}`}
                   checked={project.targetPlatforms.includes(p)}
                   onCheckedChange={() => togglePlatform(p)}
+                  disabled={status === 'uploading' || status === 'published'}
                 />
               </div>
             )
@@ -182,6 +226,9 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
                 value={project.captions[p]}
                 onChange={(e) => updateCaption(p, e.target.value)}
                 className="resize-none h-24 mt-2 border-muted"
+                disabled={
+                  statuses[p] === 'uploading' || statuses[p] === 'published'
+                }
               />
             </div>
           ))}
@@ -194,6 +241,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
             variant="secondary"
             className="w-full h-12 text-sm font-semibold shadow-sm"
             onClick={onPreviewClick}
+            disabled={isPublishing}
           >
             <Eye className="w-4 h-4 mr-2" /> Pré-visualizar para Análise
           </Button>
@@ -202,9 +250,18 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
           size="lg"
           onClick={handlePublish}
-          disabled={project.targetPlatforms.length === 0 || !project.videoUrl}
+          disabled={
+            project.targetPlatforms.length === 0 ||
+            !project.videoUrl ||
+            isPublishing
+          }
         >
-          <Send className="w-5 h-5 mr-3" /> Publicar nos Selecionados
+          {isPublishing ? (
+            <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+          ) : (
+            <Send className="w-5 h-5 mr-3" />
+          )}
+          {isPublishing ? 'Publicando...' : 'Publicar nos Selecionados'}
         </Button>
         {!project.videoUrl && (
           <p className="text-xs text-center text-muted-foreground mt-2">

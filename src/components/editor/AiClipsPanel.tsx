@@ -15,6 +15,7 @@ import {
   Settings2,
   Hash,
   FileText,
+  ArrowRight,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -26,9 +27,10 @@ import {
 interface Props {
   project: Project
   update: (updates: Partial<Project>) => void
+  onNext?: () => void
 }
 
-export function AiClipsPanel({ project, update }: Props) {
+export function AiClipsPanel({ project, update, onNext }: Props) {
   const [duration, setDuration] = useState('30')
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -189,7 +191,7 @@ export function AiClipsPanel({ project, update }: Props) {
           </div>
         ) : (
           <Button
-            className="w-full h-12 mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold"
+            className="w-full h-12 mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold shadow-md transition-transform hover:-translate-y-0.5"
             onClick={generate}
           >
             <Wand2 className="w-5 h-5 mr-2" /> Gerar Smart-Clips
@@ -197,7 +199,7 @@ export function AiClipsPanel({ project, update }: Props) {
         )}
       </div>
 
-      {project.aiClips?.length ? (
+      {project.aiClips && project.aiClips.length > 0 ? (
         <div className="space-y-4">
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <Scissors className="w-5 h-5 text-primary" /> Smart-Clips Sugeridos
@@ -270,12 +272,12 @@ export function AiClipsPanel({ project, update }: Props) {
                   <div className="space-y-4 bg-muted/10 p-4 rounded-xl border border-muted/50">
                     <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
                       <Sparkles className="w-4 h-4 text-purple-500" /> SEO &
-                      Metadata Panel
+                      Metadata
                     </h4>
                     <div className="space-y-1.5">
                       <Label className="text-xs flex items-center gap-1 font-semibold">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground" />{' '}
-                        Video Title
+                        Título
                       </Label>
                       <Input
                         value={clip.title}
@@ -288,7 +290,7 @@ export function AiClipsPanel({ project, update }: Props) {
                     <div className="space-y-1.5">
                       <Label className="text-xs flex items-center gap-1 font-semibold">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground" />{' '}
-                        Description
+                        Descrição (Otimizada)
                       </Label>
                       <Textarea
                         value={clip.description}
@@ -301,7 +303,7 @@ export function AiClipsPanel({ project, update }: Props) {
                     <div className="space-y-1.5">
                       <Label className="text-xs flex items-center gap-1 font-semibold">
                         <Hash className="w-3.5 h-3.5 text-muted-foreground" />{' '}
-                        Tags/Hashtags
+                        Hashtags
                       </Label>
                       <Input
                         value={clip.keywords.join(', ')}
@@ -320,6 +322,18 @@ export function AiClipsPanel({ project, update }: Props) {
               </Card>
             ))}
           </div>
+
+          {onNext && (
+            <div className="pt-6 border-t mt-6">
+              <Button
+                className="w-full font-bold shadow-md h-12"
+                onClick={onNext}
+                size="lg"
+              >
+                Próximo Passo: Editor <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </div>
+          )}
         </div>
       ) : null}
     </div>

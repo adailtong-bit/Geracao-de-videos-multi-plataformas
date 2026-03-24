@@ -3,6 +3,7 @@ import { Project, CutSegment } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import {
   Upload,
   Film,
@@ -15,6 +16,7 @@ import {
   CloudDownload,
   Loader2,
   Trash2,
+  ArrowRight,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { isValidVideoUrl } from '@/lib/utils'
@@ -23,12 +25,14 @@ import { usePlayerControls } from '@/stores/usePlayerStore'
 interface Props {
   project: Project
   update: (updates: Partial<Project>) => void
+  onNext?: () => void
 }
 
-export function MediaPanel({ project, update }: Props) {
+export function MediaPanel({ project, update, onNext }: Props) {
   const { toast } = useToast()
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const [importProgress, setImportProgress] = useState(0)
   const { seek, play } = usePlayerControls()
 
   const handleImportUrl = () => {
@@ -45,7 +49,20 @@ export function MediaPanel({ project, update }: Props) {
     }
 
     setIsImporting(true)
+    setImportProgress(0)
+
+    const interval = setInterval(() => {
+      setImportProgress((p) => {
+        if (p >= 100) {
+          clearInterval(interval)
+          return 100
+        }
+        return p + 20
+      })
+    }, 300)
+
     setTimeout(() => {
+      clearInterval(interval)
       setIsImporting(false)
       update({
         videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -54,7 +71,7 @@ export function MediaPanel({ project, update }: Props) {
       })
       setImportUrl('')
       toast({ title: 'Mídia puxada com sucesso!' })
-    }, 1500)
+    }, 2000)
   }
 
   useEffect(() => {
@@ -102,67 +119,82 @@ export function MediaPanel({ project, update }: Props) {
 
         {!project.videoUrl ? (
           <div className="space-y-6">
-            <div className="bg-card border-2 border-primary/20 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all focus-within:border-primary/50">
-              <div className="absolute -right-4 -top-4 opacity-[0.03] pointer-events-none">
-                <LinkIcon className="w-32 h-32" />
-              </div>
-              <div className="relative z-10">
-                <h4 className="font-bold text-base flex items-center gap-2 mb-2">
-                  <CloudDownload className="w-5 h-5 text-primary" /> Importar
-                  via Link
-                </h4>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Cole a URL do Instagram, TikTok ou YouTube para puxar o vídeo
-                  diretamente, sem precisar baixar o arquivo.
+            {isImporting ? (
+              <div className="bg-card border-2 border-primary/20 rounded-xl p-8 shadow-sm text-center space-y-4 animate-fade-in">
+                <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+                <h3 className="font-bold text-lg">Puxando vídeo...</h3>
+                <Progress
+                  value={importProgress}
+                  className="h-2 w-full max-w-[200px] mx-auto bg-muted/50"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Isso pode levar alguns segundos dependendo do tamanho.
                 </p>
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Paste Video Link here"
-                    value={importUrl}
-                    onChange={(e) => setImportUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
-                    className="h-11 text-sm bg-background/50 focus-visible:ring-1"
-                    disabled={isImporting}
-                  />
-                  <Button
-                    className="w-full h-11 font-semibold transition-all"
-                    onClick={handleImportUrl}
-                    disabled={isImporting || !importUrl.trim()}
-                  >
-                    {isImporting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
+              </div>
+            ) : (
+              <div className="bg-card border-2 border-primary/20 rounded-xl p-5 shadow-sm relative overflow-hidden transition-all focus-within:border-primary/50">
+                <div className="absolute -right-4 -top-4 opacity-[0.03] pointer-events-none">
+                  <LinkIcon className="w-32 h-32" />
+                </div>
+                <div className="relative z-10">
+                  <h4 className="font-bold text-base flex items-center gap-2 mb-2">
+                    <CloudDownload className="w-5 h-5 text-primary" /> Importar
+                    via Link
+                  </h4>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Cole a URL do Instagram, TikTok ou YouTube para puxar o
+                    vídeo diretamente, sem precisar baixar o arquivo.
+                  </p>
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Cole o link do vídeo aqui"
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
+                      className="h-11 text-sm bg-background/50 focus-visible:ring-1"
+                    />
+                    <Button
+                      className="w-full h-11 font-semibold transition-all"
+                      onClick={handleImportUrl}
+                      disabled={!importUrl.trim()}
+                    >
                       <LinkIcon className="w-4 h-4 mr-2" />
-                    )}
-                    {isImporting ? 'Extraindo vídeo...' : 'Puxar Vídeo'}
-                  </Button>
+                      Puxar Vídeo
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-                <span className="bg-muted/5 px-2 text-muted-foreground">
-                  Ou Upload Manual
-                </span>
-              </div>
-            </div>
+            {!isImporting && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                    <span className="bg-muted/5 px-2 text-muted-foreground">
+                      Ou Upload Manual
+                    </span>
+                  </div>
+                </div>
 
-            <div
-              className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/40 hover:border-primary/30 transition-all cursor-pointer group"
-              onClick={handleFakeUpload}
-            >
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                <Upload className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </div>
-              <p className="text-sm font-medium">Selecionar do computador</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                MP4, MOV até 500MB
-              </p>
-            </div>
+                <div
+                  className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted/40 hover:border-primary/30 transition-all cursor-pointer group"
+                  onClick={handleFakeUpload}
+                >
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <Upload className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <p className="text-sm font-medium">
+                    Selecionar do computador
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    MP4, MOV até 500MB
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="p-4 bg-background rounded-xl border shadow-sm flex items-center justify-between">
@@ -306,6 +338,18 @@ export function MediaPanel({ project, update }: Props) {
             </div>
           </div>
         </div>
+
+        {project.videoUrl && onNext && (
+          <div className="pt-8 border-t mt-8">
+            <Button
+              className="w-full font-bold shadow-md h-12"
+              size="lg"
+              onClick={onNext}
+            >
+              Próximo Passo: IA Engine <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

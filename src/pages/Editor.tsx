@@ -14,6 +14,8 @@ import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AssetsPanel } from '@/components/editor/AssetsPanel'
 import { AiClipsPanel } from '@/components/editor/AiClipsPanel'
 import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
+import { PreviewPanel } from '@/components/editor/PreviewPanel'
+import { SimulatorDisplay } from '@/components/editor/SimulatorDisplay'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import {
@@ -28,9 +30,10 @@ import {
   VolumeX,
   Scissors,
   Sparkles,
+  ArrowRight,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Project } from '@/types'
+import { Project, Platform } from '@/types'
 import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
 
 function TimelinePlayer({
@@ -186,6 +189,8 @@ export default function Editor() {
   const [project, update] = useProject(id || '')
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showSafeZones, setShowSafeZones] = useState(false)
+  const [activeTab, setActiveTab] = useState('media')
+  const [previewPlatform, setPreviewPlatform] = useState<Platform>('tiktok')
   const { toast } = useToast()
 
   if (project === null) {
@@ -288,7 +293,7 @@ export default function Editor() {
               htmlFor="safe-zones-editor"
               className="text-xs font-semibold cursor-pointer"
             >
-              Safe Zones
+              Zonas Seguras
             </Label>
             <Switch
               id="safe-zones-editor"
@@ -303,7 +308,7 @@ export default function Editor() {
             onClick={handleSave}
             className="hidden md:flex"
           >
-            <Save className="w-4 h-4 mr-2" /> Save
+            <Save className="w-4 h-4 mr-2" /> Salvar
           </Button>
           <Button
             variant="secondary"
@@ -316,7 +321,7 @@ export default function Editor() {
           </Button>
           <Button size="sm" onClick={handleExport} disabled={!project.videoUrl}>
             <Download className="w-4 h-4 sm:mr-2" />{' '}
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </header>
@@ -324,37 +329,38 @@ export default function Editor() {
       <div className="flex-1 flex overflow-hidden min-h-0 w-full">
         <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
           <Tabs
-            defaultValue="media"
+            value={activeTab}
+            onValueChange={setActiveTab}
             className="flex-1 flex flex-col overflow-hidden"
           >
             <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
               <TabsTrigger
                 value="media"
-                className="flex-1 min-w-[60px] text-xs sm:text-sm"
+                className="shrink-0 min-w-[60px] text-xs sm:text-sm"
               >
                 Mídia
               </TabsTrigger>
               <TabsTrigger
                 value="ai-clips"
-                className="flex-1 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
+                className="shrink-0 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1" /> IA Engine
               </TabsTrigger>
               <TabsTrigger
-                value="overlays"
-                className="flex-1 min-w-[80px] text-xs sm:text-sm"
+                value="editor"
+                className="shrink-0 min-w-[60px] text-xs sm:text-sm"
               >
-                Elementos
+                Editor
               </TabsTrigger>
               <TabsTrigger
-                value="assets"
-                className="flex-1 min-w-[60px] text-xs sm:text-sm"
+                value="preview"
+                className="shrink-0 min-w-[70px] text-xs sm:text-sm"
               >
-                Ativos
+                Preview
               </TabsTrigger>
               <TabsTrigger
                 value="publish"
-                className="flex-1 min-w-[70px] text-xs sm:text-sm"
+                className="shrink-0 min-w-[70px] text-xs sm:text-sm"
               >
                 Publicar
               </TabsTrigger>
@@ -363,22 +369,51 @@ export default function Editor() {
               <ScrollArea className="absolute inset-0 w-full h-full">
                 <div className="p-4 md:p-6 pb-12">
                   <TabsContent value="media" className="mt-0 outline-none">
-                    <MediaPanel project={project} update={update} />
+                    <MediaPanel
+                      project={project}
+                      update={update}
+                      onNext={() => setActiveTab('ai-clips')}
+                    />
                   </TabsContent>
                   <TabsContent value="ai-clips" className="mt-0 outline-none">
-                    <AiClipsPanel project={project} update={update} />
+                    <AiClipsPanel
+                      project={project}
+                      update={update}
+                      onNext={() => setActiveTab('editor')}
+                    />
                   </TabsContent>
-                  <TabsContent value="overlays" className="mt-0 outline-none">
-                    <OverlaysPanel project={project} update={update} />
+                  <TabsContent value="editor" className="mt-0 outline-none">
+                    <div className="space-y-6">
+                      <OverlaysPanel project={project} update={update} />
+                      <div className="border-t border-border pt-6">
+                        <AssetsPanel project={project} update={update} />
+                      </div>
+                      <div className="pt-6 border-t border-border">
+                        <Button
+                          className="w-full font-bold shadow-md h-12"
+                          size="lg"
+                          onClick={() => setActiveTab('preview')}
+                        >
+                          Próximo Passo: Preview{' '}
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
                   </TabsContent>
-                  <TabsContent value="assets" className="mt-0 outline-none">
-                    <AssetsPanel project={project} update={update} />
+                  <TabsContent value="preview" className="mt-0 outline-none">
+                    <PreviewPanel
+                      platform={previewPlatform}
+                      setPlatform={setPreviewPlatform}
+                      showSafeZones={showSafeZones}
+                      setShowSafeZones={setShowSafeZones}
+                      onNext={() => setActiveTab('publish')}
+                    />
                   </TabsContent>
                   <TabsContent value="publish" className="mt-0 outline-none">
                     <PublishPanel
                       project={project}
                       update={update}
-                      onPreviewClick={() => setShowPreviewModal(true)}
+                      onPreviewClick={() => setActiveTab('preview')}
                     />
                   </TabsContent>
                 </div>
@@ -388,11 +423,26 @@ export default function Editor() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
-          <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
-            <PreviewCanvas project={project} showSafeZones={showSafeZones} />
-          </div>
+          {activeTab === 'preview' ? (
+            <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden bg-background/50">
+              <SimulatorDisplay
+                project={project}
+                platform={previewPlatform}
+                showSafeZones={showSafeZones}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                <PreviewCanvas
+                  project={project}
+                  showSafeZones={showSafeZones}
+                />
+              </div>
 
-          <TimelinePlayer project={project} update={update} />
+              <TimelinePlayer project={project} update={update} />
+            </>
+          )}
         </div>
       </div>
 
