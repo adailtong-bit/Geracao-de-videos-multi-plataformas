@@ -17,6 +17,23 @@ export interface CutSegment {
   end: number
 }
 
+export interface Subtitle {
+  id: string
+  start: number
+  end: number
+  text: string
+}
+
+export interface AiClip {
+  id: string
+  start: number
+  end: number
+  title: string
+  description: string
+  keywords: string[]
+  subtitles: Subtitle[]
+}
+
 export interface Project {
   id: string
   name: string
@@ -25,6 +42,7 @@ export interface Project {
   trimStart: number
   trimEnd: number
   cuts?: CutSegment[]
+  aiClips?: AiClip[]
   elements: ProjectElement[]
   targetPlatforms: Platform[]
   aspectRatio: AspectRatio

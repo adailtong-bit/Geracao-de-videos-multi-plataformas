@@ -11,8 +11,10 @@ import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AssetsPanel } from '@/components/editor/AssetsPanel'
+import { AiClipsPanel } from '@/components/editor/AiClipsPanel'
 import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   Loader2,
@@ -25,6 +27,7 @@ import {
   Volume2,
   VolumeX,
   Scissors,
+  Sparkles,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project } from '@/types'
@@ -37,7 +40,8 @@ function TimelinePlayer({
   project: Project
   update: (updates: Partial<Project>) => void
 }) {
-  const { currentTime, duration, isPlaying, volume } = usePlayerState()
+  const { currentTime, duration, isPlaying, volume, activeClipId } =
+    usePlayerState()
   const { play, pause, seek, setVolume } = usePlayerControls()
   const [pendingMark, setPendingMark] = useState<number | null>(null)
   const { toast } = useToast()
@@ -141,6 +145,23 @@ function TimelinePlayer({
                 <div
                   key={cut.id}
                   className="absolute top-0 h-1.5 bg-primary rounded-full"
+                  style={{ left: `${left}%`, width: `${width}%` }}
+                />
+              )
+            })}
+            {project.aiClips?.map((clip) => {
+              const left = (clip.start / duration) * 100
+              const width = ((clip.end - clip.start) / duration) * 100
+              const isActive = activeClipId === clip.id
+              return (
+                <div
+                  key={clip.id}
+                  className={cn(
+                    'absolute top-0 rounded-full transition-all',
+                    isActive
+                      ? 'bg-purple-500 z-20 h-2 -translate-y-[2px] shadow-sm'
+                      : 'bg-purple-500/40 z-10 h-1.5',
+                  )}
                   style={{ left: `${left}%`, width: `${width}%` }}
                 />
               )
@@ -272,17 +293,35 @@ export default function Editor() {
             className="flex-1 flex flex-col overflow-hidden"
           >
             <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
-              <TabsTrigger value="media" className="flex-1 min-w-[80px]">
-                1. Mídia
+              <TabsTrigger
+                value="media"
+                className="flex-1 min-w-[60px] text-xs sm:text-sm"
+              >
+                Mídia
               </TabsTrigger>
-              <TabsTrigger value="overlays" className="flex-1 min-w-[90px]">
-                2. Elementos
+              <TabsTrigger
+                value="ai-clips"
+                className="flex-1 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> AI
               </TabsTrigger>
-              <TabsTrigger value="assets" className="flex-1 min-w-[80px]">
-                3. Ativos
+              <TabsTrigger
+                value="overlays"
+                className="flex-1 min-w-[80px] text-xs sm:text-sm"
+              >
+                Elementos
               </TabsTrigger>
-              <TabsTrigger value="publish" className="flex-1 min-w-[80px]">
-                4. Publicar
+              <TabsTrigger
+                value="assets"
+                className="flex-1 min-w-[60px] text-xs sm:text-sm"
+              >
+                Ativos
+              </TabsTrigger>
+              <TabsTrigger
+                value="publish"
+                className="flex-1 min-w-[70px] text-xs sm:text-sm"
+              >
+                Publicar
               </TabsTrigger>
             </TabsList>
             <div className="flex-1 relative overflow-hidden">
@@ -290,6 +329,9 @@ export default function Editor() {
                 <div className="p-4 md:p-6 pb-12">
                   <TabsContent value="media" className="mt-0 outline-none">
                     <MediaPanel project={project} update={update} />
+                  </TabsContent>
+                  <TabsContent value="ai-clips" className="mt-0 outline-none">
+                    <AiClipsPanel project={project} update={update} />
                   </TabsContent>
                   <TabsContent value="overlays" className="mt-0 outline-none">
                     <OverlaysPanel project={project} update={update} />

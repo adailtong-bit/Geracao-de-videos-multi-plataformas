@@ -9,7 +9,45 @@ import {
   Music,
 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import { usePlayerControls, setPlayerState } from '@/stores/usePlayerStore'
+import {
+  usePlayerControls,
+  setPlayerState,
+  usePlayerState,
+} from '@/stores/usePlayerStore'
+
+function SubtitleOverlay({ project }: { project: Project }) {
+  const { currentTime, activeClipId } = usePlayerState()
+  const activeClip = project.aiClips?.find((c) => c.id === activeClipId)
+  const currentSubtitle = activeClip?.subtitles.find(
+    (s) => currentTime >= s.start && currentTime <= s.end,
+  )
+
+  if (!currentSubtitle) return null
+
+  return (
+    <div className="absolute bottom-[20%] left-1/2 -translate-x-1/2 z-40 text-center w-[90%] pointer-events-none transition-all duration-200 ease-out">
+      <span className="bg-black/80 text-white px-4 py-2 rounded-xl text-lg sm:text-2xl md:text-3xl font-black shadow-[0_8px_30px_rgba(0,0,0,0.5)] border border-white/20 inline-block drop-shadow-xl backdrop-blur-sm">
+        {currentSubtitle.text}
+      </span>
+    </div>
+  )
+}
+
+function PlaybackController({ project }: { project: Project }) {
+  const { currentTime, activeClipId, isPlaying } = usePlayerState()
+  const { pause, seek } = usePlayerControls()
+
+  useEffect(() => {
+    if (!activeClipId || !isPlaying) return
+    const clip = project.aiClips?.find((c) => c.id === activeClipId)
+    if (clip && currentTime >= clip.end) {
+      pause()
+      seek(clip.start)
+    }
+  }, [currentTime, activeClipId, isPlaying, project.aiClips, pause, seek])
+
+  return null
+}
 
 export function PreviewCanvas({
   project,
@@ -60,6 +98,8 @@ export function PreviewCanvas({
 
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
+      <PlaybackController project={project} />
+
       <div
         className={cn(
           'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0',
@@ -95,6 +135,8 @@ export function PreviewCanvas({
             </div>
           </div>
         )}
+
+        <SubtitleOverlay project={project} />
 
         {project.elements.map((el) => (
           <div
