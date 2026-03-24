@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
+import { AudioPanel } from '@/components/editor/AudioPanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AssetsPanel } from '@/components/editor/AssetsPanel'
 import { AiClipsPanel } from '@/components/editor/AiClipsPanel'
@@ -31,6 +32,7 @@ import {
   Scissors,
   Sparkles,
   ArrowRight,
+  Activity,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Platform } from '@/types'
@@ -47,6 +49,7 @@ function TimelinePlayer({
     usePlayerState()
   const { play, pause, seek, setVolume } = usePlayerControls()
   const [pendingMark, setPendingMark] = useState<number | null>(null)
+  const [showEnergy, setShowEnergy] = useState(true)
   const { toast } = useToast()
 
   const formatTime = (time: number) => {
@@ -79,10 +82,40 @@ function TimelinePlayer({
     }
   }
 
+  const renderEnergyGraph = () => {
+    if (!project.energyData || project.energyData.length === 0 || !showEnergy)
+      return null
+    const maxVal = Math.max(...project.energyData.map((d) => d.value), 1)
+    const points = project.energyData
+      .map(
+        (p) =>
+          `${(p.time / (duration || 1)) * 100},${100 - (p.value / maxVal) * 100}`,
+      )
+      .join(' ')
+
+    return (
+      <div className="absolute inset-x-0 bottom-full mb-1 h-8 pointer-events-none opacity-40">
+        <svg
+          className="w-full h-full"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+        >
+          <polyline
+            points={points}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      </div>
+    )
+  }
+
   if (!project.videoUrl) return null
 
   return (
-    <div className="h-32 border-t bg-background flex flex-col shrink-0 z-10 relative shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+    <div className="h-36 border-t bg-background flex flex-col shrink-0 z-10 relative shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
       <div className="px-4 py-2 flex items-center justify-between shrink-0 bg-muted/20 border-b">
         <div className="flex items-center gap-4">
           <Button
@@ -120,7 +153,20 @@ function TimelinePlayer({
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="energy-toggle"
+              checked={showEnergy}
+              onCheckedChange={setShowEnergy}
+            />
+            <Label
+              htmlFor="energy-toggle"
+              className="text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <Activity className="w-3 h-3 text-emerald-500" /> Nível de Energia
+            </Label>
+          </div>
           <Button
             size="sm"
             variant={pendingMark !== null ? 'destructive' : 'outline'}
@@ -134,7 +180,8 @@ function TimelinePlayer({
       </div>
 
       <div className="flex-1 flex flex-col justify-center px-8 md:px-16 min-h-0">
-        <div className="relative w-full py-4 flex flex-col gap-1">
+        <div className="relative w-full py-6 flex flex-col gap-1">
+          {renderEnergyGraph()}
           <Slider
             value={[currentTime]}
             max={duration || 100}
@@ -142,7 +189,20 @@ function TimelinePlayer({
             onValueChange={([val]) => seek(val)}
             className="z-10 relative cursor-pointer"
           />
-          <div className="relative w-full h-2 pointer-events-none">
+          <div className="relative w-full h-3 pointer-events-none mt-1">
+            {showEnergy &&
+              project.energyData
+                ?.filter((p) => p.value > 0.8)
+                .map((p, i) => (
+                  <div
+                    key={`peak-${i}`}
+                    className="absolute top-0 h-4 w-2 bg-emerald-500/50 hover:bg-emerald-500 cursor-pointer rounded -translate-y-1.5 pointer-events-auto z-30 transition-colors"
+                    style={{ left: `${(p.time / (duration || 1)) * 100}%` }}
+                    onClick={() => seek(p.time)}
+                    title="Pico de Energia (Clique para ir)"
+                  />
+                ))}
+
             {project.cuts?.map((cut) => {
               const left = (cut.start / duration) * 100
               const width = ((cut.end - cut.start) / duration) * 100
@@ -168,6 +228,18 @@ function TimelinePlayer({
                       : 'bg-purple-500/40 z-10 h-1.5',
                   )}
                   style={{ left: `${left}%`, width: `${width}%` }}
+                />
+              )
+            })}
+            {project.bRolls?.map((br) => {
+              const left = (br.start / duration) * 100
+              const width = ((br.end - br.start) / duration) * 100
+              return (
+                <div
+                  key={br.id}
+                  className="absolute top-2 h-1 bg-blue-500 rounded-full z-20"
+                  style={{ left: `${left}%`, width: `${width}%` }}
+                  title="B-Roll"
                 />
               )
             })}
@@ -384,7 +456,10 @@ export default function Editor() {
                   </TabsContent>
                   <TabsContent value="editor" className="mt-0 outline-none">
                     <div className="space-y-6">
-                      <OverlaysPanel project={project} update={update} />
+                      <AudioPanel project={project} update={update} />
+                      <div className="border-t border-border pt-6">
+                        <OverlaysPanel project={project} update={update} />
+                      </div>
                       <div className="border-t border-border pt-6">
                         <AssetsPanel project={project} update={update} />
                       </div>

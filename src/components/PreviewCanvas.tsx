@@ -10,7 +10,7 @@ import {
   Play,
   Pause,
 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import {
   usePlayerControls,
   setPlayerState,
@@ -80,7 +80,7 @@ export function PreviewCanvas({
   showSafeZones?: boolean
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
-  const { isPlaying } = usePlayerState()
+  const { isPlaying, currentTime } = usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -126,6 +126,12 @@ export function PreviewCanvas({
     }
   }
 
+  const activeBRoll = useMemo(() => {
+    return project.bRolls?.find(
+      (br) => currentTime >= br.start && currentTime <= br.end,
+    )
+  }, [project.bRolls, currentTime])
+
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <PlaybackController project={project} />
@@ -142,7 +148,7 @@ export function PreviewCanvas({
             <video
               ref={videoRef}
               src={project.videoUrl}
-              className="w-full h-full object-cover opacity-90"
+              className="w-full h-full object-cover opacity-90 relative z-0"
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onEnded={handleEnded}
@@ -151,6 +157,16 @@ export function PreviewCanvas({
               playsInline
               controls={false}
             />
+
+            {activeBRoll && (
+              <div className="absolute inset-0 z-10 bg-black flex items-center justify-center overflow-hidden">
+                <img
+                  src={activeBRoll.url}
+                  alt="B-Roll"
+                  className="w-full h-full object-cover opacity-90 animate-fade-in"
+                />
+              </div>
+            )}
 
             {!isPlaying && (
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-all pointer-events-none">

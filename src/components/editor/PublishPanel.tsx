@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Project, Platform } from '@/types'
+import { useState, useMemo } from 'react'
+import { Project, Platform, ScheduledPost } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
+import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
@@ -16,8 +18,10 @@ import {
   Eye,
   Loader2,
   CheckCircle2,
+  CalendarIcon,
+  Clock,
+  Trash2,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 interface Props {
   project: Project
@@ -37,11 +41,16 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     facebook: 'ready',
   })
 
-  const totalCutsDuration =
+  const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now')
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
+  const [viewDate, setViewDate] = useState<Date | undefined>(new Date())
+
+  const totalCuts =
     project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
-  const duration =
-    totalCutsDuration > 0 ? totalCutsDuration : project.videoDuration || 0
-  const durationFormatted = Math.round(duration * 10) / 10
+  const duration = totalCuts > 0 ? totalCuts : project.videoDuration || 0
+  const isPro = user?.plan === 'pro'
+  const isPublishing = Object.values(statuses).includes('uploading')
 
   const togglePlatform = (p: Platform) => {
     const platforms = project.targetPlatforms.includes(p)
@@ -50,30 +59,32 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     update({ targetPlatforms: platforms })
   }
 
-  const updateCaption = (p: Platform, text: string) => {
-    update({ captions: { ...project.captions, [p]: text } })
-  }
-
-  const handlePublish = () => {
-    if (user?.plan !== 'pro') {
-      toast({
-        title: 'Recurso Pro Necessário',
-        description:
-          'A publicação direta via API está disponível apenas no plano Pro.',
+  const handleAction = () => {
+    if (!isPro)
+      return toast({ title: 'Recurso Pro Necessário', variant: 'destructive' })
+    if (project.targetPlatforms.length === 0)
+      return toast({
+        title: 'Selecione uma plataforma',
         variant: 'destructive',
       })
-      return
-    }
 
-    const unlinked = project.targetPlatforms.filter(
-      (p) => !user?.linkedAccounts?.[p],
-    )
-    if (unlinked.length > 0) {
-      toast({
-        title: 'Contas não conectadas',
-        description: `Por favor conecte ${unlinked.join(', ')} nas configurações de integrações.`,
-        variant: 'destructive',
+    if (publishMode === 'schedule') {
+      if (!scheduleDate || !scheduleTime)
+        return toast({
+          title: 'Data e hora obrigatórias',
+          variant: 'destructive',
+        })
+      const dt = new Date(`${scheduleDate}T${scheduleTime}`)
+      const newPosts: ScheduledPost[] = project.targetPlatforms.map((p) => ({
+        id: crypto.randomUUID(),
+        platform: p,
+        date: dt.toISOString(),
+        status: 'scheduled',
+      }))
+      update({
+        scheduledPosts: [...(project.scheduledPosts || []), ...newPosts],
       })
+      toast({ title: 'Posts Agendados com sucesso! 📅' })
       return
     }
 
@@ -82,10 +93,9 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
       newStatuses[p] = 'uploading'
     })
     setStatuses(newStatuses)
-
     toast({
       title: 'Publicando Vídeo',
-      description: `Enviando para ${project.targetPlatforms.length} plataformas via API...`,
+      description: `Enviando para as plataformas...`,
     })
 
     setTimeout(() => {
@@ -94,53 +104,48 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         finalStatuses[p] = 'published'
       })
       setStatuses(finalStatuses)
-
       toast({
         title: 'Sucesso! 🚀',
-        description:
-          'Vídeo publicado com sucesso em todas as plataformas selecionadas.',
+        description: 'Vídeo publicado com sucesso.',
       })
     }, 3000)
   }
 
-  const exceedsInsta =
-    duration > 90 && project.targetPlatforms.includes('instagram')
-  const isPro = user?.plan === 'pro'
-  const isPublishing = Object.values(statuses).includes('uploading')
+  const cancelPost = (id: string) => {
+    update({
+      scheduledPosts: project.scheduledPosts?.filter((p) => p.id !== id),
+    })
+    toast({ title: 'Agendamento cancelado' })
+  }
+
+  const scheduledDates = useMemo(
+    () => project.scheduledPosts?.map((p) => new Date(p.date)) || [],
+    [project.scheduledPosts],
+  )
+  const postsOnViewDate = useMemo(
+    () =>
+      project.scheduledPosts?.filter(
+        (p) =>
+          viewDate &&
+          new Date(p.date).toDateString() === viewDate.toDateString(),
+      ) || [],
+    [project.scheduledPosts, viewDate],
+  )
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
-      {exceedsInsta && (
+      {duration > 90 && project.targetPlatforms.includes('instagram') && (
         <Alert
           variant="destructive"
           className="border-2 shadow-sm bg-destructive/5"
         >
           <AlertTriangle className="h-5 w-5" />
-          <AlertTitle className="text-base font-bold">
-            Aviso de Duração do Reels
-          </AlertTitle>
-          <AlertDescription className="mt-2 text-sm">
-            O limite do Instagram Reels é <strong>90 segundos</strong>. Seu
-            corte atual possui <strong>{durationFormatted}s</strong>. Apare o
-            vídeo para publicar com sucesso.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!isPro && (
-        <Alert className="bg-primary/5 border-primary shadow-sm">
-          <Share2 className="h-5 w-5 text-primary" />
           <AlertTitle className="font-bold">
-            Desbloqueie a Publicação Direta
+            Aviso de Duração (Reels)
           </AlertTitle>
-          <AlertDescription className="mt-2 text-sm">
-            Faça upgrade para o Pro para enviar os vídeos editados diretamente
-            para seu Instagram, TikTok e Facebook via API.
-            <div className="mt-3">
-              <Button asChild size="sm">
-                <Link to="/billing">Fazer Upgrade</Link>
-              </Button>
-            </div>
+          <AlertDescription className="text-sm">
+            O limite do Instagram Reels é 90s. Seu vídeo tem{' '}
+            {Math.round(duration)}s.
           </AlertDescription>
         </Alert>
       )}
@@ -150,62 +155,38 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           <Share2 className="w-5 h-5 text-primary" /> Roteamento Multiplataforma
         </h3>
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
-          {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => {
-            const isConnected = !!user?.linkedAccounts?.[p]
-            const status = statuses[p]
-            return (
-              <div
-                key={p}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+          {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => (
+            <div
+              key={p}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <Label
+                className="capitalize cursor-pointer flex items-center gap-3 text-base"
+                htmlFor={`switch-${p}`}
               >
-                <div className="flex items-center gap-3">
-                  <Label
-                    className="capitalize cursor-pointer flex items-center gap-3 text-base"
-                    htmlFor={`switch-${p}`}
-                  >
-                    {p === 'instagram' && (
-                      <Instagram className="w-5 h-5 text-pink-600" />
-                    )}
-                    {p === 'facebook' && (
-                      <Facebook className="w-5 h-5 text-blue-600" />
-                    )}
-                    {p === 'tiktok' && (
-                      <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
-                        t
-                      </div>
-                    )}
-                    {p}
-                  </Label>
-                  {!isConnected && (
-                    <span className="text-[10px] font-normal px-2 py-0.5 bg-muted rounded-full">
-                      Não vinculado
-                    </span>
-                  )}
-                  {isConnected && status === 'ready' && (
-                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
-                      Pronto
-                    </span>
-                  )}
-                  {isConnected && status === 'uploading' && (
-                    <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Enviando...
-                    </span>
-                  )}
-                  {isConnected && status === 'published' && (
-                    <span className="text-[10px] font-semibold text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Publicado
-                    </span>
-                  )}
-                </div>
-                <Switch
-                  id={`switch-${p}`}
-                  checked={project.targetPlatforms.includes(p)}
-                  onCheckedChange={() => togglePlatform(p)}
-                  disabled={status === 'uploading' || status === 'published'}
-                />
-              </div>
-            )
-          })}
+                {p === 'instagram' && (
+                  <Instagram className="w-5 h-5 text-pink-600" />
+                )}
+                {p === 'facebook' && (
+                  <Facebook className="w-5 h-5 text-blue-600" />
+                )}
+                {p === 'tiktok' && (
+                  <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                    t
+                  </div>
+                )}
+                {p}
+              </Label>
+              <Switch
+                id={`switch-${p}`}
+                checked={project.targetPlatforms.includes(p)}
+                onCheckedChange={() => togglePlatform(p)}
+                disabled={
+                  statuses[p] === 'uploading' || statuses[p] === 'published'
+                }
+              />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -218,56 +199,138 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
               className="space-y-2 bg-background p-4 rounded-xl border shadow-sm relative overflow-hidden"
             >
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/50" />
-              <Label className="capitalize font-semibold text-sm flex items-center gap-2 ml-2">
+              <Label className="capitalize font-semibold text-sm">
                 Post {p}
               </Label>
               <Textarea
-                placeholder={`Escreva uma legenda engajadora com hashtags para ${p}...`}
-                value={project.captions[p]}
-                onChange={(e) => updateCaption(p, e.target.value)}
-                className="resize-none h-24 mt-2 border-muted"
-                disabled={
-                  statuses[p] === 'uploading' || statuses[p] === 'published'
+                placeholder={`Escreva uma legenda engajadora para ${p}...`}
+                value={project.captions[p] || ''}
+                onChange={(e) =>
+                  update({
+                    captions: { ...project.captions, [p]: e.target.value },
+                  })
                 }
+                className="resize-none h-20 mt-2 border-muted text-sm"
               />
             </div>
           ))}
         </div>
       )}
 
-      <div className="pt-2 space-y-3">
-        {onPreviewClick && (
+      <div className="space-y-4 bg-background p-5 rounded-xl border shadow-sm">
+        <div className="flex bg-muted p-1 rounded-lg">
           <Button
-            variant="secondary"
-            className="w-full h-12 text-sm font-semibold shadow-sm"
-            onClick={onPreviewClick}
-            disabled={isPublishing}
+            variant={publishMode === 'now' ? 'default' : 'ghost'}
+            className="flex-1 text-sm font-semibold"
+            onClick={() => setPublishMode('now')}
           >
-            <Eye className="w-4 h-4 mr-2" /> Pré-visualizar para Análise
+            <Send className="w-4 h-4 mr-2" /> Publicar Agora
           </Button>
+          <Button
+            variant={publishMode === 'schedule' ? 'default' : 'ghost'}
+            className="flex-1 text-sm font-semibold"
+            onClick={() => setPublishMode('schedule')}
+          >
+            <CalendarIcon className="w-4 h-4 mr-2" /> Agendar
+          </Button>
+        </div>
+
+        {publishMode === 'schedule' && (
+          <div className="flex gap-3 pt-2 animate-fade-in">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Data</Label>
+              <Input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Horário</Label>
+              <Input
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="h-10"
+              />
+            </div>
+          </div>
         )}
+
         <Button
-          className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
-          size="lg"
-          onClick={handlePublish}
-          disabled={
-            project.targetPlatforms.length === 0 ||
-            !project.videoUrl ||
-            isPublishing
-          }
+          className="w-full h-12 text-base font-bold shadow-md mt-4 transition-all hover:-translate-y-0.5"
+          onClick={handleAction}
+          disabled={!project.videoUrl || isPublishing}
         >
           {isPublishing ? (
-            <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-          ) : (
-            <Send className="w-5 h-5 mr-3" />
-          )}
-          {isPublishing ? 'Publicando...' : 'Publicar nos Selecionados'}
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          ) : null}
+          {publishMode === 'now'
+            ? isPublishing
+              ? 'Publicando...'
+              : 'Publicar nos Selecionados'
+            : 'Agendar Posts'}
         </Button>
-        {!project.videoUrl && (
-          <p className="text-xs text-center text-muted-foreground mt-2">
-            Importe e processe um vídeo antes de publicar.
-          </p>
-        )}
+      </div>
+
+      <div className="space-y-4 pt-4 border-t">
+        <h3 className="font-semibold text-lg flex items-center gap-2">
+          <CalendarIcon className="w-5 h-5 text-primary" /> Calendário de
+          Publicações
+        </h3>
+        <div className="bg-background p-4 rounded-xl border shadow-sm">
+          <Calendar
+            mode="single"
+            selected={viewDate}
+            onSelect={setViewDate}
+            className="mx-auto"
+            modifiers={{ scheduled: scheduledDates }}
+            modifiersStyles={{
+              scheduled: {
+                fontWeight: 'bold',
+                border: '2px solid hsl(var(--primary))',
+              },
+            }}
+          />
+          <div className="mt-4 space-y-2 border-t pt-4 min-h-[80px]">
+            {postsOnViewDate.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum post agendado para este dia.
+              </p>
+            ) : (
+              postsOnViewDate.map((post) => (
+                <div
+                  key={post.id}
+                  className="flex items-center justify-between text-sm p-3 bg-muted/50 rounded-lg border"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="capitalize font-bold text-foreground">
+                      {post.platform}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <span className="flex items-center gap-1 font-medium">
+                      <Clock className="w-3.5 h-3.5" />{' '}
+                      {new Date(post.date).toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-7 h-7 text-destructive hover:bg-destructive/10"
+                      onClick={() => cancelPost(post.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -34,6 +34,33 @@ export interface AiClip {
   subtitles: Subtitle[]
 }
 
+export interface EnergyPoint {
+  time: number
+  value: number
+}
+
+export interface BRoll {
+  id: string
+  start: number
+  end: number
+  url: string
+  keyword?: string
+}
+
+export interface AudioTrack {
+  id: string
+  name: string
+  mood: string
+  url?: string
+}
+
+export interface ScheduledPost {
+  id: string
+  platform: Platform
+  date: string
+  status: 'scheduled' | 'published'
+}
+
 export interface Project {
   id: string
   name: string
@@ -48,6 +75,10 @@ export interface Project {
   aspectRatio: AspectRatio
   captions: Record<Platform, string>
   createdAt: number
+  energyData?: EnergyPoint[]
+  bRolls?: BRoll[]
+  audioTrack?: AudioTrack | null
+  scheduledPosts?: ScheduledPost[]
 }
 
 export interface User {

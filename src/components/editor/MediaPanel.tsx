@@ -17,10 +17,14 @@ import {
   Loader2,
   Trash2,
   ArrowRight,
+  Search,
+  Video,
+  Wand2,
+  Plus,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { isValidVideoUrl } from '@/lib/utils'
-import { usePlayerControls } from '@/stores/usePlayerStore'
+import { usePlayerControls, usePlayerState } from '@/stores/usePlayerStore'
 
 interface Props {
   project: Project
@@ -33,7 +37,23 @@ export function MediaPanel({ project, update, onNext }: Props) {
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [importProgress, setImportProgress] = useState(0)
+  const [stockQuery, setStockQuery] = useState('')
+  const [stockResults, setStockResults] = useState<string[]>([])
+  const [isSuggesting, setIsSuggesting] = useState(false)
   const { seek, play } = usePlayerControls()
+  const { currentTime } = usePlayerState()
+
+  const generateEnergyData = (duration: number) => {
+    const data = []
+    for (let i = 0; i <= duration; i += 0.5) {
+      data.push({
+        time: i,
+        value:
+          Math.random() > 0.8 ? 0.8 + Math.random() * 0.2 : Math.random() * 0.4,
+      })
+    }
+    return data
+  }
 
   const handleImportUrl = () => {
     if (!importUrl.trim()) return
@@ -64,10 +84,12 @@ export function MediaPanel({ project, update, onNext }: Props) {
     setTimeout(() => {
       clearInterval(interval)
       setIsImporting(false)
+      const duration = 15 // Mock duration
       update({
         videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-        videoDuration: 10,
+        videoDuration: duration,
         cuts: [],
+        energyData: generateEnergyData(duration),
       })
       setImportUrl('')
       toast({ title: 'Mídia puxada com sucesso!' })
@@ -86,12 +108,64 @@ export function MediaPanel({ project, update, onNext }: Props) {
   }, [importUrl, isImporting, project.videoUrl])
 
   const handleFakeUpload = () => {
+    const duration = 15
     update({
       videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      videoDuration: 10,
+      videoDuration: duration,
       cuts: [],
+      energyData: generateEnergyData(duration),
     })
     toast({ title: 'Arquivo carregado com sucesso!' })
+  }
+
+  const handleSearchStock = () => {
+    if (!stockQuery) return
+    const results = Array.from({ length: 4 }).map(
+      (_, i) =>
+        `https://img.usecurling.com/p/200/300?q=${encodeURIComponent(stockQuery)}&seed=${i}`,
+    )
+    setStockResults(results)
+  }
+
+  const handleAddBRoll = (url: string) => {
+    if (!project.videoUrl) return
+    const start = currentTime
+    const end = Math.min(start + 3, project.videoDuration || 100)
+    update({
+      bRolls: [
+        ...(project.bRolls || []),
+        {
+          id: crypto.randomUUID(),
+          start,
+          end,
+          url,
+          keyword: stockQuery || 'stock',
+        },
+      ],
+    })
+    toast({ title: 'B-Roll adicionado na linha do tempo!' })
+  }
+
+  const handleAutoSuggestBRolls = () => {
+    setIsSuggesting(true)
+    toast({
+      title: 'Analisando pausas...',
+      description: 'Procurando momentos de baixa energia...',
+    })
+    setTimeout(() => {
+      setIsSuggesting(false)
+      const bRolls = [...(project.bRolls || [])]
+      const start = project.videoDuration ? project.videoDuration * 0.3 : 2
+      bRolls.push({
+        id: crypto.randomUUID(),
+        start,
+        end: start + 3,
+        url: 'https://img.usecurling.com/p/200/300?q=nature&seed=99',
+        keyword: 'nature',
+      })
+      update({ bRolls })
+      toast({ title: 'B-Rolls sugeridos adicionados com sucesso!' })
+    }, 2000)
   }
 
   const handleUpdateCut = (id: string, updates: Partial<CutSegment>) => {
@@ -103,6 +177,10 @@ export function MediaPanel({ project, update, onNext }: Props) {
 
   const handleDeleteCut = (id: string) => {
     update({ cuts: (project.cuts || []).filter((c) => c.id !== id) })
+  }
+
+  const handleDeleteBRoll = (id: string) => {
+    update({ bRolls: (project.bRolls || []).filter((c) => c.id !== id) })
   }
 
   const previewCut = (start: number) => {
@@ -231,6 +309,117 @@ export function MediaPanel({ project, update, onNext }: Props) {
         }
       >
         <div className="space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <Video className="w-5 h-5 text-blue-500" /> B-Rolls / Stock Video
+            </h3>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="text-xs h-8 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300"
+              onClick={handleAutoSuggestBRolls}
+              disabled={isSuggesting}
+            >
+              {isSuggesting ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Sugerir B-Rolls
+            </Button>
+          </div>
+
+          <div className="space-y-3 bg-background p-4 rounded-xl border shadow-sm">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar stock videos..."
+                  className="pl-9 h-9 text-sm"
+                  value={stockQuery}
+                  onChange={(e) => setStockQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchStock()}
+                />
+              </div>
+              <Button
+                size="sm"
+                className="h-9 px-4"
+                onClick={handleSearchStock}
+              >
+                Buscar
+              </Button>
+            </div>
+
+            {stockResults.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                {stockResults.map((url, i) => (
+                  <div
+                    key={i}
+                    className="relative aspect-video bg-muted rounded-md overflow-hidden group"
+                  >
+                    <img
+                      src={url}
+                      alt="Stock result"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-7 text-xs"
+                        onClick={() => handleAddBRoll(url)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Adicionar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {project.bRolls && project.bRolls.length > 0 && (
+              <div className="mt-4 pt-4 border-t space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider">
+                  Adicionados
+                </Label>
+                {project.bRolls.map((br) => (
+                  <div
+                    key={br.id}
+                    className="flex items-center justify-between bg-muted/50 p-2 rounded-lg border text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-muted rounded overflow-hidden">
+                        <img
+                          src={br.url}
+                          alt="B-Roll"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <span className="font-medium text-xs block">
+                          {br.keyword || 'Stock Video'}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {br.start.toFixed(1)}s - {br.end.toFixed(1)}s
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => handleDeleteBRoll(br.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-5 mt-8">
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <Scissors className="w-5 h-5 text-primary" /> Segmentos Cortados
           </h3>
