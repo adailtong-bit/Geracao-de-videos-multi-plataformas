@@ -2,7 +2,17 @@ import { Project } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Upload, Film, Clock, Crop, Instagram, Facebook } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  Upload,
+  Film,
+  Scissors,
+  Crop,
+  Instagram,
+  Facebook,
+  PlayCircle,
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface Props {
   project: Project
@@ -10,6 +20,8 @@ interface Props {
 }
 
 export function MediaPanel({ project, update }: Props) {
+  const { toast } = useToast()
+
   const handleFakeUpload = () => {
     update({
       videoUrl:
@@ -56,28 +68,69 @@ export function MediaPanel({ project, update }: Props) {
 
       <div className="space-y-5">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" /> Trimming (Cuts)
+          <Scissors className="w-5 h-5 text-primary" /> Cutting Tool
         </h3>
         <div className="space-y-6 bg-background p-5 rounded-xl border shadow-subtle">
-          <div className="flex justify-between text-sm font-medium">
-            <span className="text-muted-foreground">
-              Start: {project.trimStart}s
-            </span>
-            <span className="text-primary">Duration: {duration}s</span>
-            <span className="text-muted-foreground">
-              End: {project.trimEnd}s
-            </span>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs">Start Time (s)</Label>
+              <Input
+                type="number"
+                value={project.trimStart}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  if (val >= 0 && val < project.trimEnd)
+                    update({ trimStart: val })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">End Time (s)</Label>
+              <Input
+                type="number"
+                value={project.trimEnd}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  if (
+                    val > project.trimStart &&
+                    val <= (project.videoDuration || 100)
+                  )
+                    update({ trimEnd: val })
+                }}
+              />
+            </div>
           </div>
-          <Slider
-            value={[project.trimStart, project.trimEnd]}
-            max={project.videoDuration || 100}
-            step={1}
-            onValueChange={([start, end]) => {
-              if (end - start >= 1) {
-                update({ trimStart: start, trimEnd: end })
+
+          <div className="px-2">
+            <Slider
+              value={[project.trimStart, project.trimEnd]}
+              max={project.videoDuration || 100}
+              step={1}
+              onValueChange={([start, end]) => {
+                if (end - start >= 1) {
+                  update({ trimStart: start, trimEnd: end })
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-sm font-medium text-primary">
+              Duration: {duration}s
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                toast({
+                  title: 'Previewing cut...',
+                  description: `Playing segment from ${project.trimStart}s to ${project.trimEnd}s`,
+                })
               }
-            }}
-          />
+            >
+              <PlayCircle className="w-4 h-4 mr-2" /> Preview Cut
+            </Button>
+          </div>
         </div>
       </div>
 

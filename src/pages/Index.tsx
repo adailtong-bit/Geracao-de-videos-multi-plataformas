@@ -16,9 +16,9 @@ import {
   Video,
   Trash2,
   ExternalLink,
-  Facebook,
   PlaySquare,
   LayoutTemplate,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
@@ -30,8 +30,8 @@ export default function Index() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  const [fbUrl, setFbUrl] = useState('')
-  const [showFbPreview, setShowFbPreview] = useState(false)
+  const [importUrl, setImportUrl] = useState('')
+  const [showImportPreview, setShowImportPreview] = useState(false)
 
   const maxProjects = user?.plan === 'pro' ? Infinity : 3
 
@@ -54,17 +54,23 @@ export default function Index() {
     }
   }
 
-  const handleFbUrlChange = (val: string) => {
-    setFbUrl(val)
-    if (val.includes('facebook.com') || val.includes('fb.watch')) {
-      setShowFbPreview(true)
+  const handleUrlChange = (val: string) => {
+    setImportUrl(val)
+    if (
+      val.includes('facebook.com') ||
+      val.includes('fb.watch') ||
+      val.includes('instagram.com') ||
+      val.includes('tiktok.com') ||
+      val.includes('youtube.com')
+    ) {
+      setShowImportPreview(true)
     } else {
-      setShowFbPreview(false)
+      setShowImportPreview(false)
     }
   }
 
-  const handleImportFb = () => {
-    if (!fbUrl.trim()) return
+  const handleImportVideo = () => {
+    if (!importUrl.trim()) return
     if (projects.length >= maxProjects) {
       toast({
         title: 'Upgrade Required',
@@ -74,16 +80,16 @@ export default function Index() {
       return
     }
     try {
-      const p = addProject('FB Repurpose', {
+      const p = addProject('Imported Video', {
         videoUrl:
           'https://img.usecurling.com/p/800/1200?q=skateboarding&color=blue',
         videoDuration: 180,
         trimStart: 0,
         trimEnd: 180,
       })
-      setFbUrl('')
-      setShowFbPreview(false)
-      toast({ title: 'Facebook video imported!' })
+      setImportUrl('')
+      setShowImportPreview(false)
+      toast({ title: 'Video imported successfully!' })
       navigate(`/editor/${p.id}`)
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
@@ -218,24 +224,23 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 flex flex-col items-center justify-center p-6 text-center bg-card hover:shadow-md transition-all shadow-subtle border-[#1877F2]/20">
+            <Card className="border-2 flex flex-col items-center justify-center p-6 text-center bg-card hover:shadow-md transition-all shadow-subtle border-primary/20">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center justify-center gap-2">
-                  <Facebook className="w-5 h-5 text-[#1877F2]" /> Import from
-                  Facebook
+                  <LinkIcon className="w-5 h-5 text-primary" /> Unified Importer
                 </CardTitle>
                 <CardDescription>
-                  Repurpose existing Facebook videos.
+                  Fetch content from Facebook, Instagram, TikTok, or YouTube.
                 </CardDescription>
               </CardHeader>
               <CardContent className="w-full space-y-4 pt-4">
                 <Input
-                  placeholder="https://facebook.com/watch/?v=..."
-                  value={fbUrl}
-                  onChange={(e) => handleFbUrlChange(e.target.value)}
+                  placeholder="Video URL (e.g., https://...)"
+                  value={importUrl}
+                  onChange={(e) => handleUrlChange(e.target.value)}
                   className="bg-background"
                 />
-                {showFbPreview && (
+                {showImportPreview && (
                   <div className="bg-muted/50 border rounded-lg p-3 flex gap-3 text-left animate-fade-in shadow-sm">
                     <div className="w-12 h-12 bg-black rounded overflow-hidden shrink-0">
                       <img
@@ -246,20 +251,20 @@ export default function Index() {
                     </div>
                     <div className="flex flex-col justify-center overflow-hidden">
                       <h4 className="font-semibold text-xs truncate">
-                        Facebook Video
+                        External Video
                       </h4>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        3:00 • Ready to import
+                        Ready to import
                       </p>
                     </div>
                   </div>
                 )}
                 <Button
-                  className="w-full bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
-                  onClick={handleImportFb}
-                  disabled={!fbUrl.trim()}
+                  className="w-full shadow-md"
+                  onClick={handleImportVideo}
+                  disabled={!importUrl.trim()}
                 >
-                  <PlaySquare className="w-4 h-4 mr-2" /> Start Editing
+                  <PlaySquare className="w-4 h-4 mr-2" /> Import Video
                 </Button>
 
                 <div className="relative pt-2">

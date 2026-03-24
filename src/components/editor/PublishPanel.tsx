@@ -55,7 +55,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     if (unlinked.length > 0) {
       toast({
         title: 'Accounts not connected',
-        description: `Please connect ${unlinked.join(', ')} in your profile settings.`,
+        description: `Please connect ${unlinked.join(', ')} in your integrations settings.`,
         variant: 'destructive',
       })
       return
@@ -201,6 +201,11 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         >
           <Send className="w-5 h-5 mr-3" /> Publish to Selected
         </Button>
+        {!project.videoUrl && (
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            Import and process a video before publishing.
+          </p>
+        )}
       </div>
     </div>
   )

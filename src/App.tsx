@@ -6,6 +6,7 @@ import Index from './pages/Index'
 import Editor from './pages/Editor'
 import Login from './pages/Login'
 import Profile from './pages/Profile'
+import Integrations from './pages/Integrations'
 import Billing from './pages/Billing'
 import Analytics from './pages/Analytics'
 import NotFound from './pages/NotFound'
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/editor/:id" element={<Editor />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/integrations" element={<Integrations />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/analytics" element={<Analytics />} />
         </Route>
