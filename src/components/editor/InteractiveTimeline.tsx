@@ -84,86 +84,89 @@ export function InteractiveTimeline({
 
             <div className="pt-6 px-4 space-y-3 pointer-events-none">
               {/* Visuals Track */}
-              <div className="relative h-16 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
-                <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end">
-                  Visuais
-                </div>
-                {project.bRolls?.map((br, i) => (
-                  <div key={br.id}>
-                    <div
-                      className="absolute top-1 bottom-1 bg-indigo-500/20 border border-indigo-500/50 rounded overflow-hidden group hover:bg-indigo-500/30 transition-colors shadow-sm"
-                      style={{
-                        left: br.start * PIXELS_PER_SEC,
-                        width: (br.end - br.start) * PIXELS_PER_SEC,
-                      }}
-                    >
-                      <img
-                        src={br.url}
-                        alt=""
-                        className="w-full h-full object-cover opacity-60 pointer-events-none"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
-                        <ImageIcon className="w-5 h-5 text-white" />
-                      </div>
-                      {/* Drag Handle Mock */}
-                      <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-indigo-500/50" />
-                    </div>
-                    {/* Transition Hover Button */}
-                    {i < (project.bRolls?.length || 0) - 1 && (
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
-                        style={{ left: br.end * PIXELS_PER_SEC - 12 }}
-                      >
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="w-6 h-6 rounded-full bg-background border-indigo-500 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors z-30"
-                            >
-                              <Scissors className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-40 p-2"
-                            side="top"
-                            align="center"
-                          >
-                            <div className="text-xs font-bold mb-2 text-center border-b pb-1 text-foreground">
-                              Estilo de Transição
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              {['none', 'fade', 'slide', 'zoom'].map(
-                                (style) => (
-                                  <Button
-                                    key={style}
-                                    variant={
-                                      br.transitionStyle === style ||
-                                      (!br.transitionStyle && style === 'fade')
-                                        ? 'default'
-                                        : 'ghost'
-                                    }
-                                    size="sm"
-                                    className="h-8 text-xs justify-start capitalize font-medium"
-                                    onClick={() =>
-                                      setTransition(
-                                        br.id,
-                                        style as TransitionStyle,
-                                      )
-                                    }
-                                  >
-                                    {style}
-                                  </Button>
-                                ),
-                              )}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    )}
+              {project.bRolls && project.bRolls.length > 0 && (
+                <div className="relative h-16 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
+                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end">
+                    Visuais
                   </div>
-                ))}
-              </div>
+                  {project.bRolls?.map((br, i) => (
+                    <div key={br.id}>
+                      <div
+                        className="absolute top-1 bottom-1 bg-indigo-500/20 border border-indigo-500/50 rounded overflow-hidden group hover:bg-indigo-500/30 transition-colors shadow-sm"
+                        style={{
+                          left: br.start * PIXELS_PER_SEC,
+                          width: (br.end - br.start) * PIXELS_PER_SEC,
+                        }}
+                      >
+                        <img
+                          src={br.url}
+                          alt=""
+                          className="w-full h-full object-cover opacity-60 pointer-events-none"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
+                          <ImageIcon className="w-5 h-5 text-white" />
+                        </div>
+                        {/* Drag Handle Mock */}
+                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-indigo-500/50" />
+                      </div>
+                      {/* Transition Hover Button */}
+                      {i < (project.bRolls?.length || 0) - 1 && (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
+                          style={{ left: br.end * PIXELS_PER_SEC - 12 }}
+                        >
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="w-6 h-6 rounded-full bg-background border-indigo-500 shadow-md hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors z-30"
+                              >
+                                <Scissors className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-40 p-2"
+                              side="top"
+                              align="center"
+                            >
+                              <div className="text-xs font-bold mb-2 text-center border-b pb-1 text-foreground">
+                                Estilo de Transição
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                {['none', 'fade', 'slide', 'zoom'].map(
+                                  (style) => (
+                                    <Button
+                                      key={style}
+                                      variant={
+                                        br.transitionStyle === style ||
+                                        (!br.transitionStyle &&
+                                          style === 'fade')
+                                          ? 'default'
+                                          : 'ghost'
+                                      }
+                                      size="sm"
+                                      className="h-8 text-xs justify-start capitalize font-medium"
+                                      onClick={() =>
+                                        setTransition(
+                                          br.id,
+                                          style as TransitionStyle,
+                                        )
+                                      }
+                                    >
+                                      {style}
+                                    </Button>
+                                  ),
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Audio Track */}
               <div className="relative h-10 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
@@ -196,13 +199,20 @@ export function InteractiveTimeline({
                   {project.cuts.map((cut, i) => (
                     <div
                       key={cut.id}
-                      className="absolute top-1 bottom-1 bg-green-500/20 border border-green-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-green-800 dark:text-green-200 font-medium overflow-hidden shadow-sm"
+                      className="absolute top-1 bottom-1 bg-green-500/20 border border-green-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-green-800 dark:text-green-200 font-medium overflow-hidden shadow-sm group hover:bg-green-500/30 transition-colors"
                       style={{
                         left: cut.start * PIXELS_PER_SEC,
                         width: (cut.end - cut.start) * PIXELS_PER_SEC,
                       }}
+                      title={
+                        cut.sourceStart !== undefined
+                          ? `Source: ${cut.sourceStart.toFixed(1)}s - ${cut.sourceEnd?.toFixed(1)}s`
+                          : `Corte ${i + 1}`
+                      }
                     >
-                      <span className="truncate w-full">Corte #{i + 1}</span>
+                      <span className="truncate w-full font-bold px-1">
+                        Corte #{i + 1}
+                      </span>
                       <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-green-500/50" />
                     </div>
                   ))}

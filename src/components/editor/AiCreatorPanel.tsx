@@ -121,7 +121,7 @@ export function AiCreatorPanel({
   )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [targetDuration, setTargetDuration] = useState<number>(30)
+  const [targetDuration, setTargetDuration] = useState<number>(60)
   const [language, setLanguage] = useState<Language>(
     project.language || 'pt-BR',
   )
@@ -155,6 +155,14 @@ export function AiCreatorPanel({
       })
     }
 
+    if (!targetDuration || targetDuration < 10) {
+      return toast({
+        title: 'Duração inválida',
+        description: 'A duração desejada deve ser de pelo menos 10 segundos.',
+        variant: 'destructive',
+      })
+    }
+
     setStatus('generating')
     if (onStatusChange) onStatusChange('generating')
     setProgress(0)
@@ -171,14 +179,17 @@ export function AiCreatorPanel({
             { p: 20, t: `Ingerindo vídeo completo da URL...` },
             {
               p: 40,
-              t: `Motor de IA extraindo os melhores cortes (Smart Highlights)...`,
+              t: `Motor de IA analisando densidade de áudio e transições...`,
             },
             {
               p: 60,
-              t: `Sincronizando áudio e texto global em ${language}...`,
+              t: `Selecionando cortes únicos (Smart Highlights) de ${targetDuration}s...`,
             },
             { p: 80, t: `Posicionando legendas minimalistas no rodapé...` },
-            { p: 100, t: 'Gerando sequência HD final...' },
+            {
+              p: 100,
+              t: 'Gerando sequência HD final e aplicando hard reset...',
+            },
           ]
         : [
             { p: 25, t: `Ajustando emoção para modo ${mood}...` },
@@ -201,70 +212,95 @@ export function AiCreatorPanel({
   }
 
   const finishGeneration = () => {
-    let rawText = prompt.trim()
-
-    if (sourceType !== 'text') {
-      rawText = defaultTexts[language]
-    } else if (!rawText) {
-      rawText = defaultShortTexts[language]
-    }
-
-    const clauses = rawText
-      .replace(/[\n\r]+/g, ' ')
-      .split(/([.?!]+)/)
-      .reduce((acc, curr, i, arr) => {
-        if (i % 2 === 0) {
-          const clause = curr + (arr[i + 1] || '')
-          if (clause.trim().length > 3) acc.push(clause.trim())
-        }
-        return acc
-      }, [] as string[])
-
-    if (clauses.length === 0) clauses.push(rawText)
-
-    let currentStartTime = 0
-    let scenes = clauses.map((text, i) => {
-      const duration = Math.max(2.0, text.length * 0.065)
-      const start = currentStartTime
-      const end = start + duration
-      currentStartTime = end
-
-      const query = encodeURIComponent(
-        extractEnglishVisualKeyword(text, visualStyle),
-      )
-
-      return {
-        id: crypto.randomUUID(),
-        text,
-        start,
-        end,
-        imageUrl: `https://img.usecurling.com/p/800/1200?q=${query}&dpr=2&seed=${i + Date.now()}`,
-      }
-    })
-
-    let totalDuration = currentStartTime
+    let totalDuration = 0
     let cuts: CutSegment[] = []
+    let bRolls: BRoll[] = []
+    let scenes: any[] = []
+    let rawText = prompt.trim()
 
     if (sourceType === 'video') {
       totalDuration = targetDuration
 
-      const numClauses = Math.min(
-        clauses.length,
-        Math.max(2, Math.floor(targetDuration / 4)),
-      )
-      const selectedClauses = clauses.slice(0, numClauses)
+      const numSegments = Math.max(3, Math.floor(targetDuration / 10))
+      const segmentDuration = targetDuration / numSegments
 
-      currentStartTime = 0
-      scenes = selectedClauses.map((text, i) => {
-        const duration = targetDuration / selectedClauses.length
+      const interviewTexts =
+        language === 'pt-BR'
+          ? [
+              'Para mim, a grande virada de chave foi focar no que realmente importa.',
+              'Quando começamos, não tínhamos os recursos, mas tínhamos a visão.',
+              'O mercado estava saturado, então criamos nossa própria categoria.',
+              'Muitos duvidaram da viabilidade desse modelo no início.',
+              'Hoje, os resultados mostram que tomamos a decisão certa.',
+            ]
+          : [
+              'For me, the big turning point was focusing on what really matters.',
+              "When we started, we didn't have the resources, but we had the vision.",
+              'The market was saturated, so we created our own category.',
+              'Many doubted the viability of this model at first.',
+              'Today, the results show that we made the right decision.',
+            ]
+
+      let currentStartTime = 0
+      let currentSourceStart = 15
+
+      scenes = Array.from({ length: numSegments }).map((_, i) => {
+        const text = interviewTexts[i % interviewTexts.length]
+        const start = currentStartTime
+        const end = start + segmentDuration
+        currentStartTime = end
+
+        const cutSourceStart = currentSourceStart
+        const cutSourceEnd = currentSourceStart + segmentDuration
+
+        currentSourceStart = cutSourceEnd + 45 + Math.random() * 60
+
+        return {
+          id: crypto.randomUUID(),
+          text,
+          start,
+          end,
+          sourceStart: cutSourceStart,
+          sourceEnd: cutSourceEnd,
+          imageUrl: '',
+        }
+      })
+
+      cuts = scenes.map((s) => ({
+        id: crypto.randomUUID(),
+        start: s.start,
+        end: s.end,
+        sourceStart: s.sourceStart,
+        sourceEnd: s.sourceEnd,
+      }))
+
+      rawText = interviewTexts.join(' ')
+    } else {
+      if (sourceType === 'upload') rawText = defaultTexts[language]
+      else if (!rawText) rawText = defaultShortTexts[language]
+
+      const clauses = rawText
+        .replace(/[\n\r]+/g, ' ')
+        .split(/([.?!]+)/)
+        .reduce((acc, curr, i, arr) => {
+          if (i % 2 === 0) {
+            const clause = curr + (arr[i + 1] || '')
+            if (clause.trim().length > 3) acc.push(clause.trim())
+          }
+          return acc
+        }, [] as string[])
+
+      if (clauses.length === 0) clauses.push(rawText)
+
+      let currentStartTime = 0
+      scenes = clauses.map((text, i) => {
+        const duration = Math.max(2.0, text.length * 0.065)
         const start = currentStartTime
         const end = start + duration
         currentStartTime = end
-
         const query = encodeURIComponent(
           extractEnglishVisualKeyword(text, visualStyle),
         )
-
         return {
           id: crypto.randomUUID(),
           text,
@@ -274,25 +310,31 @@ export function AiCreatorPanel({
         }
       })
 
-      cuts = scenes.map((s) => ({
+      const sumDuration = scenes.reduce((sum, s) => sum + (s.end - s.start), 0)
+      const scale = targetDuration / sumDuration
+      let currentStartScaled = 0
+      scenes = scenes.map((s) => {
+        const dur = (s.end - s.start) * scale
+        const nStart = currentStartScaled
+        const nEnd = currentStartScaled + dur
+        currentStartScaled = nEnd
+        return { ...s, start: nStart, end: nEnd }
+      })
+
+      totalDuration = targetDuration
+      bRolls = scenes.map((s) => ({
         id: crypto.randomUUID(),
         start: s.start,
         end: s.end,
+        url: s.imageUrl,
+        keyword: 'semantic-alignment',
       }))
     }
-
-    const bRolls: BRoll[] = scenes.map((s) => ({
-      id: crypto.randomUUID(),
-      start: s.start,
-      end: s.end,
-      url: s.imageUrl,
-      keyword: 'semantic-alignment',
-    }))
 
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo com narração contínua e semântica visual em ${language}.`,
+      description: `Vídeo dinâmico processado com IA em ${language}.`,
       hashtags: `#historia #ia #cinematic`,
     }
 
@@ -316,7 +358,7 @@ export function AiCreatorPanel({
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
     const underlyingVideo =
       sourceType === 'video'
-        ? videoUrl || 'https://www.w3schools.com/html/mov_bbb.mp4'
+        ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
         : null
 
     const newDraft: Draft = {
@@ -329,12 +371,13 @@ export function AiCreatorPanel({
         bRolls,
         aiClips,
         cuts,
+        elements: [],
+        globalCaptionStyle: 'none',
         captions: {
           tiktok: captionText,
           instagram: captionText,
           facebook: captionText,
         },
-        elements: [],
         sfx: [],
         audioTrack: {
           id: crypto.randomUUID(),
@@ -369,7 +412,7 @@ export function AiCreatorPanel({
           <Wand2 className="w-8 h-8 text-blue-500" />
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">Processamento Unificado</h3>
+          <h3 className="font-bold text-lg">Processamento Inteligente</h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -426,8 +469,9 @@ export function AiCreatorPanel({
           <Wand2 className="w-5 h-5 text-blue-500" /> Pipeline de Mídia
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Gere conteúdo a partir de qualquer fonte com narração fluida e visuais
-          cinematográficos livres de letreiros invasivos.
+          Gere conteúdo a partir de qualquer fonte. O sistema aplicará um Hard
+          Reset isolando o projeto, aplicando cortes únicos e formatando
+          legendas minimalistas no rodapé.
         </p>
 
         <Tabs
@@ -472,30 +516,10 @@ export function AiCreatorPanel({
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                A IA ingerirá o vídeo completo e aplicará o motor de cortes
-                inteligentes (Smart Highlights) extraindo os melhores momentos
-                baseados na duração alvo.
+                A IA ingerirá o vídeo completo (até 2 horas) e aplicará o motor
+                de cortes inteligentes extraindo entrevistas únicas sem
+                repetição de conteúdo.
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" /> Duração Alvo do Corte
-                (Highlights)
-              </Label>
-              <Select
-                value={String(targetDuration)}
-                onValueChange={(v) => setTargetDuration(Number(v))}
-              >
-                <SelectTrigger className="bg-background/50 h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">Curto (15 Segundos)</SelectItem>
-                  <SelectItem value="30">Padrão (30 Segundos)</SelectItem>
-                  <SelectItem value="60">Médio (60 Segundos)</SelectItem>
-                  <SelectItem value="90">Longo (90 Segundos)</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </TabsContent>
 
@@ -532,6 +556,21 @@ export function AiCreatorPanel({
                 <SelectItem value="it-IT">Italiano</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" /> Duração Desejada (s)
+            </Label>
+            <Input
+              type="number"
+              min={10}
+              max={300}
+              value={targetDuration}
+              onChange={(e) => setTargetDuration(Number(e.target.value))}
+              className="bg-background/50 h-10"
+              placeholder="Ex: 60"
+            />
           </div>
 
           <div className="space-y-3">
@@ -588,8 +627,8 @@ export function AiCreatorPanel({
             </Select>
           </div>
 
-          <div className="space-y-3 flex flex-col justify-center lg:col-span-2">
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors h-10">
+          <div className="space-y-3 flex flex-col justify-center">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors h-10 mt-6">
               <Label
                 htmlFor="no-text-mode"
                 className="flex items-center gap-2 cursor-pointer font-semibold text-sm"

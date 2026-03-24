@@ -22,6 +22,8 @@ export interface CutSegment {
   id: string
   start: number
   end: number
+  sourceStart?: number
+  sourceEnd?: number
 }
 
 export interface Subtitle {

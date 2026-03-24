@@ -40,6 +40,7 @@ export function PreviewCanvas({
 
   const hasContent =
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
+  const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
 
   useEffect(() => {
     setVideoElement(videoRef.current)
@@ -52,16 +53,10 @@ export function PreviewCanvas({
     }
   }, [project.videoDuration])
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current && isPlaying) {
-      setPlayerState({ currentTime: videoRef.current.currentTime })
-    }
-  }
-
   const handleLoadedMetadata = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !project.videoDuration) {
       setPlayerState({
-        duration: project.videoDuration || videoRef.current.duration,
+        duration: videoRef.current.duration,
       })
     }
   }
@@ -89,28 +84,83 @@ export function PreviewCanvas({
       const delta = (time - lastTime) / 1000
       lastTime = time
 
-      if (isPlaying && !project.videoUrl) {
+      if (isPlaying) {
         const nextTime = currentTimeRef.current + delta
         if (nextTime >= (project.videoDuration || 0)) {
           setPlayerState({
             currentTime: project.videoDuration || 0,
             isPlaying: false,
           })
+          if (videoRef.current && !videoRef.current.paused) {
+            videoRef.current.pause()
+          }
         } else {
           setPlayerState({ currentTime: nextTime })
+
+          if (videoRef.current) {
+            const hasCuts = project.cuts && project.cuts.length > 0
+            if (hasCuts) {
+              const activeCut = project.cuts!.find(
+                (c) => nextTime >= c.start && nextTime < c.end,
+              )
+              if (activeCut && activeCut.sourceStart !== undefined) {
+                const target =
+                  activeCut.sourceStart + (nextTime - activeCut.start)
+                if (Math.abs(videoRef.current.currentTime - target) > 0.3) {
+                  videoRef.current.currentTime = target
+                }
+                if (videoRef.current.paused) {
+                  videoRef.current.play().catch(() => {})
+                }
+              } else {
+                if (videoRef.current.paused) {
+                  videoRef.current.play().catch(() => {})
+                }
+              }
+            } else {
+              if (Math.abs(videoRef.current.currentTime - nextTime) > 0.3) {
+                videoRef.current.currentTime = nextTime
+              }
+              if (videoRef.current.paused) {
+                videoRef.current.play().catch(() => {})
+              }
+            }
+          }
         }
-      }
-      if (isPlaying && !project.videoUrl) {
         frameId = requestAnimationFrame(tick)
       }
     }
 
-    if (isPlaying && !project.videoUrl) {
+    if (isPlaying) {
       lastTime = performance.now()
       frameId = requestAnimationFrame(tick)
+      if (videoRef.current && videoRef.current.paused) {
+        videoRef.current.play().catch(() => {})
+      }
+    } else {
+      if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause()
+      }
     }
     return () => cancelAnimationFrame(frameId)
-  }, [isPlaying, project.videoUrl, project.videoDuration])
+  }, [isPlaying, project.videoDuration, project.cuts])
+
+  useEffect(() => {
+    if (!isPlaying && videoRef.current) {
+      const hasCuts = project.cuts && project.cuts.length > 0
+      if (hasCuts) {
+        const activeCut = project.cuts!.find(
+          (c) => currentTime >= c.start && currentTime < c.end,
+        )
+        if (activeCut && activeCut.sourceStart !== undefined) {
+          videoRef.current.currentTime =
+            activeCut.sourceStart + (currentTime - activeCut.start)
+        }
+      } else {
+        videoRef.current.currentTime = currentTime
+      }
+    }
+  }, [currentTime, isPlaying, project.cuts])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -131,13 +181,25 @@ export function PreviewCanvas({
   }, [currentTime])
 
   useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume
+    }
+  }, [volume])
+
+  useEffect(() => {
     const duckingInterval = setInterval(() => {
       if (!audioRef.current) return
-      const speaking =
-        'speechSynthesis' in window && window.speechSynthesis.speaking
+
+      let speaking = false
+      if (!hasSourceAudio) {
+        speaking =
+          'speechSynthesis' in window && window.speechSynthesis.speaking
+      } else {
+        speaking = true
+      }
+
       setIsTtsSpeaking(speaking)
 
-      // Emotional BGM Adjustment
       const baseVolume =
         project.mood === 'calm'
           ? 0.15
@@ -155,14 +217,14 @@ export function PreviewCanvas({
     }, 100)
 
     return () => clearInterval(duckingInterval)
-  }, [volume, project.mood])
+  }, [volume, project.mood, hasSourceAudio])
 
   const prevIsPlayingRef = useRef(isPlaying)
   const prevTimeRef = useRef(currentTime)
   const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   useEffect(() => {
-    if (!('speechSynthesis' in window)) return
+    if (!('speechSynthesis' in window) || hasSourceAudio) return
 
     const timeDiff = Math.abs(currentTime - prevTimeRef.current)
     const isSeek = timeDiff > 0.5
@@ -193,7 +255,6 @@ export function PreviewCanvas({
           const utterance = new SpeechSynthesisUtterance(textToSpeak)
           utterance.lang = project.language || 'pt-BR'
 
-          // Voice Profile & Mood Adjustments
           let rate = 1.0
           let pitch = 1.0
 
@@ -228,7 +289,7 @@ export function PreviewCanvas({
     } else if (isPlaying && !isSeek && window.speechSynthesis.paused) {
       window.speechSynthesis.resume()
     }
-  }, [isPlaying, currentTime, project.aiClips, volume, project])
+  }, [isPlaying, currentTime, project.aiClips, volume, project, hasSourceAudio])
 
   useEffect(() => {
     return () => {
@@ -298,7 +359,6 @@ export function PreviewCanvas({
                 ref={videoRef}
                 src={project.videoUrl}
                 className="w-full h-full object-cover opacity-90 relative z-0"
-                onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={handleEnded}
                 playsInline
@@ -336,11 +396,9 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-6 left-0 right-0 z-30 px-4 pointer-events-none flex justify-center animate-fade-in-up pb-safe"
+                    className="subtitle-container pointer-events-none animate-fade-in-up"
                   >
-                    <span className="bg-black/30 text-white font-medium text-[10px] sm:text-[11px] px-3 py-1.5 rounded backdrop-blur-md shadow-sm text-center max-w-[85%] leading-relaxed text-balance border border-white/5 tracking-wider">
-                      {activeSub.text}
-                    </span>
+                    <span className="subtitle-text">{activeSub.text}</span>
                   </div>
                 )
               })}
