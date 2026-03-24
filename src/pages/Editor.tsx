@@ -44,13 +44,16 @@ function SimplePlayerBar({ project }: { project: Project }) {
   const { currentTime, duration, isPlaying, volume } = usePlayerState()
   const { play, pause, seek, setVolume } = usePlayerControls()
 
+  const hasContent =
+    !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
+
   const formatTime = (time: number) => {
     const m = Math.floor(time / 60)
     const s = Math.floor(time % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  if (!project.videoUrl) return null
+  if (!hasContent) return null
 
   return (
     <div className="h-16 bg-background border-t flex items-center px-4 sm:px-6 gap-4 sm:gap-6 shrink-0 z-10 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
@@ -154,6 +157,13 @@ function VersionsSidebar({
                     ? 'Última Criação'
                     : `Versão ${versionNum}`
 
+                  const hasMedia =
+                    draft.snapshot.videoUrl ||
+                    (draft.snapshot.bRolls && draft.snapshot.bRolls.length > 0)
+                  const thumbnail = draft.snapshot.videoUrl
+                    ? `https://img.usecurling.com/p/200/200?q=video&color=gray&seed=${draft.id}`
+                    : draft.snapshot.bRolls?.[0]?.url
+
                   return (
                     <div
                       key={draft.id}
@@ -169,9 +179,9 @@ function VersionsSidebar({
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary z-10" />
                       )}
                       <div className="relative aspect-video bg-black/5 rounded-md mb-3 overflow-hidden flex items-center justify-center border border-border/50">
-                        {draft.snapshot.videoUrl ? (
+                        {hasMedia && thumbnail ? (
                           <img
-                            src={`https://img.usecurling.com/p/200/200?q=video&color=gray&seed=${draft.id}`}
+                            src={thumbnail}
                             className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
                             alt="Thumbnail"
                           />

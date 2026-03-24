@@ -58,26 +58,26 @@ const controls = {
   play: () => {
     if (currentState.videoElement) {
       currentState.videoElement.play().catch(() => {})
-      setPlayerState({ isPlaying: true })
     }
+    setPlayerState({ isPlaying: true })
   },
   pause: () => {
     if (currentState.videoElement) {
       currentState.videoElement.pause()
-      setPlayerState({ isPlaying: false })
     }
+    setPlayerState({ isPlaying: false })
   },
   seek: (time: number) => {
     if (currentState.videoElement) {
       currentState.videoElement.currentTime = time
-      setPlayerState({ currentTime: time })
     }
+    setPlayerState({ currentTime: time })
   },
   setVolume: (vol: number) => {
     if (currentState.videoElement) {
       currentState.videoElement.volume = vol
-      setPlayerState({ volume: vol })
     }
+    setPlayerState({ volume: vol })
   },
   setVideoElement: (el: HTMLVideoElement | null) => {
     setPlayerState({ videoElement: el })

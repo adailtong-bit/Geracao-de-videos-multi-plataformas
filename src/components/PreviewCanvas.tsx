@@ -36,7 +36,7 @@ function SubtitleOverlay({ project }: { project: Project }) {
     <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 z-40 text-center w-[90%] sm:w-[85%] pointer-events-none transition-all duration-150 flex flex-col justify-end items-center">
       <span
         key={currentSubtitle.id}
-        className="text-white px-5 py-2.5 text-lg sm:text-2xl font-bold tracking-wide leading-snug inline-block transform shadow-xl animate-fade-in-up"
+        className="text-white px-5 py-2.5 text-lg sm:text-xl font-bold tracking-wide leading-snug inline-block transform shadow-xl animate-fade-in-up max-w-[90%]"
         style={{
           backgroundColor: 'rgba(0,0,0,0.75)',
           borderRadius: '0.75rem',
@@ -75,23 +75,35 @@ export function PreviewCanvas({
   isGenerating?: boolean
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
-  const { isPlaying, currentTime } = usePlayerState()
+  const { isPlaying, currentTime, volume } = usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+
+  const hasContent =
+    !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
 
   useEffect(() => {
     setVideoElement(videoRef.current)
     return () => setVideoElement(null)
   }, [setVideoElement, project.videoUrl])
 
+  useEffect(() => {
+    if (project.videoDuration) {
+      setPlayerState({ duration: project.videoDuration })
+    }
+  }, [project.videoDuration])
+
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
+    if (videoRef.current && isPlaying) {
       setPlayerState({ currentTime: videoRef.current.currentTime })
     }
   }
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setPlayerState({ duration: videoRef.current.duration })
+      setPlayerState({
+        duration: project.videoDuration || videoRef.current.duration,
+      })
     }
   }
 
@@ -103,10 +115,125 @@ export function PreviewCanvas({
   const handlePause = () => setPlayerState({ isPlaying: false })
 
   const togglePlay = () => {
-    if (!project.videoUrl) return
+    if (!hasContent) return
     if (isPlaying) pause()
     else play()
   }
+
+  // Virtual timer for generated image-only playback
+  const currentTimeRef = useRef(currentTime)
+  useEffect(() => {
+    currentTimeRef.current = currentTime
+  }, [currentTime])
+
+  useEffect(() => {
+    let lastTime = performance.now()
+    let frameId: number
+
+    const tick = (time: number) => {
+      const delta = (time - lastTime) / 1000
+      lastTime = time
+
+      if (isPlaying && !project.videoUrl) {
+        const nextTime = currentTimeRef.current + delta
+        if (nextTime >= (project.videoDuration || 0)) {
+          setPlayerState({
+            currentTime: project.videoDuration || 0,
+            isPlaying: false,
+          })
+        } else {
+          setPlayerState({ currentTime: nextTime })
+        }
+      }
+      if (isPlaying && !project.videoUrl) {
+        frameId = requestAnimationFrame(tick)
+      }
+    }
+
+    if (isPlaying && !project.videoUrl) {
+      lastTime = performance.now()
+      frameId = requestAnimationFrame(tick)
+    }
+    return () => cancelAnimationFrame(frameId)
+  }, [isPlaying, project.videoUrl, project.videoDuration])
+
+  // Sync background audio playback
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {})
+      } else {
+        audioRef.current.pause()
+      }
+    }
+  }, [isPlaying])
+
+  // Sync background audio timeline
+  useEffect(() => {
+    if (audioRef.current) {
+      if (Math.abs(audioRef.current.currentTime - currentTime) > 0.5) {
+        audioRef.current.currentTime = currentTime
+      }
+    }
+  }, [currentTime])
+
+  // Volume ducking for narration clarity
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume * 0.15 // Lowered background music
+    }
+    if (videoRef.current) {
+      videoRef.current.volume = volume * 0.1
+    }
+  }, [volume])
+
+  // Text-to-Speech Generation
+  const previousSubtitleId = useRef<string | null>(null)
+
+  const currentSubtitle = useMemo(() => {
+    if (project.aiClips) {
+      for (const clip of project.aiClips) {
+        const sub = clip.subtitles.find(
+          (s) => currentTime >= s.start && currentTime <= s.end,
+        )
+        if (sub) return sub
+      }
+    }
+    return null
+  }, [project.aiClips, currentTime])
+
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return
+
+    if (isPlaying && currentSubtitle) {
+      if (currentSubtitle.id !== previousSubtitleId.current) {
+        window.speechSynthesis.cancel()
+
+        // Small delay to prevent TTS engine drops after cancel
+        setTimeout(() => {
+          const utterance = new SpeechSynthesisUtterance(currentSubtitle.text)
+          utterance.lang = 'pt-BR'
+          utterance.rate = 1.0
+          utterance.volume = volume
+          window.speechSynthesis.speak(utterance)
+        }, 10)
+
+        previousSubtitleId.current = currentSubtitle.id
+      } else if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume()
+      }
+    } else if (!isPlaying) {
+      window.speechSynthesis.pause()
+    }
+  }, [isPlaying, currentSubtitle, volume])
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
 
   const getRatioStyle = () => {
     switch (project.aspectRatio) {
@@ -168,22 +295,34 @@ export function PreviewCanvas({
           </div>
         )}
 
-        {project.videoUrl ? (
+        {hasContent ? (
           <>
-            <video
-              ref={videoRef}
-              src={project.videoUrl}
-              className="w-full h-full object-cover opacity-90 relative z-0"
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={handleEnded}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              playsInline
-              controls={false}
-            />
+            {project.audioTrack?.url && (
+              <audio
+                ref={audioRef}
+                src={project.audioTrack.url}
+                loop
+                preload="auto"
+                className="hidden"
+              />
+            )}
 
-            {activeBRoll && (
+            {project.videoUrl && (
+              <video
+                ref={videoRef}
+                src={project.videoUrl}
+                className="w-full h-full object-cover opacity-90 relative z-0"
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={handleEnded}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                playsInline
+                controls={false}
+              />
+            )}
+
+            {activeBRoll ? (
               <div className="absolute inset-0 z-10 bg-black flex items-center justify-center overflow-hidden">
                 <img
                   src={activeBRoll.url}
@@ -191,6 +330,12 @@ export function PreviewCanvas({
                   className="w-full h-full object-cover opacity-90 animate-fade-in"
                 />
               </div>
+            ) : (
+              !project.videoUrl && (
+                <div className="absolute inset-0 z-10 bg-zinc-900 flex items-center justify-center">
+                  <span className="text-zinc-600 text-sm">Sem Mídia</span>
+                </div>
+              )
             )}
 
             {!isPlaying && (

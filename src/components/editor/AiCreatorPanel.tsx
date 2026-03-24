@@ -101,79 +101,69 @@ export function AiCreatorPanel({
   }
 
   const finishGeneration = () => {
-    const textLower = prompt.toLowerCase()
-    const isBiblical =
-      textLower.includes('salmo') ||
-      textLower.includes('psalm') ||
-      textLower.includes('deus')
+    const rawText =
+      prompt.trim() || 'A história começa aqui. Novas descobertas nos aguardam.'
 
-    let generatedResult: GeneratedResult
+    // Break exact text into shorter readable clauses (sentences)
+    const clauses = rawText
+      .replace(/[\n\r]+/g, ' ')
+      .split(/([.?!,;]+)/)
+      .reduce((acc, curr, i, arr) => {
+        if (i % 2 === 0) {
+          const clause = curr + (arr[i + 1] || '')
+          if (clause.trim()) acc.push(clause.trim())
+        }
+        return acc
+      }, [] as string[])
 
-    if (isBiblical) {
-      generatedResult = {
-        title: 'Salmo 21 - A Força e Alegria',
-        description:
-          'Uma leitura inspiradora do Salmo 21, refletindo sobre vitória e fé. #salmo21 #fe #biblia #deus',
-        hashtags: '#salmo21 #fe #biblia #vitoria',
-        scenes: [
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=ancient%20king%20praying&seed=1`,
-            text: 'O rei se alegra na tua força, ó Senhor!',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=glowing%20gold%20crown&seed=2`,
-            text: 'Puseste em sua cabeça uma coroa de ouro puro.',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=sunlight%20breaking%20clouds&seed=3`,
-            text: 'A vida ele te pediu, e tu lha deste.',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=majestic%20sky%20glory&seed=4`,
-            text: 'Grande é a sua glória pelo teu socorro.',
-          },
-        ],
-      }
-    } else {
-      const words = prompt.split(' ').filter((w) => w.length > 3)
+    if (clauses.length === 0) clauses.push(rawText)
+
+    let currentStartTime = 0
+    const scenes = clauses.map((text, i) => {
+      // Calculate realistic reading duration: ~0.08s per character, min 1.5s
+      const duration = Math.max(1.5, text.length * 0.08)
+      const start = currentStartTime
+      const end = start + duration
+      currentStartTime = end
+
+      // Determine a relevant image keyword directly from user text
+      const cleanWords = text
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .split(' ')
+        .filter((w) => w.length > 3)
       const keyword =
-        words.length > 0 ? encodeURIComponent(words[0]) : 'educational'
+        cleanWords.length > 0
+          ? cleanWords[
+              Math.floor(Math.random() * cleanWords.length)
+            ].toLowerCase()
+          : 'cinematic'
 
-      generatedResult = {
-        title: `História: ${prompt.slice(0, 15)}...`,
-        description: `Vídeo narrado gerado com IA. Tema: ${prompt.slice(0, 20)}.`,
-        hashtags: `#educacao #historia #ia`,
-        scenes: [
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=1`,
-            text: 'O início de tudo é marcado por grandes descobertas.',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=2`,
-            text: 'Pequenos detalhes muitas vezes passam despercebidos.',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=learning&seed=3`,
-            text: 'Mas a verdade se revela para quem procura.',
-          },
-          {
-            imageUrl: `https://img.usecurling.com/p/400/700?q=success&seed=4`,
-            text: 'Compartilhe esse conhecimento com outras pessoas.',
-          },
-        ],
+      return {
+        id: crypto.randomUUID(),
+        text,
+        start,
+        end,
+        imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&dpr=2&seed=${i}`,
       }
-    }
+    })
 
-    const sceneDuration = 4
-    const totalDuration = generatedResult.scenes.length * sceneDuration
+    const totalDuration = currentStartTime
 
-    const bRolls: BRoll[] = generatedResult.scenes.map((s, i) => ({
+    const bRolls: BRoll[] = scenes.map((s) => ({
       id: crypto.randomUUID(),
-      start: i * sceneDuration,
-      end: (i + 1) * sceneDuration,
+      start: s.start,
+      end: s.end,
       url: s.imageUrl,
       keyword: 'ai-generated',
     }))
+
+    const titleWords = rawText.split(' ').slice(0, 4).join(' ')
+    const generatedResult: GeneratedResult = {
+      title: `${titleWords}...`,
+      description: `Vídeo narrado gerado com IA a partir do seu texto.`,
+      hashtags: `#historia #ia #narracao`,
+      scenes,
+    }
 
     const aiClips: AiClip[] = [
       {
@@ -182,13 +172,11 @@ export function AiCreatorPanel({
         end: totalDuration,
         title: generatedResult.title,
         description: generatedResult.description,
-        keywords: generatedResult.hashtags
-          .split(' ')
-          .map((h) => h.replace('#', '')),
-        subtitles: generatedResult.scenes.map((s, i) => ({
-          id: crypto.randomUUID(),
-          start: i * sceneDuration,
-          end: (i + 1) * sceneDuration,
+        keywords: ['ia', 'historia'],
+        subtitles: scenes.map((s) => ({
+          id: s.id,
+          start: s.start,
+          end: s.end,
           text: s.text,
         })),
       },
@@ -201,7 +189,7 @@ export function AiCreatorPanel({
       createdAt: Date.now(),
       name: generatedResult.title,
       snapshot: {
-        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        videoUrl: null, // Forces image+audio playback simulation
         videoDuration: totalDuration,
         bRolls,
         aiClips,
@@ -210,10 +198,15 @@ export function AiCreatorPanel({
           instagram: captionText,
           facebook: captionText,
         },
-        elements: [], // Ensure clean elements
+        elements: [],
         cuts: [],
         sfx: [],
-        audioTrack: null,
+        audioTrack: {
+          id: crypto.randomUUID(),
+          name: 'Ambient Background',
+          mood: 'Ambient',
+          url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+        },
       },
     }
 
@@ -321,17 +314,17 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground">
           Crie um vídeo completo a partir de uma referência de texto. A IA gera
-          a narração e busca as imagens de fundo que combinam com o assunto.
+          a narração exata baseada no seu texto e busca as imagens que combinam.
         </p>
 
         <div className="space-y-3">
           <Label htmlFor="prompt" className="font-semibold text-sm">
-            Referência de Texto ou Tema
+            Texto Completo da Narração
           </Label>
           <Textarea
             id="prompt"
-            placeholder="Ex: 'Salmo 21' ou 'A história das estrelas cadentes'"
-            className="min-h-[100px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
+            placeholder="Cole seu texto longo aqui (Ex: artigos, livros, Salmos). O vídeo terá o tamanho exato da leitura."
+            className="min-h-[150px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
@@ -369,7 +362,7 @@ export function AiCreatorPanel({
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-4"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Gerar Vídeo
+          <Wand2 className="w-5 h-5 mr-2" /> Gerar Vídeo Narrado
         </Button>
       </div>
     </div>
