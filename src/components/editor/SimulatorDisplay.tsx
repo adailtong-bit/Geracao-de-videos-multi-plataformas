@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Music,
   ThumbsUp,
+  Wand2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +15,12 @@ export function SimulatorDisplay({
   project,
   platform,
   showSafeZones,
+  isGenerating = false,
 }: {
   project: Project
   platform: Platform
   showSafeZones: boolean
+  isGenerating?: boolean
 }) {
   const isFb = platform === 'facebook'
 
@@ -69,6 +72,17 @@ export function SimulatorDisplay({
           !isFb ? 'flex-1 h-full' : '',
         )}
       >
+        {isGenerating && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm text-white animate-in fade-in duration-300">
+            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-3">
+              <Wand2 className="w-6 h-6 text-blue-500" />
+            </div>
+            <h3 className="font-bold text-sm mb-1 text-center px-4">
+              Gerando Preview...
+            </h3>
+          </div>
+        )}
+
         {project.videoUrl ? (
           <img
             src={project.videoUrl}
@@ -76,7 +90,17 @@ export function SimulatorDisplay({
             className="w-full h-full object-cover opacity-90"
           />
         ) : (
-          <div className="text-muted-foreground text-sm">Sem Vídeo</div>
+          !isGenerating && (
+            <div className="flex flex-col items-center justify-center text-center p-6 bg-zinc-900/50 h-full w-full">
+              <Wand2 className="w-8 h-8 text-zinc-500 mb-3" />
+              <p className="text-zinc-300 font-medium text-sm">
+                Start creating with AI Storyteller
+              </p>
+              <p className="text-zinc-500 text-xs mt-1">
+                Nenhum conteúdo carregado.
+              </p>
+            </div>
+          )
         )}
 
         {project.elements.map((el) => (
@@ -122,7 +146,7 @@ export function SimulatorDisplay({
           </div>
         )}
 
-        {platform === 'tiktok' && (
+        {platform === 'tiktok' && project.videoUrl && (
           <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-end text-white p-4">
             <div className="flex items-end justify-between">
               <div className="flex-1 pr-12 space-y-2 mb-2">
@@ -161,7 +185,7 @@ export function SimulatorDisplay({
           </div>
         )}
 
-        {platform === 'instagram' && (
+        {platform === 'instagram' && project.videoUrl && (
           <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-end text-white p-4">
             <div className="flex items-end justify-between">
               <div className="flex-1 pr-12 space-y-3 mb-2">

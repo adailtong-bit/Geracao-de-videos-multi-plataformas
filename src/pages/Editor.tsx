@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
@@ -18,6 +19,7 @@ import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
 import { PreviewPanel } from '@/components/editor/PreviewPanel'
 import { SimulatorDisplay } from '@/components/editor/SimulatorDisplay'
+import { DraftsPanel } from '@/components/editor/DraftsPanel'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import {
@@ -35,6 +37,7 @@ import {
   ArrowRight,
   Activity,
   Wand2,
+  History,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Platform } from '@/types'
@@ -277,6 +280,9 @@ export default function Editor() {
   const [showSafeZones, setShowSafeZones] = useState(false)
   const [activeTab, setActiveTab] = useState('ai-creator')
   const [previewPlatform, setPreviewPlatform] = useState<Platform>('tiktok')
+  const [aiStatus, setAiStatus] = useState<'idle' | 'generating' | 'success'>(
+    'idle',
+  )
   const { toast } = useToast()
 
   if (project === null) {
@@ -336,6 +342,9 @@ export default function Editor() {
     )
   }
 
+  const latestDraft = project.drafts?.[project.drafts.length - 1]
+  const isLatestActive = project.activeDraftId === latestDraft?.id
+
   const handleSave = () =>
     toast({
       title: 'Project Saved',
@@ -356,23 +365,50 @@ export default function Editor() {
             variant="ghost"
             size="icon"
             asChild
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0"
           >
             <Link to="/">
               <ArrowLeft className="w-5 h-5" />
             </Link>
           </Button>
-          <div>
-            <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
-              {project.name}
-            </h1>
-            <p className="text-[10px] text-muted-foreground">
+          <div className="flex flex-col justify-center min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
+                {project.name}
+              </h1>
+              {project.activeDraftId && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] hidden sm:inline-flex px-1.5 py-0 h-4 whitespace-nowrap"
+                >
+                  Draft:{' '}
+                  {
+                    project.drafts?.find((d) => d.id === project.activeDraftId)
+                      ?.name
+                  }
+                </Badge>
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
               Salvo automaticamente
-            </p>
+              {!isLatestActive && latestDraft && (
+                <button
+                  onClick={() =>
+                    update({
+                      ...latestDraft.snapshot,
+                      activeDraftId: latestDraft.id,
+                    })
+                  }
+                  className="text-orange-500 font-medium ml-1 hover:underline flex items-center gap-1 transition-colors"
+                >
+                  • Nova versão disponível (Carregar)
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <div className="hidden sm:flex items-center gap-2 mr-2 border-r pr-4">
             <ShieldAlert className="w-4 h-4 text-muted-foreground" />
             <Label
@@ -427,6 +463,12 @@ export default function Editor() {
                 <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar c/ IA
               </TabsTrigger>
               <TabsTrigger
+                value="history"
+                className="shrink-0 min-w-[70px] text-xs sm:text-sm text-orange-600 data-[state=active]:text-orange-700"
+              >
+                <History className="w-3.5 h-3.5 mr-1" /> Histórico
+              </TabsTrigger>
+              <TabsTrigger
                 value="media"
                 className="shrink-0 min-w-[60px] text-xs sm:text-sm"
               >
@@ -466,7 +508,11 @@ export default function Editor() {
                       update={update}
                       onNext={() => setActiveTab('editor')}
                       onPreview={() => setActiveTab('preview')}
+                      onStatusChange={setAiStatus}
                     />
+                  </TabsContent>
+                  <TabsContent value="history" className="mt-0 outline-none">
+                    <DraftsPanel project={project} update={update} />
                   </TabsContent>
                   <TabsContent value="media" className="mt-0 outline-none">
                     <MediaPanel
@@ -532,6 +578,7 @@ export default function Editor() {
                 project={project}
                 platform={previewPlatform}
                 showSafeZones={showSafeZones}
+                isGenerating={aiStatus === 'generating'}
               />
             </div>
           ) : (
@@ -540,6 +587,7 @@ export default function Editor() {
                 <PreviewCanvas
                   project={project}
                   showSafeZones={showSafeZones}
+                  isGenerating={aiStatus === 'generating'}
                 />
               </div>
 

@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Project, BRoll, AiClip } from '@/types'
+import { Project, BRoll, AiClip, Draft } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -22,15 +21,14 @@ import {
 import {
   Wand2,
   Image as ImageIcon,
-  Send,
   Play,
   Hash,
   FileText,
-  Loader2,
   RefreshCcw,
   Mic,
   LayoutTemplate,
   HelpCircle,
+  Video,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -40,6 +38,7 @@ interface Props {
   update: (updates: Partial<Project>) => void
   onNext: () => void
   onPreview: () => void
+  onStatusChange?: (status: 'idle' | 'generating' | 'success') => void
 }
 
 interface Scene {
@@ -54,7 +53,13 @@ interface GeneratedResult {
   scenes: Scene[]
 }
 
-export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
+export function AiCreatorPanel({
+  project,
+  update,
+  onNext,
+  onPreview,
+  onStatusChange,
+}: Props) {
   const [prompt, setPrompt] = useState('')
   const [voice, setVoice] = useState('documentary')
   const [template, setTemplate] = useState('mystery')
@@ -76,6 +81,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
     }
 
     setStatus('generating')
+    if (onStatusChange) onStatusChange('generating')
     setProgress(0)
     setStatusText('Analisando seu prompt...')
 
@@ -126,7 +132,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
 
     const t = templateThemes[template] || templateThemes.mystery
 
-    setResult({
+    const generatedResult: GeneratedResult = {
       title: `${t.title} ${prompt.slice(0, 15)}...`,
       description: `Vídeo gerado com IA usando estilo "${template}" e tom de voz de ${voice}.`,
       hashtags: `#viral #${template} #ia`,
@@ -148,18 +154,13 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
           text: 'Curta e siga para descobrir mais!',
         },
       ],
-    })
-    setStatus('success')
-    toast({ title: 'Vídeo gerado com sucesso!' })
-  }
+    }
 
-  const handleSendToTimeline = (destination: 'editor' | 'preview') => {
-    if (!result) return
-
+    // Automatically load the newly generated content as a Draft
     const sceneDuration = 3
-    const totalDuration = result.scenes.length * sceneDuration
+    const totalDuration = generatedResult.scenes.length * sceneDuration
 
-    const bRolls: BRoll[] = result.scenes.map((s, i) => ({
+    const bRolls: BRoll[] = generatedResult.scenes.map((s, i) => ({
       id: crypto.randomUUID(),
       start: i * sceneDuration,
       end: (i + 1) * sceneDuration,
@@ -172,10 +173,12 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
         id: crypto.randomUUID(),
         start: 0,
         end: totalDuration,
-        title: result.title,
-        description: result.description,
-        keywords: result.hashtags.split(' ').map((h) => h.replace('#', '')),
-        subtitles: result.scenes.map((s, i) => ({
+        title: generatedResult.title,
+        description: generatedResult.description,
+        keywords: generatedResult.hashtags
+          .split(' ')
+          .map((h) => h.replace('#', '')),
+        subtitles: generatedResult.scenes.map((s, i) => ({
           id: crypto.randomUUID(),
           start: i * sceneDuration,
           end: (i + 1) * sceneDuration,
@@ -184,23 +187,40 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
       },
     ]
 
-    const captionText = `${result.title}\n\n${result.description}\n\n${result.hashtags}`
+    const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
 
-    update({
-      videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      videoDuration: totalDuration,
-      bRolls,
-      aiClips,
-      captions: {
-        tiktok: captionText,
-        instagram: captionText,
-        facebook: captionText,
+    const newDraft: Draft = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      name: generatedResult.title,
+      snapshot: {
+        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        videoDuration: totalDuration,
+        bRolls,
+        aiClips,
+        captions: {
+          tiktok: captionText,
+          instagram: captionText,
+          facebook: captionText,
+        },
+        elements: [],
+        cuts: [],
+        sfx: [],
+        audioTrack: null,
       },
+    }
+
+    // Apply draft immediately
+    update({
+      ...newDraft.snapshot,
+      drafts: [...(project.drafts || []), newDraft],
+      activeDraftId: newDraft.id,
     })
 
-    toast({ title: 'Projeto atualizado com IA!' })
-    if (destination === 'editor') onNext()
-    if (destination === 'preview') onPreview()
+    setResult(generatedResult)
+    setStatus('success')
+    if (onStatusChange) onStatusChange('success')
+    toast({ title: 'História gerada e carregada no Editor!' })
   }
 
   if (status === 'generating') {
@@ -229,7 +249,10 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setStatus('idle')}
+            onClick={() => {
+              setStatus('idle')
+              if (onStatusChange) onStatusChange('idle')
+            }}
             className="h-8"
           >
             <RefreshCcw className="w-4 h-4 mr-2" /> Refazer
@@ -238,7 +261,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
 
         <div className="space-y-4 bg-muted/30 p-4 rounded-xl border">
           <h4 className="font-bold flex items-center gap-2 text-sm">
-            <FileText className="w-4 h-4 text-primary" /> Título Sugerido
+            <FileText className="w-4 h-4 text-primary" /> Título Gerado
           </h4>
           <p className="font-medium text-foreground text-sm">{result.title}</p>
 
@@ -279,15 +302,12 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
           <Button
             variant="secondary"
             className="w-full font-bold h-12"
-            onClick={() => handleSendToTimeline('preview')}
+            onClick={onPreview}
           >
-            <Play className="w-4 h-4 mr-2" /> Preview Story
+            <Play className="w-4 h-4 mr-2" /> Ver Preview
           </Button>
-          <Button
-            className="w-full font-bold h-12 shadow-md"
-            onClick={() => handleSendToTimeline('editor')}
-          >
-            <Send className="w-4 h-4 mr-2" /> Enviar p/ Editor
+          <Button className="w-full font-bold h-12 shadow-md" onClick={onNext}>
+            <Video className="w-4 h-4 mr-2" /> Editar Mídia
           </Button>
         </div>
       </div>
@@ -302,7 +322,8 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
         </h3>
         <p className="text-sm text-muted-foreground">
           Crie um vídeo viral completo a partir de uma simples ideia. A IA
-          cuidará do roteiro, imagens, áudio e metadados.
+          cuidará do roteiro, imagens, áudio e metadados, atualizando o player
+          automaticamente.
         </p>
 
         <div className="space-y-3">
@@ -396,7 +417,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-4"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Gerar Vídeo Viral
+          <Wand2 className="w-5 h-5 mr-2" /> Gerar Nova História
         </Button>
       </div>
     </div>

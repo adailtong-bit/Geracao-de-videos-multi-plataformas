@@ -9,6 +9,7 @@ import {
   Music,
   Play,
   Pause,
+  Wand2,
 } from 'lucide-react'
 import { useEffect, useRef, useMemo } from 'react'
 import {
@@ -87,9 +88,11 @@ function PlaybackController({ project }: { project: Project }) {
 export function PreviewCanvas({
   project,
   showSafeZones = false,
+  isGenerating = false,
 }: {
   project: Project
   showSafeZones?: boolean
+  isGenerating?: boolean
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
   const { isPlaying, currentTime } = usePlayerState()
@@ -155,6 +158,20 @@ export function PreviewCanvas({
         style={getRatioStyle()}
         onClick={togglePlay}
       >
+        {isGenerating && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm text-white animate-in fade-in duration-300">
+            <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-4">
+              <Wand2 className="w-8 h-8 text-blue-500" />
+            </div>
+            <h3 className="font-bold text-xl mb-2 text-center">
+              A IA está criando sua história...
+            </h3>
+            <p className="text-sm text-zinc-400">
+              Isso pode levar alguns segundos.
+            </p>
+          </div>
+        )}
+
         {project.videoUrl ? (
           <>
             <video
@@ -197,20 +214,22 @@ export function PreviewCanvas({
             )}
           </>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-zinc-900/50 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-2 shadow-inner border border-zinc-700/50">
-              <LinkIcon className="w-8 h-8 text-zinc-400" />
+          !isGenerating && (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-zinc-900/50 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-2 shadow-inner border border-zinc-700/50">
+                <Wand2 className="w-8 h-8 text-zinc-400" />
+              </div>
+              <div>
+                <span className="block text-zinc-200 font-semibold text-base sm:text-lg mb-1.5">
+                  Start creating with AI Storyteller
+                </span>
+                <span className="block text-xs sm:text-sm max-w-[250px] text-zinc-400 leading-relaxed mx-auto">
+                  Vá para a aba <strong>Criar c/ IA</strong> para gerar sua
+                  primeira história e carregá-la dinamicamente.
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="block text-zinc-200 font-semibold text-base sm:text-lg mb-1.5">
-                Nenhuma mídia carregada
-              </span>
-              <span className="block text-xs sm:text-sm max-w-[250px] text-zinc-400 leading-relaxed mx-auto">
-                Vá para a aba <strong>Mídia</strong> e cole o link do seu vídeo
-                para puxá-lo automaticamente.
-              </span>
-            </div>
-          </div>
+          )
         )}
 
         <SubtitleOverlay project={project} />

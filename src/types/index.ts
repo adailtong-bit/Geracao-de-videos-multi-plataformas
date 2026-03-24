@@ -70,6 +70,13 @@ export interface ScheduledPost {
   status: 'scheduled' | 'published'
 }
 
+export interface Draft {
+  id: string
+  name: string
+  createdAt: number
+  snapshot: Partial<Project>
+}
+
 export interface Project {
   id: string
   name: string
@@ -90,6 +97,8 @@ export interface Project {
   sfx?: SFXTrack[]
   globalCaptionStyle?: 'pop-up' | 'highlight' | 'none'
   scheduledPosts?: ScheduledPost[]
+  drafts?: Draft[]
+  activeDraftId?: string | null
 }
 
 export interface User {
