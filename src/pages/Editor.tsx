@@ -49,6 +49,7 @@ import {
   Clock,
   Video,
   Loader2,
+  CheckCircle2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Platform, Draft } from '@/types'
@@ -309,8 +310,8 @@ function VersionsSidebar({
   return (
     <Sidebar variant="sidebar">
       <SidebarHeader className="h-14 border-b px-4 flex items-center justify-center shrink-0 bg-card">
-        <h2 className="text-sm font-bold flex items-center gap-2 w-full">
-          <History className="w-4 h-4 text-primary" /> Versões do Projeto
+        <h2 className="text-sm font-bold flex items-center gap-2 w-full text-foreground">
+          <History className="w-4 h-4 text-primary" /> Histórico de Mídia
         </h2>
       </SidebarHeader>
       <SidebarContent className="bg-muted/10">
@@ -318,15 +319,15 @@ function VersionsSidebar({
           <SidebarGroup>
             <SidebarGroupContent className="p-3 space-y-3">
               {isGenerating && (
-                <div className="p-3 flex flex-col gap-3 bg-card rounded-xl border-2 border-dashed border-primary/50 animate-pulse shadow-sm">
+                <div className="p-3 flex flex-col gap-3 bg-primary/5 rounded-xl border-2 border-dashed border-primary/50 animate-pulse shadow-sm">
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     <p className="text-sm font-bold text-primary">
-                      Processando IA...
+                      Gerando novo vídeo...
                     </p>
                   </div>
-                  <Skeleton className="h-24 w-full rounded-md" />
-                  <Skeleton className="h-3 w-3/4 rounded" />
+                  <Skeleton className="h-24 w-full rounded-md bg-primary/10" />
+                  <Skeleton className="h-3 w-3/4 rounded bg-primary/10" />
                 </div>
               )}
               {drafts
@@ -335,21 +336,26 @@ function VersionsSidebar({
                 .map((draft, idx) => {
                   const isActive = activeDraftId === draft.id
                   const versionNum = drafts.length - idx
+                  const isLatest = idx === 0
+                  const label = isLatest
+                    ? 'Última Criação'
+                    : `Versão ${versionNum}`
+
                   return (
                     <div
                       key={draft.id}
                       className={cn(
-                        'p-3 border rounded-xl cursor-pointer transition-all hover:shadow-md relative overflow-hidden',
+                        'p-3 border rounded-xl cursor-pointer transition-all relative overflow-hidden group',
                         isActive
-                          ? 'bg-primary/5 border-primary ring-1 ring-primary shadow-sm'
-                          : 'hover:border-primary/50 bg-card',
+                          ? 'bg-primary/10 border-primary ring-2 ring-primary/50 shadow-sm'
+                          : 'hover:border-primary/50 bg-card hover:shadow-md',
                       )}
                       onClick={() => handleSwitch(draft)}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary z-10" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary z-10" />
                       )}
-                      <div className="relative aspect-video bg-black/5 rounded-md mb-3 overflow-hidden flex items-center justify-center border group">
+                      <div className="relative aspect-video bg-black/5 rounded-md mb-3 overflow-hidden flex items-center justify-center border border-border/50">
                         {draft.snapshot.videoUrl ? (
                           <img
                             src={`https://img.usecurling.com/p/200/200?q=video&color=gray&seed=${draft.id}`}
@@ -360,38 +366,50 @@ function VersionsSidebar({
                           <Video className="w-6 h-6 text-muted-foreground" />
                         )}
                         {isActive && (
-                          <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10">
-                            Ativo
+                          <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Selecionado
                           </div>
                         )}
-                        <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded z-10">
-                          V{versionNum}
-                        </div>
                       </div>
-                      <p
-                        className="text-sm font-semibold line-clamp-1 mb-1 pl-1"
-                        title={draft.name}
-                      >
-                        {draft.name}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 pl-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(draft.createdAt, {
-                          addSuffix: true,
-                          locale: ptBR,
-                        })}
-                      </p>
+
+                      <div className="pl-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p
+                            className={cn(
+                              'text-sm font-bold line-clamp-1',
+                              isActive ? 'text-primary' : 'text-foreground',
+                            )}
+                            title={label}
+                          >
+                            {label}
+                          </p>
+                        </div>
+                        <p
+                          className="text-xs text-muted-foreground line-clamp-1 font-medium"
+                          title={draft.name}
+                        >
+                          {draft.name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDistanceToNow(draft.createdAt, {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </p>
+                      </div>
                     </div>
                   )
                 })}
               {!isGenerating && drafts.length === 0 && (
-                <div className="text-center py-10 text-muted-foreground">
-                  <History className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm font-medium">Nenhuma versão</p>
-                  <p className="text-xs mt-1">
-                    Gere novas histórias
-                    <br />
-                    na aba "Criar c/ IA".
+                <div className="text-center py-10 px-2 text-muted-foreground bg-card rounded-xl border border-dashed">
+                  <Video className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-semibold text-foreground">
+                    Nenhum vídeo ainda
+                  </p>
+                  <p className="text-xs mt-2 text-balance leading-relaxed">
+                    Seus vídeos gerados aparecerão aqui. Comece criando uma
+                    história!
                   </p>
                 </div>
               )}
@@ -472,9 +490,6 @@ export default function Editor() {
     )
   }
 
-  const latestDraft = project.drafts?.[project.drafts.length - 1]
-  const isLatestActive = project.activeDraftId === latestDraft?.id
-
   const handleSave = () =>
     toast({
       title: 'Project Saved',
@@ -527,14 +542,6 @@ export default function Editor() {
                   <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
                     {project.name}
                   </h1>
-                  {project.activeDraftId && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] hidden sm:inline-flex px-1.5 py-0 h-4 whitespace-nowrap"
-                    >
-                      Versão Ativa
-                    </Badge>
-                  )}
                 </div>
                 <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                   Salvo automaticamente

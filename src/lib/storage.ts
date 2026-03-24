@@ -13,6 +13,8 @@ export const getProjects = (): Project[] => {
     // Ignore error and fall back to mock data
   }
 
+  const defaultDraftId = crypto.randomUUID()
+
   // Provide fully populated mock data by default so the interface is never blank
   const defaultProject: Project = {
     id: 'mock-project-1',
@@ -56,7 +58,30 @@ export const getProjects = (): Project[] => {
       facebook: 'Incrível',
     },
     createdAt: Date.now(),
+    drafts: [],
+    activeDraftId: defaultDraftId,
   }
+
+  // Populate the default draft with the initial snapshot state
+  defaultProject.drafts = [
+    {
+      id: defaultDraftId,
+      name: 'Como fazer vídeos virais em 2024',
+      createdAt: Date.now(),
+      snapshot: {
+        videoUrl: defaultProject.videoUrl,
+        videoDuration: defaultProject.videoDuration,
+        trimStart: defaultProject.trimStart,
+        trimEnd: defaultProject.trimEnd,
+        cuts: defaultProject.cuts,
+        elements: defaultProject.elements,
+        aiClips: defaultProject.aiClips,
+        targetPlatforms: defaultProject.targetPlatforms,
+        aspectRatio: defaultProject.aspectRatio,
+        captions: defaultProject.captions,
+      },
+    },
+  ]
 
   localStorage.setItem(KEY, JSON.stringify([defaultProject]))
   return [defaultProject]
@@ -98,6 +123,7 @@ export const createProject = (
     aspectRatio: '9:16',
     captions: { instagram: '', tiktok: '', facebook: '' },
     createdAt: Date.now(),
+    drafts: [],
     ...options,
   }
   projects.push(newProject)
