@@ -1,5 +1,6 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
+import { Link as LinkIcon } from 'lucide-react'
 
 export function PreviewCanvas({ project }: { project: Project }) {
   const getRatioStyle = () => {
@@ -34,13 +35,19 @@ export function PreviewCanvas({ project }: { project: Project }) {
             className="w-full h-full object-cover opacity-80"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-white/5">
-            <span className="text-white/80 font-medium">
-              Nenhum vídeo importado
-            </span>
-            <span className="text-xs mt-2 text-white/50">
-              Vá para o painel de Mídia para começar
-            </span>
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-zinc-900/50 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-2 shadow-inner border border-zinc-700/50">
+              <LinkIcon className="w-8 h-8 text-zinc-400" />
+            </div>
+            <div>
+              <span className="block text-zinc-200 font-semibold text-base sm:text-lg mb-1.5">
+                Nenhuma mídia carregada
+              </span>
+              <span className="block text-xs sm:text-sm max-w-[250px] text-zinc-400 leading-relaxed mx-auto">
+                Vá para a aba <strong>Mídia</strong> e cole o link do seu vídeo
+                para puxá-lo automaticamente.
+              </span>
+            </div>
           </div>
         )}
 
@@ -72,11 +79,13 @@ export function PreviewCanvas({ project }: { project: Project }) {
           </div>
         ))}
 
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none opacity-60 z-0 flex items-end justify-center pb-4">
-          <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold drop-shadow-sm">
-            Zona Segura
-          </span>
-        </div>
+        {project.videoUrl && (
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none opacity-60 z-0 flex items-end justify-center pb-4">
+            <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold drop-shadow-sm">
+              Zona Segura
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
