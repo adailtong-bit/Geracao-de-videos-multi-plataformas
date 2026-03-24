@@ -4,7 +4,6 @@ import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Slider } from '@/components/ui/slider'
 import {
   SidebarProvider,
   Sidebar,
@@ -18,16 +17,17 @@ import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { TimelinePanel } from '@/components/editor/TimelinePanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
+import { AudioPanel } from '@/components/editor/AudioPanel'
+import { InteractiveTimeline } from '@/components/editor/InteractiveTimeline'
+import { PublishDialog } from '@/components/editor/PublishDialog'
+import { TeamDialog } from '@/components/editor/TeamDialog'
+import { Avatar, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   Save,
   ShieldAlert,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
   Wand2,
   Video,
   Loader2,
@@ -36,75 +36,13 @@ import {
   Send,
   Film,
   Download,
+  Music,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
-import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
+import { usePlayerControls } from '@/stores/usePlayerStore'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-
-function SimplePlayerBar({ project }: { project: Project }) {
-  const { currentTime, duration, isPlaying, volume } = usePlayerState()
-  const { play, pause, seek, setVolume } = usePlayerControls()
-
-  const hasContent =
-    !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
-
-  const formatTime = (time: number) => {
-    const m = Math.floor(time / 60)
-    const s = Math.floor(time % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
-
-  if (!hasContent) return null
-
-  return (
-    <div className="h-16 bg-background border-t flex items-center px-4 sm:px-6 gap-4 sm:gap-6 shrink-0 z-10 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
-      <Button
-        variant={isPlaying ? 'secondary' : 'default'}
-        size="icon"
-        className="rounded-full shadow-sm w-12 h-12 transition-transform active:scale-95 shrink-0"
-        onClick={isPlaying ? pause : play}
-      >
-        {isPlaying ? (
-          <Pause className="w-6 h-6 fill-current" />
-        ) : (
-          <Play className="w-6 h-6 fill-current ml-1" />
-        )}
-      </Button>
-      <span className="text-sm font-mono font-medium shrink-0 w-24 text-center text-muted-foreground">
-        {formatTime(currentTime)} / {formatTime(duration)}
-      </span>
-      <Slider
-        value={[currentTime]}
-        max={duration || 100}
-        step={0.1}
-        onValueChange={([val]) => seek(val)}
-        className="flex-1 cursor-pointer py-4"
-      />
-      <div className="hidden sm:flex items-center gap-2 w-32 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setVolume(volume === 0 ? 1 : 0)}
-        >
-          {volume === 0 ? (
-            <VolumeX className="w-5 h-5 text-muted-foreground" />
-          ) : (
-            <Volume2 className="w-5 h-5 text-muted-foreground" />
-          )}
-        </Button>
-        <Slider
-          value={[volume]}
-          max={1}
-          step={0.1}
-          onValueChange={([v]) => setVolume(v)}
-          className="cursor-pointer"
-        />
-      </div>
-    </div>
-  )
-}
 
 function VersionsSidebar({
   project,
@@ -325,6 +263,7 @@ export default function Editor() {
   }
 
   const hasMultipleCreations = (project.drafts?.length || 0) > 1
+  const teamMembers = project.teamMembers || []
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -365,13 +304,25 @@ export default function Editor() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <div className="hidden lg:flex items-center -space-x-2 mr-2">
+                {teamMembers.slice(0, 3).map((m) => (
+                  <Avatar
+                    key={m.id}
+                    className="w-8 h-8 border-2 border-card shadow-sm"
+                    title={m.email}
+                  >
+                    <AvatarImage src={m.avatar} />
+                  </Avatar>
+                ))}
+              </div>
+              <TeamDialog project={project} update={update} />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                className="hidden md:flex bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900"
+                className="hidden md:flex"
               >
-                <Download className="w-4 h-4 mr-2" /> Download HD (MP4)
+                <Download className="w-4 h-4 mr-2" /> Baixar
               </Button>
               <Button
                 variant="ghost"
@@ -381,6 +332,7 @@ export default function Editor() {
               >
                 <Save className="w-4 h-4 mr-2" /> Salvar
               </Button>
+              <PublishDialog project={project} />
             </div>
           </header>
 
@@ -399,6 +351,12 @@ export default function Editor() {
                     <Wand2 className="w-4 h-4 mr-2" /> Criar
                   </TabsTrigger>
                   <TabsTrigger
+                    value="audio"
+                    className="shrink-0 min-w-[90px] text-sm text-green-600 data-[state=active]:text-green-700 font-bold h-10"
+                  >
+                    <Music className="w-4 h-4 mr-2" /> Áudio
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="timeline"
                     className="shrink-0 min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-10"
                   >
@@ -413,7 +371,7 @@ export default function Editor() {
                 </TabsList>
                 <div className="flex-1 relative overflow-hidden">
                   <ScrollArea className="absolute inset-0 w-full h-full">
-                    <div className="p-4 md:p-6 pb-12">
+                    <div className="p-4 md:p-6 pb-12 h-full">
                       <TabsContent
                         value="ai-creator"
                         className="mt-0 outline-none"
@@ -421,9 +379,15 @@ export default function Editor() {
                         <AiCreatorPanel
                           project={project}
                           update={update}
-                          onNext={() => setActiveTab('timeline')}
+                          onNext={() => setActiveTab('audio')}
                           onStatusChange={setAiStatus}
                         />
+                      </TabsContent>
+                      <TabsContent
+                        value="audio"
+                        className="mt-0 outline-none h-full"
+                      >
+                        <AudioPanel project={project} update={update} />
                       </TabsContent>
                       <TabsContent
                         value="timeline"
@@ -454,7 +418,7 @@ export default function Editor() {
                 />
               </div>
 
-              <SimplePlayerBar project={project} />
+              <InteractiveTimeline project={project} update={update} />
             </div>
           </div>
         </div>

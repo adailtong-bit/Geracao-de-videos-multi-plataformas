@@ -1,9 +1,10 @@
-export type Platform = 'tiktok' | 'instagram' | 'facebook'
+export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube'
 export type AspectRatio = '9:16' | '1:1' | '4:5'
 
 export type VoiceProfile = 'deep' | 'soft' | 'announcer'
 export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
 export type Mood = 'inspirational' | 'dramatic' | 'calm'
+export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
 
 export interface ProjectElement {
   id: string
@@ -50,6 +51,7 @@ export interface BRoll {
   end: number
   url: string
   keyword?: string
+  transitionStyle?: TransitionStyle
 }
 
 export interface AudioTrack {
@@ -81,6 +83,13 @@ export interface Draft {
   snapshot: Partial<Project>
 }
 
+export interface TeamMember {
+  id: string
+  email: string
+  role: 'viewer' | 'editor'
+  avatar?: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -93,7 +102,7 @@ export interface Project {
   elements: ProjectElement[]
   targetPlatforms: Platform[]
   aspectRatio: AspectRatio
-  captions: Record<Platform, string>
+  captions: Record<string, string>
   createdAt: number
   energyData?: EnergyPoint[]
   bRolls?: BRoll[]
@@ -107,6 +116,7 @@ export interface Project {
   visualStyle?: VisualStyle
   mood?: Mood
   noTextMode?: boolean
+  teamMembers?: TeamMember[]
 }
 
 export interface User {
@@ -118,6 +128,7 @@ export interface User {
     instagram?: string
     tiktok?: string
     facebook?: string
+    youtube?: string
   }
 }
 
