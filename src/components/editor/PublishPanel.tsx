@@ -41,9 +41,9 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const handlePublish = () => {
     if (user?.plan !== 'pro') {
       toast({
-        title: 'Pro Feature Required',
+        title: 'Recurso Pro Necessário',
         description:
-          'Direct API publishing is exclusively available on the Pro plan.',
+          'A publicação direta via API está disponível apenas no plano Pro.',
         variant: 'destructive',
       })
       return
@@ -54,22 +54,22 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     )
     if (unlinked.length > 0) {
       toast({
-        title: 'Accounts not connected',
-        description: `Please connect ${unlinked.join(', ')} in your integrations settings.`,
+        title: 'Contas não conectadas',
+        description: `Por favor conecte ${unlinked.join(', ')} nas configurações de integrações.`,
         variant: 'destructive',
       })
       return
     }
 
     toast({
-      title: 'Publishing Video',
-      description: `Pushing to ${project.targetPlatforms.length} platforms via API...`,
+      title: 'Publicando Vídeo',
+      description: `Enviando para ${project.targetPlatforms.length} plataformas via API...`,
     })
     setTimeout(() => {
       toast({
-        title: 'Success! 🚀',
+        title: 'Sucesso! 🚀',
         description:
-          'Video published successfully to all selected feeds/reels.',
+          'Vídeo publicado com sucesso em todas as plataformas selecionadas.',
       })
     }, 2500)
   }
@@ -79,36 +79,36 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const isPro = user?.plan === 'pro'
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="space-y-8 animate-fade-in-up pb-8">
       {exceedsInsta && (
         <Alert
           variant="destructive"
-          className="border-2 shadow-subtle bg-destructive/5"
+          className="border-2 shadow-sm bg-destructive/5"
         >
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle className="text-base font-bold">
-            Reels Duration Warning
+            Aviso de Duração do Reels
           </AlertTitle>
           <AlertDescription className="mt-2 text-sm">
-            Instagram Reels limit is <strong>90 seconds</strong>. Your current
-            edit is <strong>{duration}s</strong>. Trim the video to publish
-            successfully.
+            O limite do Instagram Reels é <strong>90 segundos</strong>. Seu
+            corte atual possui <strong>{duration}s</strong>. Apare o vídeo para
+            publicar com sucesso.
           </AlertDescription>
         </Alert>
       )}
 
       {!isPro && (
-        <Alert className="bg-primary/5 border-primary shadow-subtle">
+        <Alert className="bg-primary/5 border-primary shadow-sm">
           <Share2 className="h-5 w-5 text-primary" />
           <AlertTitle className="font-bold">
-            Unlock Direct Publishing
+            Desbloqueie a Publicação Direta
           </AlertTitle>
           <AlertDescription className="mt-2 text-sm">
-            Upgrade to Pro to send edited videos directly to your Instagram,
-            TikTok, and Facebook feeds via API.
+            Faça upgrade para o Pro para enviar os vídeos editados diretamente
+            para seu Instagram, TikTok e Facebook via API.
             <div className="mt-3">
               <Button asChild size="sm">
-                <Link to="/billing">Upgrade Now</Link>
+                <Link to="/billing">Fazer Upgrade</Link>
               </Button>
             </div>
           </AlertDescription>
@@ -117,9 +117,9 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
 
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Share2 className="w-5 h-5 text-primary" /> Multi-Platform Routing
+          <Share2 className="w-5 h-5 text-primary" /> Roteamento Multiplataforma
         </h3>
-        <div className="space-y-3 bg-background p-2 rounded-xl border shadow-subtle">
+        <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
           {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => {
             const isConnected = !!user?.linkedAccounts?.[p]
             return (
@@ -145,7 +145,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
                   {p}
                   {!isConnected && (
                     <span className="text-[10px] font-normal px-2 py-0.5 bg-muted rounded-full">
-                      Not linked
+                      Não vinculado
                     </span>
                   )}
                 </Label>
@@ -162,18 +162,18 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
 
       {project.targetPlatforms.length > 0 && (
         <div className="space-y-5">
-          <h3 className="font-semibold text-lg">Unique Captions</h3>
+          <h3 className="font-semibold text-lg">Legendas Únicas</h3>
           {project.targetPlatforms.map((p) => (
             <div
               key={p}
-              className="space-y-2 bg-background p-4 rounded-xl border shadow-subtle relative overflow-hidden"
+              className="space-y-2 bg-background p-4 rounded-xl border shadow-sm relative overflow-hidden"
             >
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/50" />
               <Label className="capitalize font-semibold text-sm flex items-center gap-2 ml-2">
-                {p} Post
+                Post {p}
               </Label>
               <Textarea
-                placeholder={`Write an engaging caption with hashtags for ${p}...`}
+                placeholder={`Escreva uma legenda engajadora com hashtags para ${p}...`}
                 value={project.captions[p]}
                 onChange={(e) => updateCaption(p, e.target.value)}
                 className="resize-none h-24 mt-2 border-muted"
@@ -187,10 +187,10 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         {onPreviewClick && (
           <Button
             variant="secondary"
-            className="w-full h-12 text-sm font-semibold"
+            className="w-full h-12 text-sm font-semibold shadow-sm"
             onClick={onPreviewClick}
           >
-            <Eye className="w-4 h-4 mr-2" /> Preview for Analysis
+            <Eye className="w-4 h-4 mr-2" /> Pré-visualizar para Análise
           </Button>
         )}
         <Button
@@ -199,11 +199,11 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           onClick={handlePublish}
           disabled={project.targetPlatforms.length === 0 || !project.videoUrl}
         >
-          <Send className="w-5 h-5 mr-3" /> Publish to Selected
+          <Send className="w-5 h-5 mr-3" /> Publicar nos Selecionados
         </Button>
         {!project.videoUrl && (
           <p className="text-xs text-center text-muted-foreground mt-2">
-            Import and process a video before publishing.
+            Importe e processe um vídeo antes de publicar.
           </p>
         )}
       </div>

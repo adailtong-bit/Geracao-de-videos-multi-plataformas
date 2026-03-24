@@ -18,17 +18,17 @@ export function AssetsPanel({ project, update }: Props) {
 
   if (!isPro) {
     return (
-      <div className="flex flex-col items-center justify-center text-center space-y-4 h-[60vh] animate-fade-in-up">
+      <div className="flex flex-col items-center justify-center text-center space-y-4 h-[50vh] animate-fade-in-up pb-8">
         <div className="p-4 bg-primary/10 rounded-full mb-2">
           <Lock className="w-8 h-8 text-primary" />
         </div>
-        <h3 className="text-xl font-bold">Global Resource Library</h3>
+        <h3 className="text-xl font-bold">Biblioteca Global</h3>
         <p className="text-muted-foreground text-sm max-w-[280px]">
-          Upgrade to Pro to save and reuse your custom banners, CTAs, and brand
-          assets across all projects.
+          Faça upgrade para o Pro para salvar e reutilizar seus banners
+          personalizados e ativos da marca em todos os projetos.
         </p>
         <Button asChild className="mt-4 shadow-sm">
-          <Link to="/billing">Upgrade Plan</Link>
+          <Link to="/billing">Fazer Upgrade</Link>
         </Button>
       </div>
     )
@@ -53,27 +53,27 @@ export function AssetsPanel({ project, update }: Props) {
 
   const handleCreateNewAsset = () => {
     addAsset({
-      name: `New Banner ${assets.length + 1}`,
+      name: `Novo Banner ${assets.length + 1}`,
       type: 'banner',
       bgColor: '#10b981',
-      content: 'Click Link in Bio',
+      content: 'Clique no Link da Bio',
     })
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold flex items-center gap-2">
-          <FolderPlus className="w-5 h-5 text-primary" /> Your Assets
+          <FolderPlus className="w-5 h-5 text-primary" /> Seus Ativos
         </h3>
         <Button size="sm" onClick={handleCreateNewAsset}>
-          <Plus className="w-4 h-4 mr-1" /> New
+          <Plus className="w-4 h-4 mr-1" /> Novo
         </Button>
       </div>
 
       {assets.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground border border-dashed rounded-xl bg-background/50">
-          <p>No assets saved yet.</p>
+          <p>Nenhum ativo salvo ainda.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">

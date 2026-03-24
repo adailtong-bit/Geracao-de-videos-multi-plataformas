@@ -30,20 +30,20 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
     tiktok: {
       duration: duration <= 600,
       aspect: is916,
-      durationText: `${duration}s / 600s max`,
-      aspectText: is916 ? '9:16 Optimized' : '9:16 Recommended',
+      durationText: `${duration}s / 600s máx`,
+      aspectText: is916 ? '9:16 Otimizado' : '9:16 Recomendado',
     },
     instagram: {
       duration: duration <= 90,
       aspect: is916,
-      durationText: `${duration}s / 90s max`,
-      aspectText: is916 ? '9:16 Optimized' : '9:16 Recommended',
+      durationText: `${duration}s / 90s máx`,
+      aspectText: is916 ? '9:16 Otimizado' : '9:16 Recomendado',
     },
     facebook: {
       duration: duration <= 240,
       aspect: is45 || is916,
-      durationText: `${duration}s / 240s max`,
-      aspectText: is45 || is916 ? 'Optimized' : '4:5 or 9:16 Recommended',
+      durationText: `${duration}s / 240s máx`,
+      aspectText: is45 || is916 ? 'Otimizado' : '4:5 ou 9:16 Recomendado',
     },
   }
 
@@ -51,17 +51,16 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[80vh] flex flex-col md:flex-row gap-0 p-0 overflow-hidden">
-        {/* Left Panel - Controls & Validation */}
-        <div className="w-full md:w-[320px] bg-muted/10 border-r flex flex-col p-6 overflow-y-auto shrink-0">
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col md:flex-row gap-0 p-0 overflow-hidden">
+        <div className="w-full md:w-[320px] bg-muted/10 border-b md:border-b-0 md:border-r flex flex-col p-6 overflow-y-auto shrink-0">
           <DialogHeader className="mb-6">
-            <DialogTitle>Preview & Analyze</DialogTitle>
+            <DialogTitle>Pré-visualizar & Analisar</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Platform Simulator
+                Simulador de Plataforma
               </Label>
               <div className="grid grid-cols-1 gap-2">
                 {(['tiktok', 'instagram', 'facebook'] as Platform[]).map(
@@ -81,7 +80,7 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
 
             <div className="space-y-3">
               <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Pre-Publishing Analysis
+                Análise Pré-Publicação
               </Label>
               <div className="bg-background border rounded-lg p-4 space-y-4 shadow-sm">
                 <div className="flex items-start gap-3">
@@ -91,7 +90,7 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
                     <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <p className="font-medium text-sm">Duration</p>
+                    <p className="font-medium text-sm">Duração</p>
                     <p className="text-xs text-muted-foreground">
                       {currentValidation.durationText}
                     </p>
@@ -104,7 +103,9 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
                     <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <p className="font-medium text-sm">Aspect Ratio</p>
+                    <p className="font-medium text-sm">
+                      Proporção (Aspect Ratio)
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {currentValidation.aspectText}
                     </p>
@@ -119,7 +120,7 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
                   htmlFor="safe-zones"
                   className="flex items-center gap-2 cursor-pointer"
                 >
-                  <Eye className="w-4 h-4" /> Show Safe Zones
+                  <Eye className="w-4 h-4" /> Mostrar Zonas Seguras
                 </Label>
                 <Switch
                   id="safe-zones"
@@ -128,8 +129,8 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Highlight areas covered by the native app interface to avoid
-                placing important text or banners there.
+                Destaca áreas cobertas pela interface nativa do app para evitar
+                posicionar elementos importantes nessas regiões.
               </p>
             </div>
           </div>
@@ -140,13 +141,12 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
               variant="secondary"
               onClick={() => onOpenChange(false)}
             >
-              Return to Editor
+              Voltar ao Editor
             </Button>
           </div>
         </div>
 
-        {/* Right Panel - Preview */}
-        <div className="flex-1 bg-black/5 relative flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+        <div className="flex-1 bg-black/5 relative flex items-center justify-center p-4 sm:p-8 overflow-hidden min-h-0">
           <SimulatorDisplay
             project={project}
             platform={platform}

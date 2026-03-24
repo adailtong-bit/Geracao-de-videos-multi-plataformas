@@ -19,7 +19,7 @@ export function OverlaysPanel({ project, update }: Props) {
     const el: ProjectElement = {
       id: crypto.randomUUID(),
       type,
-      content: type === 'text' ? 'Engaging Hook!' : 'Subscribe Now',
+      content: type === 'text' ? 'Gancho Engajador!' : 'Inscreva-se',
       x: 50,
       y: 50,
       color: '#ffffff',
@@ -31,15 +31,15 @@ export function OverlaysPanel({ project, update }: Props) {
   const handleGenerateCaptions = () => {
     if (!project.videoUrl) {
       toast({
-        title: 'Upload a video first',
-        description: 'Auto-captions require video audio.',
+        title: 'Faça upload de um vídeo',
+        description: 'Legendas automáticas precisam do áudio do vídeo.',
         variant: 'destructive',
       })
       return
     }
     toast({
-      title: 'Analyzing audio...',
-      description: 'Generating smart captions.',
+      title: 'Analisando áudio...',
+      description: 'Gerando legendas inteligentes.',
     })
 
     setTimeout(() => {
@@ -49,7 +49,7 @@ export function OverlaysPanel({ project, update }: Props) {
           {
             id: crypto.randomUUID(),
             type: 'caption',
-            content: 'Welcome back guys!',
+            content: 'Bem-vindos de volta pessoal!',
             x: 50,
             y: 75,
             color: '#ffffff',
@@ -57,14 +57,14 @@ export function OverlaysPanel({ project, update }: Props) {
           {
             id: crypto.randomUUID(),
             type: 'caption',
-            content: 'Today we will explore...',
+            content: 'Hoje vamos explorar...',
             x: 50,
             y: 75,
             color: '#facc15',
           },
         ],
       })
-      toast({ title: 'Captions generated successfully!' })
+      toast({ title: 'Legendas geradas com sucesso!' })
     }, 2000)
   }
 
@@ -81,21 +81,21 @@ export function OverlaysPanel({ project, update }: Props) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="flex gap-2">
         <Button
           onClick={() => addElement('text')}
-          className="flex-1 shadow-subtle"
+          className="flex-1 shadow-sm"
           variant="secondary"
         >
-          <Type className="w-4 h-4 mr-2" /> Text
+          <Type className="w-4 h-4 mr-2" /> Texto
         </Button>
         <Button
           onClick={() => addElement('banner')}
-          className="flex-1 shadow-subtle"
+          className="flex-1 shadow-sm"
           variant="secondary"
         >
-          <Square className="w-4 h-4 mr-2" /> CTA Banner
+          <Square className="w-4 h-4 mr-2" /> Banner CTA
         </Button>
       </div>
 
@@ -103,20 +103,20 @@ export function OverlaysPanel({ project, update }: Props) {
         onClick={handleGenerateCaptions}
         className="w-full h-12 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 transition-all hover:scale-[1.02]"
       >
-        <Wand2 className="w-4 h-4 mr-2" /> Auto-Generate Captions
+        <Wand2 className="w-4 h-4 mr-2" /> Gerar Legendas Automáticas
       </Button>
 
       <div className="space-y-4 mt-8">
         {project.elements.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground border border-dashed rounded-xl bg-background/50">
-            <p>No overlays added yet.</p>
-            <p className="text-sm mt-1">Add text, banners or auto-captions.</p>
+            <p>Nenhum elemento adicionado.</p>
+            <p className="text-sm mt-1">Adicione texto, banners ou legendas.</p>
           </div>
         ) : (
           project.elements.map((el, i) => (
             <Card
               key={el.id}
-              className="relative overflow-hidden shadow-subtle border-l-4"
+              className="relative overflow-hidden shadow-sm border-l-4"
               style={{
                 borderLeftColor:
                   el.type === 'text' || el.type === 'caption'
@@ -128,7 +128,7 @@ export function OverlaysPanel({ project, update }: Props) {
                 <div className="flex items-center justify-between">
                   <Label className="font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                    {el.type === 'banner' ? 'CTA Banner' : el.type} {i + 1}
+                    {el.type === 'banner' ? 'Banner CTA' : el.type} {i + 1}
                   </Label>
                   <Button
                     variant="ghost"
@@ -153,7 +153,7 @@ export function OverlaysPanel({ project, update }: Props) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2 bg-muted/30 p-2 rounded-lg">
                     <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
-                      <span>X Pos</span>
+                      <span>Pos X</span>
                       <span>{el.x}%</span>
                     </div>
                     <Slider
@@ -164,7 +164,7 @@ export function OverlaysPanel({ project, update }: Props) {
                   </div>
                   <div className="space-y-2 bg-muted/30 p-2 rounded-lg">
                     <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
-                      <span>Y Pos</span>
+                      <span>Pos Y</span>
                       <span>{el.y}%</span>
                     </div>
                     <Slider
@@ -176,7 +176,7 @@ export function OverlaysPanel({ project, update }: Props) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Label className="text-xs font-medium">Color</Label>
+                  <Label className="text-xs font-medium">Cor</Label>
                   <Input
                     type="color"
                     value={
