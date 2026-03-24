@@ -8,6 +8,15 @@ import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarTrigger,
+} from '@/components/ui/sidebar'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
@@ -19,7 +28,6 @@ import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
 import { PreviewPanel } from '@/components/editor/PreviewPanel'
 import { SimulatorDisplay } from '@/components/editor/SimulatorDisplay'
-import { DraftsPanel } from '@/components/editor/DraftsPanel'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import {
@@ -38,10 +46,15 @@ import {
   Activity,
   Wand2,
   History,
+  Clock,
+  Video,
+  Loader2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Project, Platform } from '@/types'
+import { Project, Platform, Draft } from '@/types'
 import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 function TimelinePlayer({
   project,
@@ -273,6 +286,123 @@ function TimelinePlayer({
   )
 }
 
+function VersionsSidebar({
+  project,
+  update,
+  isGenerating,
+}: {
+  project: Project
+  update: (updates: Partial<Project>) => void
+  isGenerating: boolean
+}) {
+  const { drafts = [], activeDraftId } = project
+  const { seek } = usePlayerControls()
+
+  const handleSwitch = (draft: Draft) => {
+    update({
+      ...draft.snapshot,
+      activeDraftId: draft.id,
+    })
+    seek(0)
+  }
+
+  return (
+    <Sidebar variant="sidebar">
+      <SidebarHeader className="h-14 border-b px-4 flex items-center justify-center shrink-0 bg-card">
+        <h2 className="text-sm font-bold flex items-center gap-2 w-full">
+          <History className="w-4 h-4 text-primary" /> Versões do Projeto
+        </h2>
+      </SidebarHeader>
+      <SidebarContent className="bg-muted/10">
+        <ScrollArea className="flex-1">
+          <SidebarGroup>
+            <SidebarGroupContent className="p-3 space-y-3">
+              {isGenerating && (
+                <div className="p-3 flex flex-col gap-3 bg-card rounded-xl border-2 border-dashed border-primary/50 animate-pulse shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    <p className="text-sm font-bold text-primary">
+                      Processando IA...
+                    </p>
+                  </div>
+                  <Skeleton className="h-24 w-full rounded-md" />
+                  <Skeleton className="h-3 w-3/4 rounded" />
+                </div>
+              )}
+              {drafts
+                .slice()
+                .reverse()
+                .map((draft, idx) => {
+                  const isActive = activeDraftId === draft.id
+                  const versionNum = drafts.length - idx
+                  return (
+                    <div
+                      key={draft.id}
+                      className={cn(
+                        'p-3 border rounded-xl cursor-pointer transition-all hover:shadow-md relative overflow-hidden',
+                        isActive
+                          ? 'bg-primary/5 border-primary ring-1 ring-primary shadow-sm'
+                          : 'hover:border-primary/50 bg-card',
+                      )}
+                      onClick={() => handleSwitch(draft)}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary z-10" />
+                      )}
+                      <div className="relative aspect-video bg-black/5 rounded-md mb-3 overflow-hidden flex items-center justify-center border group">
+                        {draft.snapshot.videoUrl ? (
+                          <img
+                            src={`https://img.usecurling.com/p/200/200?q=video&color=gray&seed=${draft.id}`}
+                            className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
+                            alt="Thumbnail"
+                          />
+                        ) : (
+                          <Video className="w-6 h-6 text-muted-foreground" />
+                        )}
+                        {isActive && (
+                          <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10">
+                            Ativo
+                          </div>
+                        )}
+                        <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded z-10">
+                          V{versionNum}
+                        </div>
+                      </div>
+                      <p
+                        className="text-sm font-semibold line-clamp-1 mb-1 pl-1"
+                        title={draft.name}
+                      >
+                        {draft.name}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 pl-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDistanceToNow(draft.createdAt, {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </p>
+                    </div>
+                  )
+                })}
+              {!isGenerating && drafts.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                  <History className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-medium">Nenhuma versão</p>
+                  <p className="text-xs mt-1">
+                    Gere novas histórias
+                    <br />
+                    na aba "Criar c/ IA".
+                  </p>
+                </div>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </ScrollArea>
+      </SidebarContent>
+    </Sidebar>
+  )
+}
+
 export default function Editor() {
   const { id } = useParams()
   const [project, update] = useProject(id || '')
@@ -358,250 +488,263 @@ export default function Editor() {
     })
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
-      <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0 z-20 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            className="text-muted-foreground hover:text-foreground shrink-0"
-          >
-            <Link to="/">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </Button>
-          <div className="flex flex-col justify-center min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
-                {project.name}
-              </h1>
-              {project.activeDraftId && (
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] hidden sm:inline-flex px-1.5 py-0 h-4 whitespace-nowrap"
-                >
-                  Draft:{' '}
-                  {
-                    project.drafts?.find((d) => d.id === project.activeDraftId)
-                      ?.name
-                  }
-                </Badge>
-              )}
-            </div>
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-              Salvo automaticamente
-              {!isLatestActive && latestDraft && (
-                <button
-                  onClick={() =>
-                    update({
-                      ...latestDraft.snapshot,
-                      activeDraftId: latestDraft.id,
-                    })
-                  }
-                  className="text-orange-500 font-medium ml-1 hover:underline flex items-center gap-1 transition-colors"
-                >
-                  • Nova versão disponível (Carregar)
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen w-screen overflow-hidden bg-background">
+        <VersionsSidebar
+          project={project}
+          update={update}
+          isGenerating={aiStatus === 'generating'}
+        />
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <div className="hidden sm:flex items-center gap-2 mr-2 border-r pr-4">
-            <ShieldAlert className="w-4 h-4 text-muted-foreground" />
-            <Label
-              htmlFor="safe-zones-editor"
-              className="text-xs font-semibold cursor-pointer"
-            >
-              Zonas Seguras
-            </Label>
-            <Switch
-              id="safe-zones-editor"
-              checked={showSafeZones}
-              onCheckedChange={setShowSafeZones}
-            />
-          </div>
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+          <header className="h-14 border-b flex items-center justify-between px-2 sm:px-4 bg-card shrink-0 z-20 shadow-sm">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            className="hidden md:flex"
-          >
-            <Save className="w-4 h-4 mr-2" /> Salvar
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowPreviewModal(true)}
-            disabled={!project.videoUrl}
-          >
-            <Eye className="w-4 h-4 sm:mr-2" />{' '}
-            <span className="hidden sm:inline">Preview</span>
-          </Button>
-          <Button size="sm" onClick={handleExport} disabled={!project.videoUrl}>
-            <Download className="w-4 h-4 sm:mr-2" />{' '}
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-        </div>
-      </header>
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="text-muted-foreground hover:text-foreground shrink-0 hidden sm:flex"
+              >
+                <Link to="/">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar aos Projetos
+                </Link>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="text-muted-foreground hover:text-foreground shrink-0 sm:hidden"
+              >
+                <Link to="/">
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+              </Button>
 
-      <div className="flex-1 flex overflow-hidden min-h-0 w-full">
-        <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="flex-1 flex flex-col overflow-hidden"
-          >
-            <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
-              <TabsTrigger
-                value="ai-creator"
-                className="shrink-0 min-w-[90px] text-xs sm:text-sm text-blue-600 data-[state=active]:text-blue-700"
-              >
-                <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar c/ IA
-              </TabsTrigger>
-              <TabsTrigger
-                value="history"
-                className="shrink-0 min-w-[70px] text-xs sm:text-sm text-orange-600 data-[state=active]:text-orange-700"
-              >
-                <History className="w-3.5 h-3.5 mr-1" /> Histórico
-              </TabsTrigger>
-              <TabsTrigger
-                value="media"
-                className="shrink-0 min-w-[60px] text-xs sm:text-sm"
-              >
-                Mídia
-              </TabsTrigger>
-              <TabsTrigger
-                value="ai-clips"
-                className="shrink-0 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> IA Engine
-              </TabsTrigger>
-              <TabsTrigger
-                value="editor"
-                className="shrink-0 min-w-[60px] text-xs sm:text-sm"
-              >
-                Editor
-              </TabsTrigger>
-              <TabsTrigger
-                value="preview"
-                className="shrink-0 min-w-[70px] text-xs sm:text-sm"
-              >
-                Preview
-              </TabsTrigger>
-              <TabsTrigger
-                value="publish"
-                className="shrink-0 min-w-[70px] text-xs sm:text-sm"
-              >
-                Publicar
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex-1 relative overflow-hidden">
-              <ScrollArea className="absolute inset-0 w-full h-full">
-                <div className="p-4 md:p-6 pb-12">
-                  <TabsContent value="ai-creator" className="mt-0 outline-none">
-                    <AiCreatorPanel
-                      project={project}
-                      update={update}
-                      onNext={() => setActiveTab('editor')}
-                      onPreview={() => setActiveTab('preview')}
-                      onStatusChange={setAiStatus}
-                    />
-                  </TabsContent>
-                  <TabsContent value="history" className="mt-0 outline-none">
-                    <DraftsPanel project={project} update={update} />
-                  </TabsContent>
-                  <TabsContent value="media" className="mt-0 outline-none">
-                    <MediaPanel
-                      project={project}
-                      update={update}
-                      onNext={() => setActiveTab('ai-clips')}
-                    />
-                  </TabsContent>
-                  <TabsContent value="ai-clips" className="mt-0 outline-none">
-                    <AiClipsPanel
-                      project={project}
-                      update={update}
-                      onNext={() => setActiveTab('editor')}
-                    />
-                  </TabsContent>
-                  <TabsContent value="editor" className="mt-0 outline-none">
-                    <div className="space-y-6">
-                      <AudioPanel project={project} update={update} />
-                      <div className="border-t border-border pt-6">
-                        <OverlaysPanel project={project} update={update} />
-                      </div>
-                      <div className="border-t border-border pt-6">
-                        <AssetsPanel project={project} update={update} />
-                      </div>
-                      <div className="pt-6 border-t border-border">
-                        <Button
-                          className="w-full font-bold shadow-md h-12"
-                          size="lg"
-                          onClick={() => setActiveTab('preview')}
-                        >
-                          Próximo Passo: Preview{' '}
-                          <ArrowRight className="w-5 h-5 ml-2" />
-                        </Button>
-                      </div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="preview" className="mt-0 outline-none">
-                    <PreviewPanel
-                      platform={previewPlatform}
-                      setPlatform={setPreviewPlatform}
-                      showSafeZones={showSafeZones}
-                      setShowSafeZones={setShowSafeZones}
-                      onNext={() => setActiveTab('publish')}
-                    />
-                  </TabsContent>
-                  <TabsContent value="publish" className="mt-0 outline-none">
-                    <PublishPanel
-                      project={project}
-                      update={update}
-                      onPreviewClick={() => setActiveTab('preview')}
-                    />
-                  </TabsContent>
+              <div className="flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-l">
+                <div className="flex items-center gap-2">
+                  <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
+                    {project.name}
+                  </h1>
+                  {project.activeDraftId && (
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] hidden sm:inline-flex px-1.5 py-0 h-4 whitespace-nowrap"
+                    >
+                      Versão Ativa
+                    </Badge>
+                  )}
                 </div>
-              </ScrollArea>
+                <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                  Salvo automaticamente
+                </div>
+              </div>
             </div>
-          </Tabs>
-        </div>
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
-          {activeTab === 'preview' ? (
-            <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden bg-background/50">
-              <SimulatorDisplay
-                project={project}
-                platform={previewPlatform}
-                showSafeZones={showSafeZones}
-                isGenerating={aiStatus === 'generating'}
-              />
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
-                <PreviewCanvas
-                  project={project}
-                  showSafeZones={showSafeZones}
-                  isGenerating={aiStatus === 'generating'}
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <div className="hidden lg:flex items-center gap-2 mr-2 border-r pr-4">
+                <ShieldAlert className="w-4 h-4 text-muted-foreground" />
+                <Label
+                  htmlFor="safe-zones-editor"
+                  className="text-xs font-semibold cursor-pointer"
+                >
+                  Zonas Seguras
+                </Label>
+                <Switch
+                  id="safe-zones-editor"
+                  checked={showSafeZones}
+                  onCheckedChange={setShowSafeZones}
                 />
               </div>
 
-              <TimelinePlayer project={project} update={update} />
-            </>
-          )}
-        </div>
-      </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="hidden md:flex"
+              >
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowPreviewModal(true)}
+                disabled={!project.videoUrl}
+              >
+                <Eye className="w-4 h-4 sm:mr-2" />{' '}
+                <span className="hidden sm:inline">Preview</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleExport}
+                disabled={!project.videoUrl}
+              >
+                <Download className="w-4 h-4 sm:mr-2" />{' '}
+                <span className="hidden sm:inline">Exportar</span>
+              </Button>
+            </div>
+          </header>
 
-      <PreviewSimulatorModal
-        project={project}
-        open={showPreviewModal}
-        onOpenChange={setShowPreviewModal}
-      />
-    </div>
+          <div className="flex-1 flex overflow-hidden min-h-0 w-full">
+            <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex-1 flex flex-col overflow-hidden"
+              >
+                <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
+                  <TabsTrigger
+                    value="ai-creator"
+                    className="shrink-0 min-w-[90px] text-xs sm:text-sm text-blue-600 data-[state=active]:text-blue-700"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar c/ IA
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="media"
+                    className="shrink-0 min-w-[60px] text-xs sm:text-sm"
+                  >
+                    Mídia
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ai-clips"
+                    className="shrink-0 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 mr-1" /> IA Engine
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="editor"
+                    className="shrink-0 min-w-[60px] text-xs sm:text-sm"
+                  >
+                    Editor
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="preview"
+                    className="shrink-0 min-w-[70px] text-xs sm:text-sm"
+                  >
+                    Preview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="publish"
+                    className="shrink-0 min-w-[70px] text-xs sm:text-sm"
+                  >
+                    Publicar
+                  </TabsTrigger>
+                </TabsList>
+                <div className="flex-1 relative overflow-hidden">
+                  <ScrollArea className="absolute inset-0 w-full h-full">
+                    <div className="p-4 md:p-6 pb-12">
+                      <TabsContent
+                        value="ai-creator"
+                        className="mt-0 outline-none"
+                      >
+                        <AiCreatorPanel
+                          project={project}
+                          update={update}
+                          onNext={() => setActiveTab('editor')}
+                          onPreview={() => setActiveTab('preview')}
+                          onStatusChange={setAiStatus}
+                        />
+                      </TabsContent>
+                      <TabsContent value="media" className="mt-0 outline-none">
+                        <MediaPanel
+                          project={project}
+                          update={update}
+                          onNext={() => setActiveTab('ai-clips')}
+                        />
+                      </TabsContent>
+                      <TabsContent
+                        value="ai-clips"
+                        className="mt-0 outline-none"
+                      >
+                        <AiClipsPanel
+                          project={project}
+                          update={update}
+                          onNext={() => setActiveTab('editor')}
+                        />
+                      </TabsContent>
+                      <TabsContent value="editor" className="mt-0 outline-none">
+                        <div className="space-y-6">
+                          <AudioPanel project={project} update={update} />
+                          <div className="border-t border-border pt-6">
+                            <OverlaysPanel project={project} update={update} />
+                          </div>
+                          <div className="border-t border-border pt-6">
+                            <AssetsPanel project={project} update={update} />
+                          </div>
+                          <div className="pt-6 border-t border-border">
+                            <Button
+                              className="w-full font-bold shadow-md h-12"
+                              size="lg"
+                              onClick={() => setActiveTab('preview')}
+                            >
+                              Próximo Passo: Preview{' '}
+                              <ArrowRight className="w-5 h-5 ml-2" />
+                            </Button>
+                          </div>
+                        </div>
+                      </TabsContent>
+                      <TabsContent
+                        value="preview"
+                        className="mt-0 outline-none"
+                      >
+                        <PreviewPanel
+                          platform={previewPlatform}
+                          setPlatform={setPreviewPlatform}
+                          showSafeZones={showSafeZones}
+                          setShowSafeZones={setShowSafeZones}
+                          onNext={() => setActiveTab('publish')}
+                        />
+                      </TabsContent>
+                      <TabsContent
+                        value="publish"
+                        className="mt-0 outline-none"
+                      >
+                        <PublishPanel
+                          project={project}
+                          update={update}
+                          onPreviewClick={() => setActiveTab('preview')}
+                        />
+                      </TabsContent>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </Tabs>
+            </div>
+
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
+              {activeTab === 'preview' ? (
+                <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden bg-background/50">
+                  <SimulatorDisplay
+                    project={project}
+                    platform={previewPlatform}
+                    showSafeZones={showSafeZones}
+                    isGenerating={aiStatus === 'generating'}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                    <PreviewCanvas
+                      project={project}
+                      showSafeZones={showSafeZones}
+                      isGenerating={aiStatus === 'generating'}
+                    />
+                  </div>
+
+                  <TimelinePlayer project={project} update={update} />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <PreviewSimulatorModal
+          project={project}
+          open={showPreviewModal}
+          onOpenChange={setShowPreviewModal}
+        />
+      </div>
+    </SidebarProvider>
   )
 }

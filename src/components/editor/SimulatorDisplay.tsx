@@ -73,13 +73,29 @@ export function SimulatorDisplay({
         )}
       >
         {isGenerating && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm text-white animate-in fade-in duration-300">
-            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-3">
-              <Wand2 className="w-6 h-6 text-blue-500" />
+          <div className="absolute inset-0 z-50 flex flex-col p-4 bg-zinc-950/90 backdrop-blur-md text-white animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-4 opacity-40">
+              <div className="w-10 h-10 rounded-full bg-white/20 animate-pulse shrink-0" />
+              <div className="space-y-2 w-full">
+                <div className="h-3 w-24 bg-white/20 rounded animate-pulse" />
+                <div className="h-2 w-16 bg-white/20 rounded animate-pulse" />
+              </div>
             </div>
-            <h3 className="font-bold text-sm mb-1 text-center px-4">
-              Gerando Preview...
-            </h3>
+
+            <div className="flex-1 flex items-center justify-center flex-col">
+              <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-3">
+                <Wand2 className="w-6 h-6 text-blue-500" />
+              </div>
+              <h3 className="font-bold text-sm mb-1 text-center px-4">
+                Gerando Preview...
+              </h3>
+            </div>
+
+            <div className="mt-auto space-y-2 opacity-40 pb-2">
+              <div className="h-3 w-full bg-white/20 rounded animate-pulse" />
+              <div className="h-3 w-4/5 bg-white/20 rounded animate-pulse" />
+              <div className="h-3 w-3/5 bg-white/20 rounded animate-pulse" />
+            </div>
           </div>
         )}
 

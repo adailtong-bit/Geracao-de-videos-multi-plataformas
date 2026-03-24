@@ -17,6 +17,7 @@ import {
   setPlayerState,
   usePlayerState,
 } from '@/stores/usePlayerStore'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function SubtitleOverlay({ project }: { project: Project }) {
   const { currentTime, activeClipId } = usePlayerState()
@@ -159,16 +160,32 @@ export function PreviewCanvas({
         onClick={togglePlay}
       >
         {isGenerating && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm text-white animate-in fade-in duration-300">
-            <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-4">
-              <Wand2 className="w-8 h-8 text-blue-500" />
+          <div className="absolute inset-0 z-50 flex flex-col p-4 sm:p-6 bg-zinc-950/90 backdrop-blur-md text-white animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6 opacity-40">
+              <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 shrink-0" />
+              <div className="space-y-2.5 w-full">
+                <Skeleton className="h-3 sm:h-4 w-32 sm:w-40 bg-white/20" />
+                <Skeleton className="h-2 sm:h-3 w-20 sm:w-28 bg-white/20" />
+              </div>
             </div>
-            <h3 className="font-bold text-xl mb-2 text-center">
-              A IA está criando sua história...
-            </h3>
-            <p className="text-sm text-zinc-400">
-              Isso pode levar alguns segundos.
-            </p>
+
+            <div className="flex-1 flex items-center justify-center flex-col">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse mb-6 ring-4 ring-blue-500/10">
+                <Wand2 className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500" />
+              </div>
+              <h3 className="font-bold text-xl sm:text-2xl mb-2 text-center drop-shadow-sm">
+                Gerando Rascunho...
+              </h3>
+              <p className="text-sm sm:text-base text-zinc-400 text-center max-w-[250px]">
+                A inteligência artificial está processando sua nova história.
+              </p>
+            </div>
+
+            <div className="mt-auto space-y-3 opacity-40 pb-4">
+              <Skeleton className="h-4 sm:h-5 w-full bg-white/20" />
+              <Skeleton className="h-4 sm:h-5 w-5/6 bg-white/20" />
+              <Skeleton className="h-4 sm:h-5 w-4/6 bg-white/20" />
+            </div>
           </div>
         )}
 
