@@ -318,9 +318,10 @@ export function PreviewCanvas({
                     src={br.url}
                     alt="Semantic"
                     className={cn(
-                      'absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out',
+                      'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
                       isActive ? 'opacity-100' : 'opacity-0',
                     )}
+                    style={{ transitionDuration: '2000ms' }}
                   />
                 )
               })}
