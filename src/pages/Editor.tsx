@@ -88,7 +88,7 @@ function TimelinePlayer({
             ) : (
               <Play className="w-5 h-5" />
             )}
-          Button>
+          </Button>
           <div className="flex items-center gap-2 w-32">
             <Button
               variant="ghost"
