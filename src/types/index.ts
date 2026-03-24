@@ -1,6 +1,10 @@
 export type Platform = 'tiktok' | 'instagram' | 'facebook'
 export type AspectRatio = '9:16' | '1:1' | '4:5'
 
+export type VoiceProfile = 'deep' | 'soft' | 'announcer'
+export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
+export type Mood = 'inspirational' | 'dramatic' | 'calm'
+
 export interface ProjectElement {
   id: string
   type: 'text' | 'banner' | 'caption'
@@ -99,6 +103,10 @@ export interface Project {
   scheduledPosts?: ScheduledPost[]
   drafts?: Draft[]
   activeDraftId?: string | null
+  voiceProfile?: VoiceProfile
+  visualStyle?: VisualStyle
+  mood?: Mood
+  noTextMode?: boolean
 }
 
 export interface User {

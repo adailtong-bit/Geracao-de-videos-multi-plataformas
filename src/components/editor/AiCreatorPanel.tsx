@@ -1,10 +1,19 @@
 import { useState } from 'react'
-import { Project, BRoll, AiClip, Draft } from '@/types'
+import {
+  Project,
+  BRoll,
+  AiClip,
+  Draft,
+  VoiceProfile,
+  VisualStyle,
+  Mood,
+} from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
@@ -14,23 +23,18 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   Wand2,
   FileText,
   RefreshCcw,
   Mic,
-  HelpCircle,
   Hash,
   Film,
   Palette,
   Youtube,
   Upload,
   Type,
+  Activity,
+  EyeOff,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -47,43 +51,26 @@ interface GeneratedResult {
   hashtags: string
 }
 
-// AI Semantic Mock Logic
-const extractEnglishVisualKeyword = (t: string): string => {
+const extractEnglishVisualKeyword = (t: string, style: string): string => {
   const lower = t.toLowerCase()
+  let base = 'epic landscape'
   if (lower.match(/sol|pôr do sol|entardecer|amanhecer|luz/))
-    return 'sunset light'
-  if (lower.match(/mar|oceano|água|onda|praia|rio/)) return 'ocean water'
-  if (lower.match(/montanha|colina|pico|pedra|rocha/)) return 'mountain peak'
-  if (lower.match(/cidade|urbano|rua|prédio|metrópole/)) return 'urban city'
-  if (lower.match(/floresta|árvore|mato|natureza|selva|folha/))
-    return 'forest nature'
-  if (lower.match(/céu|nuvem|estrela|espaço|galáxia|universo/))
-    return 'night sky stars'
-  if (lower.match(/noite|escuro|sombra|trevas/)) return 'dark shadows'
-  if (lower.match(/pessoas|homem|mulher|rosto|olhos|multidão|criança/))
-    return 'people portrait'
-  if (lower.match(/fogo|chama|quente|incêndio|calor/)) return 'fire flames'
-  if (lower.match(/chuva|tempestade|frio|neve|gelo/)) return 'rain storm'
-  if (lower.match(/livro|ler|história|papel|biblioteca|conhecimento/))
-    return 'ancient book'
-  if (lower.match(/deus|fé|sagrado|igreja|cruz|divino|salmo|anjo|milagre/))
-    return 'holy divine light'
-  if (lower.match(/amor|coração|paz|esperança|alegria/))
-    return 'peaceful beautiful'
-  if (lower.match(/dinheiro|ouro|riqueza|tesouro/)) return 'gold treasure'
-  if (lower.match(/carro|esporte|corrida|velocidade/)) return 'sports car'
-  if (lower.match(/tecnologia|computador|ia|futuro/))
-    return 'futuristic technology'
-  if (lower.match(/comida|cozinhar|restaurante|sabor/)) return 'delicious food'
+    base = 'sunset light'
+  else if (lower.match(/mar|oceano|água|onda|praia|rio/)) base = 'ocean water'
+  else if (lower.match(/montanha|colina|pico|pedra|rocha/))
+    base = 'mountain peak'
+  else if (lower.match(/cidade|urbano|rua|prédio|metrópole/))
+    base = 'urban city'
+  else if (lower.match(/floresta|árvore|mato|natureza|selva|folha/))
+    base = 'forest nature'
+  else if (lower.match(/céu|nuvem|estrela|espaço|galáxia|universo/))
+    base = 'night sky stars'
+  else if (lower.match(/pessoas|homem|mulher|rosto|olhos|multidão|criança/))
+    base = 'people portrait'
+  else if (lower.match(/tecnologia|computador|ia|futuro/))
+    base = 'futuristic technology'
 
-  const themes = [
-    'epic landscape',
-    'dramatic atmosphere',
-    'cinematic view',
-    'beautiful scenery',
-    'mystical light',
-  ]
-  return themes[Math.floor(Math.random() * themes.length)]
+  return `${base} ${style}`
 }
 
 export function AiCreatorPanel({
@@ -92,11 +79,16 @@ export function AiCreatorPanel({
   onNext,
   onStatusChange,
 }: Props) {
-  const [sourceType, setSourceType] = useState<'text' | 'video'>('text')
+  const [sourceType, setSourceType] = useState<'text' | 'video' | 'upload'>(
+    'text',
+  )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [voice, setVoice] = useState('documentary')
-  const [artStyle, setArtStyle] = useState('cinematic')
+  const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>('deep')
+  const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
+  const [mood, setMood] = useState<Mood>('inspirational')
+  const [noTextMode, setNoTextMode] = useState(true)
+
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
   )
@@ -109,8 +101,7 @@ export function AiCreatorPanel({
     if (sourceType === 'text' && !prompt.trim()) {
       return toast({
         title: 'Faltando informações',
-        description:
-          'Por favor, descreva o texto ou tema da sua história primeiro.',
+        description: 'Descreva o texto ou tema da sua história primeiro.',
         variant: 'destructive',
       })
     }
@@ -118,7 +109,7 @@ export function AiCreatorPanel({
     if (sourceType === 'video' && !videoUrl.trim()) {
       return toast({
         title: 'Faltando informações',
-        description: 'Cole a URL do vídeo ou envie um arquivo primeiro.',
+        description: 'Cole a URL do vídeo primeiro.',
         variant: 'destructive',
       })
     }
@@ -127,17 +118,17 @@ export function AiCreatorPanel({
     if (onStatusChange) onStatusChange('generating')
     setProgress(0)
 
-    if (sourceType === 'video') {
-      setStatusText('Processando URL do vídeo e extraindo transcrição...')
-    } else {
-      setStatusText('Extraindo contexto semântico do texto...')
-    }
+    setStatusText(
+      sourceType === 'text'
+        ? 'Extraindo contexto semântico...'
+        : 'Processando mídia e extraindo transcrição...',
+    )
 
     const steps = [
-      { p: 25, t: 'Mapeando emoções e narrativa...' },
-      { p: 50, t: 'Buscando recursos visuais semanticamente alinhados...' },
-      { p: 75, t: `Aplicando estética visual unificada (${artStyle})...` },
-      { p: 100, t: 'Garantindo oratória orgânica e transições fluidas...' },
+      { p: 25, t: `Ajustando emoção para modo ${mood}...` },
+      { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
+      { p: 75, t: `Renderizando oratória ${voiceProfile}...` },
+      { p: 100, t: 'Garantindo transições orgânicas...' },
     ]
 
     let currentStep = 0
@@ -150,22 +141,19 @@ export function AiCreatorPanel({
         clearInterval(interval)
         finishGeneration()
       }
-    }, 1200)
+    }, 1000)
   }
 
   const finishGeneration = () => {
     let rawText = prompt.trim()
 
-    // If it's a video source, we mock the extracted transcript to apply the SAME universal standards
-    if (sourceType === 'video') {
+    if (sourceType !== 'text') {
       rawText =
-        'Este é um trecho extraído do vídeo original. A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas para sobrepor aos momentos onde a mensagem precisa de reforço visual.'
+        'A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas.'
     } else if (!rawText) {
-      rawText =
-        'A história começa aqui. Novas descobertas nos aguardam em nossa jornada.'
+      rawText = 'A história começa aqui. Novas descobertas nos aguardam.'
     }
 
-    // Break exact text into continuous sentences for visual transitions
     const clauses = rawText
       .replace(/[\n\r]+/g, ' ')
       .split(/([.?!]+)/)
@@ -186,8 +174,9 @@ export function AiCreatorPanel({
       const end = start + duration
       currentStartTime = end
 
-      const semanticKeyword = extractEnglishVisualKeyword(text)
-      const query = encodeURIComponent(`${semanticKeyword} ${artStyle}`)
+      const query = encodeURIComponent(
+        extractEnglishVisualKeyword(text, visualStyle),
+      )
 
       return {
         id: crypto.randomUUID(),
@@ -211,7 +200,7 @@ export function AiCreatorPanel({
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo com narração contínua e semântica visual avançada. Sem distrações de texto.`,
+      description: `Vídeo com narração contínua e semântica visual.`,
       hashtags: `#historia #ia #cinematic`,
     }
 
@@ -233,8 +222,6 @@ export function AiCreatorPanel({
     ]
 
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
-
-    // If source is video, attach a mock underlying video url so B-rolls can fade over it
     const underlyingVideo =
       sourceType === 'video'
         ? 'https://www.w3schools.com/html/mov_bbb.mp4'
@@ -254,7 +241,7 @@ export function AiCreatorPanel({
           instagram: captionText,
           facebook: captionText,
         },
-        elements: [], // Explicitly clearing any text elements for clean visual output
+        elements: [],
         cuts: [],
         sfx: [],
         audioTrack: {
@@ -263,6 +250,10 @@ export function AiCreatorPanel({
           mood: 'Ambient',
           url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
         },
+        voiceProfile,
+        visualStyle,
+        mood,
+        noTextMode,
       },
     }
 
@@ -275,7 +266,7 @@ export function AiCreatorPanel({
     setResult(generatedResult)
     setStatus('success')
     if (onStatusChange) onStatusChange('success')
-    toast({ title: 'Análise semântica e oratória concluída!' })
+    toast({ title: 'Processamento Oratório Concluído!' })
   }
 
   if (status === 'generating') {
@@ -285,7 +276,7 @@ export function AiCreatorPanel({
           <Wand2 className="w-8 h-8 text-blue-500" />
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">Processamento Universal</h3>
+          <h3 className="font-bold text-lg">Processamento Unificado</h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -299,7 +290,7 @@ export function AiCreatorPanel({
         <div className="flex items-center justify-between bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-500/20">
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
-            <span className="font-bold">Mapeamento Visual Concluído</span>
+            <span className="font-bold">Mídia Processada</span>
           </div>
           <Button
             variant="ghost"
@@ -319,23 +310,18 @@ export function AiCreatorPanel({
             <FileText className="w-4 h-4 text-primary" /> Título Semântico
           </h4>
           <p className="font-medium text-foreground text-sm">{result.title}</p>
-
           <h4 className="font-bold flex items-center gap-2 text-sm mt-4">
             <Hash className="w-4 h-4 text-primary" /> Hashtags
           </h4>
-          <p className="text-sm text-blue-500 dark:text-blue-400 font-medium">
-            {result.hashtags}
-          </p>
+          <p className="text-sm text-blue-500 font-medium">{result.hashtags}</p>
         </div>
 
-        <div className="pt-4 border-t">
-          <Button
-            className="w-full font-bold h-12 shadow-md bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:-translate-y-0.5"
-            onClick={onNext}
-          >
-            <Film className="w-5 h-5 mr-2" /> Revisar Sequência Visual Limpa
-          </Button>
-        </div>
+        <Button
+          className="w-full font-bold h-12 shadow-md bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:-translate-y-0.5"
+          onClick={onNext}
+        >
+          <Film className="w-5 h-5 mr-2" /> Revisar Sequência
+        </Button>
       </div>
     )
   }
@@ -343,15 +329,12 @@ export function AiCreatorPanel({
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-blue-500" /> Processamento Oratório
-          </h3>
-        </div>
+        <h3 className="font-semibold text-lg flex items-center gap-2">
+          <Wand2 className="w-5 h-5 text-blue-500" /> Pipeline de Mídia
+        </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Nossa engine aplica padrões universais de qualidade: extrai o
-          contexto, gera uma voz natural sem pausas artificiais e mapeia imagens
-          orgânicas, garantindo um visual limpo sem letreiros.
+          Gere conteúdo a partir de qualquer fonte com narração fluida e visuais
+          cinematográficos livres de letreiros.
         </p>
 
         <Tabs
@@ -359,122 +342,122 @@ export function AiCreatorPanel({
           onValueChange={(v) => setSourceType(v as any)}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="text" className="text-xs font-semibold">
-              <Type className="w-4 h-4 mr-2" />
-              Texto para Vídeo
+          <TabsList className="grid w-full grid-cols-3 mb-4 h-auto p-1">
+            <TabsTrigger value="text" className="text-xs font-semibold py-2">
+              <Type className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Texto</span>
             </TabsTrigger>
-            <TabsTrigger value="video" className="text-xs font-semibold">
-              <Youtube className="w-4 h-4 mr-2" />
-              YouTube / Upload
+            <TabsTrigger value="video" className="text-xs font-semibold py-2">
+              <Youtube className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Link</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="text-xs font-semibold py-2">
+              <Upload className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Upload</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="text" className="space-y-3 mt-0">
-            <Label htmlFor="prompt" className="font-semibold text-sm">
-              Texto Completo da Narração
-            </Label>
+            <Label className="font-semibold text-sm">Texto da Narração</Label>
             <Textarea
-              id="prompt"
-              placeholder="Cole seu texto longo aqui (Ex: reflexões, contos, palestras). O vídeo terá o fluxo natural da oratória."
-              className="min-h-[160px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
+              placeholder="Cole seu texto longo aqui..."
+              className="min-h-[120px] resize-none text-sm bg-background/50"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />
           </TabsContent>
 
-          <TabsContent value="video" className="space-y-4 mt-0">
-            <div className="space-y-3">
-              <Label htmlFor="video-url" className="font-semibold text-sm">
-                Link do Vídeo
-              </Label>
-              <Input
-                id="video-url"
-                placeholder="Cole a URL do YouTube, TikTok ou Instagram..."
-                className="bg-background/50 h-11"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-              />
-            </div>
+          <TabsContent value="video" className="space-y-3 mt-0">
+            <Label className="font-semibold text-sm">URL do Vídeo</Label>
+            <Input
+              placeholder="YouTube, TikTok ou Instagram..."
+              className="bg-background/50 h-11"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
+          </TabsContent>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground font-semibold">
-                  Ou
-                </span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full h-11 border-dashed border-2 hover:bg-muted/50"
-            >
-              <Upload className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                Fazer upload de arquivo
-              </span>
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              A IA irá transcrever o vídeo e aplicar a mesma análise semântica
-              para gerar transições visuais.
-            </p>
+          <TabsContent value="upload" className="space-y-3 mt-0">
+            <Label className="font-semibold text-sm">
+              Arquivo Local (Áudio/Vídeo)
+            </Label>
+            <Input
+              type="file"
+              accept="video/*,audio/*"
+              className="bg-background/50 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-11 cursor-pointer"
+            />
           </TabsContent>
         </Tabs>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <Mic className="w-4 h-4 text-primary" /> Tom de Oratória
-              </Label>
-            </div>
-            <Select value={voice} onValueChange={setVoice}>
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Mic className="w-4 h-4 text-primary" /> Perfil de Voz
+            </Label>
+            <Select
+              value={voiceProfile}
+              onValueChange={(v) => setVoiceProfile(v as VoiceProfile)}
+            >
               <SelectTrigger className="bg-background/50 h-10">
-                <SelectValue placeholder="Selecione a voz" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="documentary">Calmo e Reflexivo</SelectItem>
-                <SelectItem value="enthusiastic">Voz Entusiasmada</SelectItem>
-                <SelectItem value="suspense">Sério / Palestrante</SelectItem>
+                <SelectItem value="deep">Profunda / Solene</SelectItem>
+                <SelectItem value="soft">Suave / Meditação</SelectItem>
+                <SelectItem value="announcer">Comercial / Locutor</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <Palette className="w-4 h-4 text-primary" /> Estética Visual
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Garante um estilo visual coeso em todo o projeto.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Select value={artStyle} onValueChange={setArtStyle}>
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Palette className="w-4 h-4 text-primary" /> Estilo Visual
+            </Label>
+            <Select
+              value={visualStyle}
+              onValueChange={(v) => setVisualStyle(v as VisualStyle)}
+            >
               <SelectTrigger className="bg-background/50 h-10">
-                <SelectValue placeholder="Selecione o estilo" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cinematic">Cinemático & Realista</SelectItem>
-                <SelectItem value="watercolor">Aquarela Suave</SelectItem>
-                <SelectItem value="3d animation">Animação 3D</SelectItem>
-                <SelectItem value="epic illustration">
-                  Ilustração Épica
-                </SelectItem>
-                <SelectItem value="vintage photography">
-                  Fotografia Vintage
-                </SelectItem>
+                <SelectItem value="realistic">Realista</SelectItem>
+                <SelectItem value="cinematic-dark">Cinemático Dark</SelectItem>
+                <SelectItem value="artistic">Pintura Artística</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" /> Clima Emocional
+            </Label>
+            <Select value={mood} onValueChange={(v) => setMood(v as Mood)}>
+              <SelectTrigger className="bg-background/50 h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="inspirational">Inspirador</SelectItem>
+                <SelectItem value="dramatic">Dramático</SelectItem>
+                <SelectItem value="calm">Calmo / Relaxante</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3 flex flex-col justify-center">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors">
+              <Label
+                htmlFor="no-text-mode"
+                className="flex items-center gap-2 cursor-pointer font-semibold text-sm"
+              >
+                <EyeOff className="w-4 h-4 text-primary" /> Modo Sem Texto
+              </Label>
+              <Switch
+                id="no-text-mode"
+                checked={noTextMode}
+                onCheckedChange={setNoTextMode}
+              />
+            </div>
           </div>
         </div>
 
@@ -482,7 +465,7 @@ export function AiCreatorPanel({
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-6"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Aplicar Processamento Universal
+          <Wand2 className="w-5 h-5 mr-2" /> Gerar Sequência HD
         </Button>
       </div>
     </div>

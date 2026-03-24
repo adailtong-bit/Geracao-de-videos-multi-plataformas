@@ -35,6 +35,7 @@ import {
   Clock,
   Send,
   Film,
+  Download,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
@@ -141,7 +142,7 @@ function VersionsSidebar({
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     <p className="text-sm font-bold text-primary">
-                      Gerando nova narrativa...
+                      Gerando nova narrativa HD...
                     </p>
                   </div>
                   <Skeleton className="h-24 w-full rounded-md bg-primary/10" />
@@ -310,6 +311,19 @@ export default function Editor() {
       description: 'Alterações armazenadas com sucesso.',
     })
 
+  const handleDownload = () => {
+    toast({
+      title: 'Renderizando HD',
+      description: 'Seu vídeo MP4 está sendo gerado em alta definição...',
+    })
+    setTimeout(() => {
+      toast({
+        title: 'Download Concluído',
+        description: 'O arquivo MP4 foi salvo no seu dispositivo.',
+      })
+    }, 3000)
+  }
+
   const hasMultipleCreations = (project.drafts?.length || 0) > 1
 
   return (
@@ -351,6 +365,14 @@ export default function Editor() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="hidden md:flex bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900"
+              >
+                <Download className="w-4 h-4 mr-2" /> Download HD (MP4)
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
