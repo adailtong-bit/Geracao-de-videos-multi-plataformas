@@ -22,7 +22,12 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
   const [platform, setPlatform] = useState<Platform>('tiktok')
   const [showSafeZones, setShowSafeZones] = useState(false)
 
-  const duration = project.trimEnd - project.trimStart
+  const totalCutsDuration =
+    project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
+  const duration =
+    totalCutsDuration > 0 ? totalCutsDuration : project.videoDuration || 0
+  const durationFormatted = Math.round(duration * 10) / 10
+
   const is916 = project.aspectRatio === '9:16'
   const is45 = project.aspectRatio === '4:5'
 
@@ -30,19 +35,19 @@ export function PreviewSimulatorModal({ project, open, onOpenChange }: Props) {
     tiktok: {
       duration: duration <= 600,
       aspect: is916,
-      durationText: `${duration}s / 600s máx`,
+      durationText: `${durationFormatted}s / 600s máx`,
       aspectText: is916 ? '9:16 Otimizado' : '9:16 Recomendado',
     },
     instagram: {
       duration: duration <= 90,
       aspect: is916,
-      durationText: `${duration}s / 90s máx`,
+      durationText: `${durationFormatted}s / 90s máx`,
       aspectText: is916 ? '9:16 Otimizado' : '9:16 Recomendado',
     },
     facebook: {
       duration: duration <= 240,
       aspect: is45 || is916,
-      durationText: `${duration}s / 240s máx`,
+      durationText: `${durationFormatted}s / 240s máx`,
       aspectText: is45 || is916 ? 'Otimizado' : '4:5 ou 9:16 Recomendado',
     },
   }

@@ -32,7 +32,6 @@ export const createProject = (
   options?: Partial<Project>,
 ): Project => {
   const projects = getProjects()
-  // Limit handled in UI now based on plan, but keep this fallback check safe
   if (projects.length >= 100) throw new Error('Maximum absolute limit reached')
 
   const newProject: Project = {
@@ -42,6 +41,7 @@ export const createProject = (
     videoDuration: 120,
     trimStart: 0,
     trimEnd: 120,
+    cuts: [],
     elements: [],
     targetPlatforms: ['instagram', 'tiktok', 'facebook'],
     aspectRatio: '9:16',

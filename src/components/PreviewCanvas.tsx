@@ -8,6 +8,8 @@ import {
   Bookmark,
   Music,
 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { usePlayerControls, setPlayerState } from '@/stores/usePlayerStore'
 
 export function PreviewCanvas({
   project,
@@ -16,6 +18,33 @@ export function PreviewCanvas({
   project: Project
   showSafeZones?: boolean
 }) {
+  const { setVideoElement } = usePlayerControls()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    setVideoElement(videoRef.current)
+    return () => setVideoElement(null)
+  }, [setVideoElement, project.videoUrl])
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setPlayerState({ currentTime: videoRef.current.currentTime })
+    }
+  }
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setPlayerState({ duration: videoRef.current.duration })
+    }
+  }
+
+  const handleEnded = () => {
+    setPlayerState({ isPlaying: false })
+  }
+
+  const handlePlay = () => setPlayerState({ isPlaying: true })
+  const handlePause = () => setPlayerState({ isPlaying: false })
+
   const getRatioStyle = () => {
     switch (project.aspectRatio) {
       case '9:16':
@@ -38,10 +67,17 @@ export function PreviewCanvas({
         style={getRatioStyle()}
       >
         {project.videoUrl ? (
-          <img
+          <video
+            ref={videoRef}
             src={project.videoUrl}
-            alt="Video preview"
             className="w-full h-full object-cover opacity-90"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onEnded={handleEnded}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            playsInline
+            controls={false}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-zinc-900/50 space-y-4">

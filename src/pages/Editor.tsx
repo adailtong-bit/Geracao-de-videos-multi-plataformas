@@ -3,9 +3,9 @@ import { useParams, Link } from 'react-router-dom'
 import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { MediaPanel } from '@/components/editor/MediaPanel'
 import { OverlaysPanel } from '@/components/editor/OverlaysPanel'
@@ -20,14 +20,147 @@ import {
   Save,
   Download,
   ShieldAlert,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Scissors,
 } from 'lucide-react'
-import useAuthStore from '@/stores/useAuthStore'
 import { useToast } from '@/hooks/use-toast'
+import { Project } from '@/types'
+import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
+
+function TimelinePlayer({
+  project,
+  update,
+}: {
+  project: Project
+  update: (updates: Partial<Project>) => void
+}) {
+  const { currentTime, duration, isPlaying, volume } = usePlayerState()
+  const { play, pause, seek, setVolume } = usePlayerControls()
+  const [pendingMark, setPendingMark] = useState<number | null>(null)
+  const { toast } = useToast()
+
+  const formatTime = (time: number) => {
+    const m = Math.floor(time / 60)
+    const s = Math.floor(time % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  const handleMarkCut = () => {
+    if (pendingMark === null) {
+      setPendingMark(currentTime)
+      toast({
+        title: 'Ponto inicial marcado',
+        description: `Em ${formatTime(currentTime)}`,
+      })
+    } else {
+      const start = Math.min(pendingMark, currentTime)
+      const end = Math.max(pendingMark, currentTime)
+      update({
+        cuts: [
+          ...(project.cuts || []),
+          { id: crypto.randomUUID(), start, end },
+        ],
+      })
+      setPendingMark(null)
+      toast({
+        title: 'Segmento salvo',
+        description: `De ${formatTime(start)} a ${formatTime(end)}`,
+      })
+    }
+  }
+
+  if (!project.videoUrl) return null
+
+  return (
+    <div className="h-32 border-t bg-background flex flex-col shrink-0 z-10 relative shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+      <div className="px-4 py-2 flex items-center justify-between shrink-0 bg-muted/20 border-b">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={isPlaying ? pause : play}
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5" />
+            )}
+          Button>
+          <div className="flex items-center gap-2 w-32">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setVolume(volume === 0 ? 1 : 0)}
+            >
+              {volume === 0 ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+            </Button>
+            <Slider
+              value={[volume]}
+              max={1}
+              step={0.1}
+              onValueChange={([v]) => setVolume(v)}
+            />
+          </div>
+          <span className="text-xs font-mono font-medium">
+            {formatTime(currentTime)} / {formatTime(duration)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={pendingMark !== null ? 'destructive' : 'default'}
+            onClick={handleMarkCut}
+          >
+            <Scissors className="w-4 h-4 mr-2" />
+            {pendingMark !== null ? 'Marcar Fim' : 'Marcar Corte'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col justify-center px-8 md:px-16 min-h-0">
+        <div className="relative w-full py-4 flex flex-col gap-1">
+          <Slider
+            value={[currentTime]}
+            max={duration || 100}
+            step={0.1}
+            onValueChange={([val]) => seek(val)}
+            className="z-10 relative cursor-pointer"
+          />
+          <div className="relative w-full h-2 pointer-events-none">
+            {project.cuts?.map((cut) => {
+              const left = (cut.start / duration) * 100
+              const width = ((cut.end - cut.start) / duration) * 100
+              return (
+                <div
+                  key={cut.id}
+                  className="absolute top-0 h-1.5 bg-primary rounded-full"
+                  style={{ left: `${left}%`, width: `${width}%` }}
+                />
+              )
+            })}
+            {pendingMark !== null && (
+              <div
+                className="absolute top-0 h-2 w-2 bg-red-500 rounded-full -translate-x-1 shadow-sm"
+                style={{ left: `${(pendingMark / duration) * 100}%` }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Editor() {
   const { id } = useParams()
   const [project, update] = useProject(id || '')
-  const { user } = useAuthStore()
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showSafeZones, setShowSafeZones] = useState(false)
   const { toast } = useToast()
@@ -67,9 +200,6 @@ export default function Editor() {
       description:
         'Your video is rendering. We will notify you when it is done.',
     })
-
-  const videoDuration = project.videoDuration || 100
-  const snapPoints = [15, 30, 60, 90, 120]
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
@@ -185,51 +315,7 @@ export default function Editor() {
             <PreviewCanvas project={project} showSafeZones={showSafeZones} />
           </div>
 
-          {project.videoUrl && (
-            <div className="h-32 border-t bg-background flex flex-col shrink-0 z-10 relative shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-              <div className="px-4 pt-3 flex items-center justify-between shrink-0">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-bold">
-                  Precise Cut Timeline
-                </p>
-                <span className="text-xs font-mono font-medium bg-muted px-2 py-1 rounded border">
-                  {project.trimStart}s - {project.trimEnd}s
-                </span>
-              </div>
-
-              <div className="flex-1 flex flex-col justify-center px-8 md:px-16 min-h-0">
-                <div className="relative w-full py-4">
-                  <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none">
-                    {snapPoints.map((point) => {
-                      if (point > videoDuration) return null
-                      const pct = (point / videoDuration) * 100
-                      return (
-                        <div
-                          key={point}
-                          className="absolute top-0 flex flex-col items-center -translate-x-1/2"
-                          style={{ left: `${pct}%` }}
-                        >
-                          <span className="text-[9px] font-bold text-yellow-600 mb-0.5 bg-yellow-100 px-1 rounded">
-                            {point}s
-                          </span>
-                          <div className="w-px h-2 bg-yellow-500" />
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <Slider
-                    value={[project.trimStart, project.trimEnd]}
-                    max={videoDuration}
-                    step={1}
-                    onValueChange={([start, end]) => {
-                      if (end - start >= 1)
-                        update({ trimStart: start, trimEnd: end })
-                    }}
-                    className="z-10 relative cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          <TimelinePlayer project={project} update={update} />
         </div>
       </div>
 

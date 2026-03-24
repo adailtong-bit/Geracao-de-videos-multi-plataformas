@@ -11,6 +11,12 @@ export interface ProjectElement {
   bgColor?: string
 }
 
+export interface CutSegment {
+  id: string
+  start: number
+  end: number
+}
+
 export interface Project {
   id: string
   name: string
@@ -18,6 +24,7 @@ export interface Project {
   videoDuration: number
   trimStart: number
   trimEnd: number
+  cuts?: CutSegment[]
   elements: ProjectElement[]
   targetPlatforms: Platform[]
   aspectRatio: AspectRatio

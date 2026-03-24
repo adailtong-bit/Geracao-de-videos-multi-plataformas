@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Project } from '@/types'
+import { Project, CutSegment } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,9 +14,11 @@ import {
   Link as LinkIcon,
   CloudDownload,
   Loader2,
+  Trash2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { isValidVideoUrl } from '@/lib/utils'
+import { usePlayerControls } from '@/stores/usePlayerStore'
 
 interface Props {
   project: Project
@@ -28,6 +29,7 @@ export function MediaPanel({ project, update }: Props) {
   const { toast } = useToast()
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const { seek, play } = usePlayerControls()
 
   const handleImportUrl = () => {
     if (!importUrl.trim()) return
@@ -43,15 +45,12 @@ export function MediaPanel({ project, update }: Props) {
     }
 
     setIsImporting(true)
-    // Simulate automated URL processing and fetching
     setTimeout(() => {
       setIsImporting(false)
       update({
-        videoUrl:
-          'https://img.usecurling.com/p/800/1200?q=skateboarding&color=blue',
-        videoDuration: 120,
-        trimStart: 0,
-        trimEnd: 120,
+        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        videoDuration: 10,
+        cuts: [],
       })
       setImportUrl('')
       toast({ title: 'Mídia puxada com sucesso!' })
@@ -71,16 +70,28 @@ export function MediaPanel({ project, update }: Props) {
 
   const handleFakeUpload = () => {
     update({
-      videoUrl:
-        'https://img.usecurling.com/p/800/1200?q=skateboarding&color=blue',
-      videoDuration: 120,
-      trimStart: 0,
-      trimEnd: 120,
+      videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+      videoDuration: 10,
+      cuts: [],
     })
     toast({ title: 'Arquivo carregado com sucesso!' })
   }
 
-  const duration = project.trimEnd - project.trimStart
+  const handleUpdateCut = (id: string, updates: Partial<CutSegment>) => {
+    const newCuts = (project.cuts || []).map((c) =>
+      c.id === id ? { ...c, ...updates } : c,
+    )
+    update({ cuts: newCuts })
+  }
+
+  const handleDeleteCut = (id: string) => {
+    update({ cuts: (project.cuts || []).filter((c) => c.id !== id) })
+  }
+
+  const previewCut = (start: number) => {
+    seek(start)
+    play()
+  }
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
@@ -189,59 +200,70 @@ export function MediaPanel({ project, update }: Props) {
       >
         <div className="space-y-5">
           <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Scissors className="w-5 h-5 text-primary" /> Ferramenta de Corte
+            <Scissors className="w-5 h-5 text-primary" /> Segmentos Cortados
           </h3>
-          <div className="space-y-6 bg-background p-5 rounded-xl border shadow-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Início (s)</Label>
-                <Input
-                  type="number"
-                  value={project.trimStart}
-                  onChange={(e) => {
-                    const val = Number(e.target.value)
-                    if (val >= 0 && val < project.trimEnd)
-                      update({ trimStart: val })
-                  }}
-                  disabled={!project.videoUrl}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Fim (s)</Label>
-                <Input
-                  type="number"
-                  value={project.trimEnd}
-                  onChange={(e) => {
-                    const val = Number(e.target.value)
-                    if (
-                      val > project.trimStart &&
-                      val <= (project.videoDuration || 100)
-                    )
-                      update({ trimEnd: val })
-                  }}
-                  disabled={!project.videoUrl}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-sm font-medium text-primary">
-                Duração: {duration}s
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!project.videoUrl}
-                onClick={() =>
-                  toast({
-                    title: 'Visualizando corte...',
-                    description: `Tocando segmento de ${project.trimStart}s a ${project.trimEnd}s`,
-                  })
-                }
-              >
-                <PlayCircle className="w-4 h-4 mr-2" /> Prévia
-              </Button>
-            </div>
+          <div className="space-y-3 bg-background p-4 rounded-xl border shadow-sm max-h-[300px] overflow-y-auto">
+            {!project.cuts || project.cuts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum corte marcado. Use a linha do tempo abaixo para marcar.
+              </p>
+            ) : (
+              project.cuts.map((cut) => (
+                <div
+                  key={cut.id}
+                  className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border"
+                >
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase">Início</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={cut.start}
+                        onChange={(e) =>
+                          handleUpdateCut(cut.id, {
+                            start: Number(e.target.value),
+                          })
+                        }
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase">Fim</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={cut.end}
+                        onChange={(e) =>
+                          handleUpdateCut(cut.id, {
+                            end: Number(e.target.value),
+                          })
+                        }
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => previewCut(cut.start)}
+                    >
+                      <PlayCircle className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleDeleteCut(cut.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

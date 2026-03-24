@@ -25,7 +25,12 @@ interface Props {
 export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const { toast } = useToast()
   const { user } = useAuthStore()
-  const duration = project.trimEnd - project.trimStart
+
+  const totalCutsDuration =
+    project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
+  const duration =
+    totalCutsDuration > 0 ? totalCutsDuration : project.videoDuration || 0
+  const durationFormatted = Math.round(duration * 10) / 10
 
   const togglePlatform = (p: Platform) => {
     const platforms = project.targetPlatforms.includes(p)
@@ -91,8 +96,8 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           </AlertTitle>
           <AlertDescription className="mt-2 text-sm">
             O limite do Instagram Reels é <strong>90 segundos</strong>. Seu
-            corte atual possui <strong>{duration}s</strong>. Apare o vídeo para
-            publicar com sucesso.
+            corte atual possui <strong>{durationFormatted}s</strong>. Apare o
+            vídeo para publicar com sucesso.
           </AlertDescription>
         </Alert>
       )}
