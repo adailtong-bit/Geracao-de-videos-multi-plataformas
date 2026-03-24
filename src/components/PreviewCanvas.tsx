@@ -9,48 +9,6 @@ import {
 } from '@/stores/usePlayerStore'
 import { Skeleton } from '@/components/ui/skeleton'
 
-function SubtitleOverlay({ project }: { project: Project }) {
-  const { currentTime, activeClipId } = usePlayerState()
-
-  let currentSubtitle = null
-
-  if (activeClipId) {
-    const activeClip = project.aiClips?.find((c) => c.id === activeClipId)
-    currentSubtitle = activeClip?.subtitles.find(
-      (s) => currentTime >= s.start && currentTime <= s.end,
-    )
-  } else if (project.aiClips) {
-    const clip = project.aiClips.find(
-      (c) => currentTime >= c.start && currentTime <= c.end,
-    )
-    if (clip) {
-      currentSubtitle = clip.subtitles.find(
-        (s) => currentTime >= s.start && currentTime <= s.end,
-      )
-    }
-  }
-
-  if (!currentSubtitle) return null
-
-  return (
-    <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 z-40 text-center w-[90%] sm:w-[85%] pointer-events-none transition-all duration-150 flex flex-col justify-end items-center">
-      <span
-        key={currentSubtitle.id}
-        className="text-white px-5 py-2.5 text-lg sm:text-xl font-bold tracking-wide leading-snug inline-block transform shadow-xl animate-fade-in-up max-w-[90%]"
-        style={{
-          backgroundColor: 'rgba(0,0,0,0.75)',
-          borderRadius: '0.75rem',
-          backdropFilter: 'blur(8px)',
-          textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
-          border: '1px solid rgba(255,255,255,0.1)',
-        }}
-      >
-        {currentSubtitle.text}
-      </span>
-    </div>
-  )
-}
-
 function PlaybackController({ project }: { project: Project }) {
   const { currentTime, activeClipId, isPlaying } = usePlayerState()
   const { pause, seek } = usePlayerControls()
@@ -187,45 +145,51 @@ export function PreviewCanvas({
     }
   }, [volume])
 
-  // Text-to-Speech Generation
-  const previousSubtitleId = useRef<string | null>(null)
-
-  const currentSubtitle = useMemo(() => {
-    if (project.aiClips) {
-      for (const clip of project.aiClips) {
-        const sub = clip.subtitles.find(
-          (s) => currentTime >= s.start && currentTime <= s.end,
-        )
-        if (sub) return sub
-      }
-    }
-    return null
-  }, [project.aiClips, currentTime])
+  // Text-to-Speech Generation for Continuous Narration
+  const prevIsPlayingRef = useRef(isPlaying)
+  const prevTimeRef = useRef(currentTime)
 
   useEffect(() => {
     if (!('speechSynthesis' in window)) return
 
-    if (isPlaying && currentSubtitle) {
-      if (currentSubtitle.id !== previousSubtitleId.current) {
-        window.speechSynthesis.cancel()
+    const timeDiff = Math.abs(currentTime - prevTimeRef.current)
+    const isSeek = timeDiff > 0.5
+    const justStartedPlaying = isPlaying && !prevIsPlayingRef.current
+    const justPaused = !isPlaying && prevIsPlayingRef.current
 
-        // Small delay to prevent TTS engine drops after cancel
-        setTimeout(() => {
-          const utterance = new SpeechSynthesisUtterance(currentSubtitle.text)
+    prevTimeRef.current = currentTime
+    prevIsPlayingRef.current = isPlaying
+
+    if (justStartedPlaying || (isPlaying && isSeek)) {
+      window.speechSynthesis.cancel()
+
+      // Slight delay allows TTS engine to fully reset before beginning new continuous utterance
+      setTimeout(() => {
+        if (!project.aiClips) return
+        let textToSpeak = ''
+        for (const clip of project.aiClips) {
+          if (currentTime >= clip.start && currentTime < clip.end) {
+            const remainingSubs = clip.subtitles.filter(
+              (s) => s.end > currentTime,
+            )
+            textToSpeak = remainingSubs.map((s) => s.text).join(' ')
+            break
+          }
+        }
+        if (textToSpeak) {
+          const utterance = new SpeechSynthesisUtterance(textToSpeak)
           utterance.lang = 'pt-BR'
-          utterance.rate = 1.0
+          utterance.rate = 1.05
           utterance.volume = volume
           window.speechSynthesis.speak(utterance)
-        }, 10)
-
-        previousSubtitleId.current = currentSubtitle.id
-      } else if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume()
-      }
-    } else if (!isPlaying) {
+        }
+      }, 50)
+    } else if (justPaused) {
       window.speechSynthesis.pause()
+    } else if (isPlaying && !isSeek && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume()
     }
-  }, [isPlaying, currentSubtitle, volume])
+  }, [isPlaying, currentTime, project.aiClips, volume])
 
   useEffect(() => {
     return () => {
@@ -325,9 +289,10 @@ export function PreviewCanvas({
             {activeBRoll ? (
               <div className="absolute inset-0 z-10 bg-black flex items-center justify-center overflow-hidden">
                 <img
+                  key={activeBRoll.id}
                   src={activeBRoll.url}
                   alt="B-Roll"
-                  className="w-full h-full object-cover opacity-90 animate-fade-in"
+                  className="w-full h-full object-cover opacity-100 animate-in fade-in duration-700 slide-in-from-bottom-1"
                 />
               </div>
             ) : (
@@ -372,8 +337,6 @@ export function PreviewCanvas({
             </div>
           )
         )}
-
-        <SubtitleOverlay project={project} />
       </div>
     </div>
   )

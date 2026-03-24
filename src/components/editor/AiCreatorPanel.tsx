@@ -81,9 +81,9 @@ export function AiCreatorPanel({
     setStatusText('Analisando seu texto...')
 
     const steps = [
-      { p: 25, t: 'Gerando narrativa...' },
+      { p: 25, t: 'Gerando narrativa contínua...' },
       { p: 50, t: 'Buscando imagens e referências visuais...' },
-      { p: 75, t: 'Sincronizando áudio e texto...' },
+      { p: 75, t: 'Sincronizando narração e imagens...' },
       { p: 100, t: 'Finalizando vídeo...' },
     ]
 
@@ -104,14 +104,14 @@ export function AiCreatorPanel({
     const rawText =
       prompt.trim() || 'A história começa aqui. Novas descobertas nos aguardam.'
 
-    // Break exact text into shorter readable clauses (sentences)
+    // Break exact text into continuous sentences for visual transitions
     const clauses = rawText
       .replace(/[\n\r]+/g, ' ')
-      .split(/([.?!,;]+)/)
+      .split(/([.?!]+)/)
       .reduce((acc, curr, i, arr) => {
         if (i % 2 === 0) {
           const clause = curr + (arr[i + 1] || '')
-          if (clause.trim()) acc.push(clause.trim())
+          if (clause.trim().length > 3) acc.push(clause.trim())
         }
         return acc
       }, [] as string[])
@@ -120,17 +120,18 @@ export function AiCreatorPanel({
 
     let currentStartTime = 0
     const scenes = clauses.map((text, i) => {
-      // Calculate realistic reading duration: ~0.08s per character, min 1.5s
-      const duration = Math.max(1.5, text.length * 0.08)
+      // Calculate realistic reading duration: ~0.065s per character
+      const duration = Math.max(2.0, text.length * 0.065)
       const start = currentStartTime
       const end = start + duration
       currentStartTime = end
 
-      // Determine a relevant image keyword directly from user text
+      // Determine a relevant image keyword directly from user text for visual relevance
       const cleanWords = text
-        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .replace(/[^a-zA-Z0-9áéíóúâêîôûãõç -]/gi, '')
         .split(' ')
-        .filter((w) => w.length > 3)
+        .filter((w) => w.length > 4)
+
       const keyword =
         cleanWords.length > 0
           ? cleanWords[
@@ -143,7 +144,7 @@ export function AiCreatorPanel({
         text,
         start,
         end,
-        imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&dpr=2&seed=${i}`,
+        imageUrl: `https://img.usecurling.com/p/800/1200?q=${encodeURIComponent(keyword)}&dpr=2&seed=${i}`,
       }
     })
 
@@ -160,7 +161,7 @@ export function AiCreatorPanel({
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo narrado gerado com IA a partir do seu texto.`,
+      description: `Vídeo focado em imagens e narração contínua gerado com IA a partir do seu texto.`,
       hashtags: `#historia #ia #narracao`,
       scenes,
     }
@@ -273,7 +274,7 @@ export function AiCreatorPanel({
         </div>
 
         <div className="space-y-3">
-          <Label className="font-bold">Cenas & Legendas</Label>
+          <Label className="font-bold">Cenas Geradas</Label>
           <ScrollArea className="h-48 rounded-xl border bg-background">
             <div className="p-3 space-y-3">
               {result.scenes.map((scene, idx) => (
@@ -288,7 +289,7 @@ export function AiCreatorPanel({
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <p className="text-sm font-medium leading-tight">
+                  <p className="text-xs font-medium leading-tight line-clamp-4">
                     "{scene.text}"
                   </p>
                 </div>
@@ -314,7 +315,8 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground">
           Crie um vídeo completo a partir de uma referência de texto. A IA gera
-          a narração exata baseada no seu texto e busca as imagens que combinam.
+          a narração exata baseada no seu texto e busca as imagens que combinam,
+          focando totalmente no visual.
         </p>
 
         <div className="space-y-3">
@@ -341,7 +343,10 @@ export function AiCreatorPanel({
                   <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>A voz e o tom que a IA utilizará para ler o texto.</p>
+                  <p>
+                    A voz e o tom que a IA utilizará para ler o texto de forma
+                    contínua.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
