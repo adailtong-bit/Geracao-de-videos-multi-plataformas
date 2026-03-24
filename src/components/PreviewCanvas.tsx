@@ -50,18 +50,21 @@ function SubtitleOverlay({ project }: { project: Project }) {
         : ''
 
   return (
-    <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 z-40 text-center w-[90%] pointer-events-none transition-all duration-75">
+    <div className="absolute bottom-10 sm:bottom-12 left-1/2 -translate-x-1/2 z-40 text-center w-[90%] sm:w-[80%] pointer-events-none transition-all duration-75 flex flex-col justify-end items-center pb-4">
       <span
         key={currentSubtitle.id}
         className={cn(
-          'text-white px-3 py-1 text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tighter leading-tight inline-block transform scale-110',
+          'text-white px-4 py-2 text-lg sm:text-xl font-bold uppercase tracking-wide leading-snug inline-block transform shadow-lg',
           animClass,
         )}
         style={{
           color:
             project.globalCaptionStyle === 'highlight' ? '#ffffff' : '#facc15',
-          WebkitTextStroke: '1.5px black',
-          textShadow: '3px 4px 8px rgba(0,0,0,0.8), 0px 0px 4px rgba(0,0,0,1)',
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          borderRadius: '0.5rem',
+          backdropFilter: 'blur(4px)',
+          textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+          border: '1px solid rgba(255,255,255,0.15)',
         }}
       >
         {currentSubtitle.text}
@@ -274,9 +277,9 @@ export function PreviewCanvas({
                 <span
                   key={isPlaying ? el.id : `static-${el.id}`}
                   className={cn(
-                    'font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] whitespace-nowrap text-xl sm:text-2xl md:text-3xl',
+                    'font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] whitespace-nowrap text-lg sm:text-xl md:text-2xl',
                     el.type === 'caption' &&
-                      'bg-black/60 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg font-black border border-white/10',
+                      'bg-black/70 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold border border-white/10 backdrop-blur-sm',
                     isAnimated && animClass,
                   )}
                   style={{
@@ -290,7 +293,7 @@ export function PreviewCanvas({
                 </span>
               ) : (
                 <div
-                  className="text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold text-sm sm:text-xl whitespace-nowrap shadow-[0_8px_16px_rgba(0,0,0,0.5)] border border-white/20"
+                  className="text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-bold text-sm sm:text-lg whitespace-nowrap shadow-[0_6px_12px_rgba(0,0,0,0.4)] border border-white/20"
                   style={{ backgroundColor: el.bgColor || '#e11d48' }}
                 >
                   {el.content || 'Banner'}

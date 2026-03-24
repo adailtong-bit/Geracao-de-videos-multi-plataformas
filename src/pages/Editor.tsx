@@ -502,35 +502,42 @@ export default function Editor() {
         'Your video is rendering. We will notify you when it is done.',
     })
 
+  const hasDrafts =
+    (project.drafts && project.drafts.length > 0) || aiStatus === 'generating'
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen w-screen overflow-hidden bg-background">
-        <VersionsSidebar
-          project={project}
-          update={update}
-          isGenerating={aiStatus === 'generating'}
-        />
+        {hasDrafts && (
+          <VersionsSidebar
+            project={project}
+            update={update}
+            isGenerating={aiStatus === 'generating'}
+          />
+        )}
 
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
           <header className="h-14 border-b flex items-center justify-between px-2 sm:px-4 bg-card shrink-0 z-20 shadow-sm">
             <div className="flex items-center gap-2 sm:gap-4">
-              <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
+              {hasDrafts && (
+                <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
+              )}
 
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 asChild
-                className="text-muted-foreground hover:text-foreground shrink-0 hidden sm:flex"
+                className="text-foreground shrink-0 hidden sm:flex font-medium hover:bg-secondary/80"
               >
                 <Link to="/">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar aos Projetos
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Sair do Editor
                 </Link>
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 asChild
-                className="text-muted-foreground hover:text-foreground shrink-0 sm:hidden"
+                className="text-foreground shrink-0 sm:hidden hover:bg-secondary/80"
               >
                 <Link to="/">
                   <ArrowLeft className="w-5 h-5" />
@@ -603,9 +610,9 @@ export default function Editor() {
                 <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
                   <TabsTrigger
                     value="ai-creator"
-                    className="shrink-0 min-w-[90px] text-xs sm:text-sm text-blue-600 data-[state=active]:text-blue-700"
+                    className="shrink-0 min-w-[90px] text-xs sm:text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold"
                   >
-                    <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar c/ IA
+                    <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar Vídeo
                   </TabsTrigger>
                   <TabsTrigger
                     value="media"
@@ -629,7 +636,7 @@ export default function Editor() {
                     value="preview"
                     className="shrink-0 min-w-[70px] text-xs sm:text-sm"
                   >
-                    Preview
+                    Ajustes Finais
                   </TabsTrigger>
                   <TabsTrigger
                     value="publish"
@@ -685,7 +692,7 @@ export default function Editor() {
                               size="lg"
                               onClick={() => setActiveTab('preview')}
                             >
-                              Próximo Passo: Preview{' '}
+                              Próximo Passo: Ajustes Finais{' '}
                               <ArrowRight className="w-5 h-5 ml-2" />
                             </Button>
                           </div>

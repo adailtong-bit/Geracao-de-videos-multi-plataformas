@@ -106,58 +106,91 @@ export function AiCreatorPanel({
   }
 
   const finishGeneration = () => {
-    const words = prompt.split(' ').filter((w) => w.length > 3)
-    const keyword = words.length > 0 ? encodeURIComponent(words[0]) : 'epic'
+    const isSalmo21 =
+      prompt.toLowerCase().includes('salmo 21') ||
+      prompt.toLowerCase().includes('psalm 21')
 
-    const templateThemes: Record<
-      string,
-      { title: string; text1: string; text2: string }
-    > = {
-      mystery: {
-        title: 'O Segredo Oculto:',
-        text1: 'Tudo começou quando descobrimos algo incrível.',
-        text2: 'Durante anos, isso foi escondido de todos nós.',
-      },
-      curiosities: {
-        title: 'Você Sabia disso?',
-        text1: 'Fatos incríveis que vão explodir sua mente!',
-        text2: 'Muitas pessoas passam a vida inteira sem saber disso.',
-      },
-      motivational: {
-        title: 'Sua Dose de Inspiração',
-        text1: 'O sucesso é construído dia após dia.',
-        text2: 'Não desista quando a estrada ficar difícil.',
-      },
-    }
+    let generatedResult: GeneratedResult
 
-    const t = templateThemes[template] || templateThemes.mystery
+    if (isSalmo21) {
+      generatedResult = {
+        title: 'Salmo 21 - A Alegria e a Força do Rei',
+        description:
+          'Uma mensagem poderosa de fé, vitória e bênçãos baseada no Salmo 21. #salmo21 #fe #biblia #deus',
+        hashtags: '#salmo21 #fe #biblia #deus #vitoria #reflexao',
+        scenes: [
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=ancient%20king%20praying&seed=s21_1`,
+            text: 'O rei se alegra na tua força, ó Senhor!',
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=glowing%20gold%20crown&seed=s21_2`,
+            text: 'Puseste em sua cabeça uma coroa de ouro puro.',
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=sunlight%20breaking%20clouds&seed=s21_3`,
+            text: 'A vida ele te pediu, e tu lha deste.',
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=majestic%20sky%20glory&seed=s21_4`,
+            text: 'Grande é a sua glória pelo teu socorro.',
+          },
+        ],
+      }
+    } else {
+      const words = prompt.split(' ').filter((w) => w.length > 3)
+      const keyword = words.length > 0 ? encodeURIComponent(words[0]) : 'epic'
 
-    const generatedResult: GeneratedResult = {
-      title: `${t.title} ${prompt.slice(0, 15)}...`,
-      description: `Vídeo gerado com IA usando estilo "${template}" e tom de voz de ${voice}.`,
-      hashtags: `#viral #${template} #ia`,
-      scenes: [
-        {
-          imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=1`,
-          text: t.text1,
+      const templateThemes: Record<
+        string,
+        { title: string; text1: string; text2: string }
+      > = {
+        mystery: {
+          title: 'O Segredo Oculto:',
+          text1: 'Tudo começou quando descobrimos algo incrível.',
+          text2: 'Durante anos, isso foi escondido de todos nós.',
         },
-        {
-          imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=2`,
-          text: t.text2,
+        curiosities: {
+          title: 'Você Sabia disso?',
+          text1: 'Fatos incríveis que vão explodir sua mente!',
+          text2: 'Muitas pessoas passam a vida inteira sem saber disso.',
         },
-        {
-          imageUrl: `https://img.usecurling.com/p/400/700?q=cinematic&seed=3`,
-          text: 'Mas agora, a verdade finalmente apareceu.',
+        motivational: {
+          title: 'Sua Dose de Inspiração',
+          text1: 'O sucesso é construído dia após dia.',
+          text2: 'Não desista quando a estrada ficar difícil.',
         },
-        {
-          imageUrl: `https://img.usecurling.com/p/400/700?q=shocked&seed=4`,
-          text: 'Curta e siga para descobrir mais!',
-        },
-      ],
+      }
+
+      const t = templateThemes[template] || templateThemes.mystery
+
+      generatedResult = {
+        title: `${t.title} ${prompt.slice(0, 15)}...`,
+        description: `Vídeo gerado com IA usando estilo "${template}" e tom de voz de ${voice}.`,
+        hashtags: `#viral #${template} #ia`,
+        scenes: [
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=1`,
+            text: t.text1,
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=2`,
+            text: t.text2,
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=cinematic&seed=3`,
+            text: 'Mas agora, a verdade finalmente apareceu.',
+          },
+          {
+            imageUrl: `https://img.usecurling.com/p/400/700?q=shocked&seed=4`,
+            text: 'Curta e siga para descobrir mais!',
+          },
+        ],
+      }
     }
 
     // Automatically load the newly generated content as a Draft
-    const sceneDuration = 3
+    const sceneDuration = 4
     const totalDuration = generatedResult.scenes.length * sceneDuration
 
     const bRolls: BRoll[] = generatedResult.scenes.map((s, i) => ({
@@ -323,7 +356,7 @@ export function AiCreatorPanel({
         <p className="text-sm text-muted-foreground">
           Crie um vídeo viral completo a partir de uma simples ideia. A IA
           cuidará do roteiro, imagens, áudio e metadados, atualizando o player
-          automaticamente.
+          automaticamente. Tente buscar por "Salmo 21".
         </p>
 
         <div className="space-y-3">
@@ -332,7 +365,7 @@ export function AiCreatorPanel({
           </Label>
           <Textarea
             id="prompt"
-            placeholder="Ex: Conte uma história sobre o mistério das pirâmides..."
+            placeholder="Ex: Conte uma história sobre o mistério das pirâmides... ou Salmo 21"
             className="min-h-[100px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
