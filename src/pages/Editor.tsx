@@ -14,6 +14,7 @@ import { AudioPanel } from '@/components/editor/AudioPanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AssetsPanel } from '@/components/editor/AssetsPanel'
 import { AiClipsPanel } from '@/components/editor/AiClipsPanel'
+import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { PreviewSimulatorModal } from '@/components/editor/PreviewSimulatorModal'
 import { PreviewPanel } from '@/components/editor/PreviewPanel'
 import { SimulatorDisplay } from '@/components/editor/SimulatorDisplay'
@@ -33,6 +34,7 @@ import {
   Sparkles,
   ArrowRight,
   Activity,
+  Wand2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Platform } from '@/types'
@@ -261,7 +263,7 @@ export default function Editor() {
   const [project, update] = useProject(id || '')
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showSafeZones, setShowSafeZones] = useState(false)
-  const [activeTab, setActiveTab] = useState('media')
+  const [activeTab, setActiveTab] = useState('ai-creator')
   const [previewPlatform, setPreviewPlatform] = useState<Platform>('tiktok')
   const { toast } = useToast()
 
@@ -407,6 +409,12 @@ export default function Editor() {
           >
             <TabsList className="w-full justify-start rounded-none border-b h-12 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
               <TabsTrigger
+                value="ai-creator"
+                className="shrink-0 min-w-[90px] text-xs sm:text-sm text-blue-600 data-[state=active]:text-blue-700"
+              >
+                <Wand2 className="w-3.5 h-3.5 mr-1" /> Criar c/ IA
+              </TabsTrigger>
+              <TabsTrigger
                 value="media"
                 className="shrink-0 min-w-[60px] text-xs sm:text-sm"
               >
@@ -440,6 +448,14 @@ export default function Editor() {
             <div className="flex-1 relative overflow-hidden">
               <ScrollArea className="absolute inset-0 w-full h-full">
                 <div className="p-4 md:p-6 pb-12">
+                  <TabsContent value="ai-creator" className="mt-0 outline-none">
+                    <AiCreatorPanel
+                      project={project}
+                      update={update}
+                      onNext={() => setActiveTab('editor')}
+                      onPreview={() => setActiveTab('preview')}
+                    />
+                  </TabsContent>
                   <TabsContent value="media" className="mt-0 outline-none">
                     <MediaPanel
                       project={project}
