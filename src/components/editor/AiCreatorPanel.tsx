@@ -1,10 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Project, BRoll, AiClip } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Wand2,
   Image as ImageIcon,
@@ -14,6 +28,9 @@ import {
   FileText,
   Loader2,
   RefreshCcw,
+  Mic,
+  LayoutTemplate,
+  HelpCircle,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -39,6 +56,8 @@ interface GeneratedResult {
 
 export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
   const [prompt, setPrompt] = useState('')
+  const [voice, setVoice] = useState('documentary')
+  const [template, setTemplate] = useState('mystery')
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
   )
@@ -63,7 +82,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
     const steps = [
       { p: 25, t: 'Escrevendo roteiro viral...' },
       { p: 50, t: 'Gerando imagens fotorealistas...' },
-      { p: 75, t: 'Otimizando metadados...' },
+      { p: 75, t: 'Ajustando tom de voz e ritmo...' },
       { p: 100, t: 'Finalizando vídeo...' },
     ]
 
@@ -84,19 +103,41 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
     const words = prompt.split(' ').filter((w) => w.length > 3)
     const keyword = words.length > 0 ? encodeURIComponent(words[0]) : 'epic'
 
+    const templateThemes: Record<
+      string,
+      { title: string; text1: string; text2: string }
+    > = {
+      mystery: {
+        title: 'O Segredo Oculto:',
+        text1: 'Tudo começou quando descobrimos algo incrível.',
+        text2: 'Durante anos, isso foi escondido de todos nós.',
+      },
+      curiosities: {
+        title: 'Você Sabia disso?',
+        text1: 'Fatos incríveis que vão explodir sua mente!',
+        text2: 'Muitas pessoas passam a vida inteira sem saber disso.',
+      },
+      motivational: {
+        title: 'Sua Dose de Inspiração',
+        text1: 'O sucesso é construído dia após dia.',
+        text2: 'Não desista quando a estrada ficar difícil.',
+      },
+    }
+
+    const t = templateThemes[template] || templateThemes.mystery
+
     setResult({
-      title: `O Segredo Oculto: ${prompt.slice(0, 15)}...`,
-      description:
-        'Você não vai acreditar no que descobrimos no final deste vídeo!',
-      hashtags: '#viral #curiosidades #misterio #ia #fatos',
+      title: `${t.title} ${prompt.slice(0, 15)}...`,
+      description: `Vídeo gerado com IA usando estilo "${template}" e tom de voz de ${voice}.`,
+      hashtags: `#viral #${template} #ia`,
       scenes: [
         {
           imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=1`,
-          text: 'Tudo começou quando descobrimos algo incrível.',
+          text: t.text1,
         },
         {
-          imageUrl: `https://img.usecurling.com/p/400/700?q=mystery&seed=2`,
-          text: 'Durante anos, isso foi escondido de todos nós.',
+          imageUrl: `https://img.usecurling.com/p/400/700?q=${keyword}&seed=2`,
+          text: t.text2,
         },
         {
           imageUrl: `https://img.usecurling.com/p/400/700?q=cinematic&seed=3`,
@@ -261,7 +302,7 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
         </h3>
         <p className="text-sm text-muted-foreground">
           Crie um vídeo viral completo a partir de uma simples ideia. A IA
-          cuidará do roteiro, imagens e metadados.
+          cuidará do roteiro, imagens, áudio e metadados.
         </p>
 
         <div className="space-y-3">
@@ -275,6 +316,67 @@ export function AiCreatorPanel({ project, update, onNext, onPreview }: Props) {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold text-sm flex items-center gap-2">
+                <Mic className="w-4 h-4 text-primary" /> Narrador (Voz)
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>A voz da IA que irá narrar seu vídeo.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Select value={voice} onValueChange={setVoice}>
+              <SelectTrigger className="w-full bg-background/50 h-10">
+                <SelectValue placeholder="Selecione a voz" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="documentary">
+                  Locutor de Documentário
+                </SelectItem>
+                <SelectItem value="enthusiastic">Voz Entusiasmada</SelectItem>
+                <SelectItem value="suspense">Tom de Suspense</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold text-sm flex items-center gap-2">
+                <LayoutTemplate className="w-4 h-4 text-primary" /> Template
+                Pronto
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>A estrutura de conteúdo do seu formato de vídeo.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <Select value={template} onValueChange={setTemplate}>
+              <SelectTrigger className="w-full bg-background/50 h-10">
+                <SelectValue placeholder="Selecione o template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mystery">Mistério</SelectItem>
+                <SelectItem value="curiosities">Curiosidades</SelectItem>
+                <SelectItem value="motivational">Motivacional</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-3">

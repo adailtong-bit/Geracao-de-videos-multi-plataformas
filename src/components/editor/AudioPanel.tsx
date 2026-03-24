@@ -2,7 +2,21 @@ import { Project, AudioTrack } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Music, Wand2, PlayCircle, CheckCircle2 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  Music,
+  Wand2,
+  PlayCircle,
+  CheckCircle2,
+  Scissors,
+  HelpCircle,
+  Loader2,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -23,6 +37,7 @@ interface Props {
 export function AudioPanel({ project, update }: Props) {
   const { toast } = useToast()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isRemovingSilences, setIsRemovingSilences] = useState(false)
 
   const handleSuggestSoundtrack = () => {
     setIsAnalyzing(true)
@@ -46,11 +61,64 @@ export function AudioPanel({ project, update }: Props) {
     update({ audioTrack: track })
   }
 
+  const handleRemoveSilences = () => {
+    setIsRemovingSilences(true)
+    toast({
+      title: 'Analisando áudio...',
+      description: 'Buscando espaços vazios e silêncios na narração...',
+    })
+
+    setTimeout(() => {
+      setIsRemovingSilences(false)
+      toast({
+        title: 'Silêncios removidos!',
+        description: 'Seu vídeo ficou mais dinâmico e focado.',
+      })
+    }, 2000)
+  }
+
   const moods = Array.from(new Set(MUSIC_LIBRARY.map((t) => t.mood)))
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-4">
-      <div className="flex items-center justify-between">
+      <div className="bg-background p-5 rounded-xl border shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <Scissors className="w-4 h-4 text-primary" /> Edição de Áudio
+            Inteligente
+          </Label>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-[200px] text-xs">
+                  A IA detecta e remove automaticamente partes sem fala ou
+                  longas pausas para reter a atenção da sua audiência.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <Button
+          variant="secondary"
+          className="w-full font-semibold border border-primary/20 hover:border-primary/50 transition-all h-11"
+          onClick={handleRemoveSilences}
+          disabled={isRemovingSilences || !project.videoUrl}
+        >
+          {isRemovingSilences ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Scissors className="w-4 h-4 mr-2" />
+          )}
+          {isRemovingSilences
+            ? 'Processando áudio...'
+            : 'Remover Silêncios Inteligente'}
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between mt-8">
         <h3 className="font-semibold flex items-center gap-2 text-lg">
           <Music className="w-5 h-5 text-primary" /> Trilha Sonora (IA)
         </h3>

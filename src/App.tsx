@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Index from './pages/Index'
+import Dashboard from './pages/Dashboard'
 import Editor from './pages/Editor'
 import Login from './pages/Login'
 import Profile from './pages/Profile'
@@ -36,6 +37,7 @@ const App = () => (
           }
         >
           <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/editor/:id" element={<Editor />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/integrations" element={<Integrations />} />

@@ -7,6 +7,7 @@ import {
   LogOut,
   Video,
   Link as LinkIcon,
+  Home,
 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
@@ -25,7 +26,8 @@ export default function Layout() {
   }
 
   const links = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Projetos', path: '/', icon: Home },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Integrations', path: '/integrations', icon: LinkIcon },
     { name: 'Billing', path: '/billing', icon: CreditCard },
