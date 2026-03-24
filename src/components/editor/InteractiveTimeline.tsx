@@ -186,6 +186,28 @@ export function InteractiveTimeline({
                   )),
                 )}
               </div>
+
+              {/* Cuts Track */}
+              {project.cuts && project.cuts.length > 0 && (
+                <div className="relative h-10 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto mt-3">
+                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end text-right leading-tight">
+                    Smart Cuts
+                  </div>
+                  {project.cuts.map((cut, i) => (
+                    <div
+                      key={cut.id}
+                      className="absolute top-1 bottom-1 bg-green-500/20 border border-green-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-green-800 dark:text-green-200 font-medium overflow-hidden shadow-sm"
+                      style={{
+                        left: cut.start * PIXELS_PER_SEC,
+                        width: (cut.end - cut.start) * PIXELS_PER_SEC,
+                      }}
+                    >
+                      <span className="truncate w-full">Corte #{i + 1}</span>
+                      <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-green-500/50" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <ScrollBar orientation="horizontal" className="h-2.5" />

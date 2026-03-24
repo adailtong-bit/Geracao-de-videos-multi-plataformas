@@ -159,18 +159,33 @@ export function AiCreatorPanel({
     if (onStatusChange) onStatusChange('generating')
     setProgress(0)
 
-    setStatusText(
-      sourceType === 'text'
-        ? 'Extraindo contexto semântico...'
-        : 'Analisando vídeo completo para extrair os melhores cortes...',
-    )
+    const initialText =
+      sourceType === 'video'
+        ? 'Acessando link e ingerindo vídeo...'
+        : 'Extraindo contexto semântico...'
+    setStatusText(initialText)
 
-    const steps = [
-      { p: 25, t: `Ajustando emoção para modo ${mood}...` },
-      { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
-      { p: 75, t: `Renderizando oratória ${language}...` },
-      { p: 100, t: 'Garantindo transições orgânicas...' },
-    ]
+    const steps =
+      sourceType === 'video'
+        ? [
+            { p: 20, t: `Ingerindo vídeo completo da URL...` },
+            {
+              p: 40,
+              t: `Motor de IA extraindo os melhores cortes (Smart Highlights)...`,
+            },
+            {
+              p: 60,
+              t: `Sincronizando áudio e texto global em ${language}...`,
+            },
+            { p: 80, t: `Posicionando legendas minimalistas no rodapé...` },
+            { p: 100, t: 'Gerando sequência HD final...' },
+          ]
+        : [
+            { p: 25, t: `Ajustando emoção para modo ${mood}...` },
+            { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
+            { p: 75, t: `Sincronizando áudio e texto em ${language}...` },
+            { p: 100, t: 'Garantindo transições orgânicas...' },
+          ]
 
     let currentStep = 0
     const interval = setInterval(() => {
@@ -233,8 +248,11 @@ export function AiCreatorPanel({
     if (sourceType === 'video') {
       totalDuration = targetDuration
 
-      const allowedClauses = Math.max(1, Math.floor(targetDuration / 3))
-      const selectedClauses = clauses.slice(0, allowedClauses)
+      const numClauses = Math.min(
+        clauses.length,
+        Math.max(2, Math.floor(targetDuration / 4)),
+      )
+      const selectedClauses = clauses.slice(0, numClauses)
 
       currentStartTime = 0
       scenes = selectedClauses.map((text, i) => {
@@ -256,14 +274,11 @@ export function AiCreatorPanel({
         }
       })
 
-      cuts = [
-        { id: crypto.randomUUID(), start: 10, end: 10 + targetDuration * 0.6 },
-        {
-          id: crypto.randomUUID(),
-          start: 150,
-          end: 150 + targetDuration * 0.4,
-        },
-      ]
+      cuts = scenes.map((s) => ({
+        id: crypto.randomUUID(),
+        start: s.start,
+        end: s.end,
+      }))
     }
 
     const bRolls: BRoll[] = scenes.map((s) => ({
@@ -457,8 +472,9 @@ export function AiCreatorPanel({
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                A IA analisará o vídeo completo e extrairá automaticamente os
-                melhores cortes de acordo com a duração escolhida.
+                A IA ingerirá o vídeo completo e aplicará o motor de cortes
+                inteligentes (Smart Highlights) extraindo os melhores momentos
+                baseados na duração alvo.
               </p>
             </div>
             <div className="space-y-2">
