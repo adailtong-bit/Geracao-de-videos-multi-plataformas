@@ -9,7 +9,9 @@ export const getProjects = (): Project[] => {
       const parsed = JSON.parse(data)
       if (parsed.length > 0) return parsed
     }
-  } catch {}
+  } catch {
+    // Ignore error and fall back to mock data
+  }
 
   // Provide fully populated mock data by default so the interface is never blank
   const defaultProject: Project = {
