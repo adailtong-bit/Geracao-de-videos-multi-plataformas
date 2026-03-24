@@ -83,14 +83,15 @@ function TimelinePlayer({
       <div className="px-4 py-2 flex items-center justify-between shrink-0 bg-muted/20 border-b">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
+            variant={isPlaying ? 'secondary' : 'default'}
             size="icon"
+            className="rounded-full shadow-sm w-10 h-10 transition-transform active:scale-95"
             onClick={isPlaying ? pause : play}
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5" />
+              <Pause className="w-5 h-5 fill-current" />
             ) : (
-              <Play className="w-5 h-5" />
+              <Play className="w-5 h-5 fill-current ml-1" />
             )}
           </Button>
           <div className="flex items-center gap-2 w-32">
@@ -119,8 +120,9 @@ function TimelinePlayer({
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant={pendingMark !== null ? 'destructive' : 'default'}
+            variant={pendingMark !== null ? 'destructive' : 'outline'}
             onClick={handleMarkCut}
+            className="font-medium"
           >
             <Scissors className="w-4 h-4 mr-2" />
             {pendingMark !== null ? 'Marcar Fim' : 'Marcar Corte'}
@@ -287,7 +289,7 @@ export default function Editor() {
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0 w-full">
-        <div className="w-80 lg:w-96 border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
+        <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
           <Tabs
             defaultValue="media"
             className="flex-1 flex flex-col overflow-hidden"
@@ -303,7 +305,7 @@ export default function Editor() {
                 value="ai-clips"
                 className="flex-1 min-w-[80px] text-xs sm:text-sm text-purple-600 data-[state=active]:text-purple-700"
               >
-                <Sparkles className="w-3.5 h-3.5 mr-1" /> AI
+                <Sparkles className="w-3.5 h-3.5 mr-1" /> IA Engine
               </TabsTrigger>
               <TabsTrigger
                 value="overlays"
