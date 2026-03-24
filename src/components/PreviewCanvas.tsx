@@ -366,26 +366,29 @@ export function PreviewCanvas({
               />
             )}
 
-            <div className="absolute inset-0 z-10 pointer-events-none bg-black/20">
-              {project.bRolls?.map((br) => {
-                const isActive = currentTime >= br.start && currentTime < br.end
-                const isRendered =
-                  currentTime >= br.start - 0.5 && currentTime <= br.end + 1.5
-                if (!isRendered) return null
-                return (
-                  <img
-                    key={br.id}
-                    src={br.url}
-                    alt="Semantic"
-                    className={cn(
-                      'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
-                      isActive ? 'opacity-100' : 'opacity-0',
-                    )}
-                    style={{ transitionDuration: '2000ms' }}
-                  />
-                )
-              })}
-            </div>
+            {project.bRolls && project.bRolls.length > 0 && (
+              <div className="absolute inset-0 z-10 pointer-events-none bg-black/20">
+                {project.bRolls.map((br) => {
+                  const isActive =
+                    currentTime >= br.start && currentTime < br.end
+                  const isRendered =
+                    currentTime >= br.start - 0.5 && currentTime <= br.end + 1.5
+                  if (!isRendered) return null
+                  return (
+                    <img
+                      key={br.id}
+                      src={br.url}
+                      alt="Semantic"
+                      className={cn(
+                        'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
+                        isActive ? 'opacity-100' : 'opacity-0',
+                      )}
+                      style={{ transitionDuration: '2000ms' }}
+                    />
+                  )
+                })}
+              </div>
+            )}
 
             {!project.noTextMode &&
               project.aiClips?.map((clip) => {
@@ -396,9 +399,11 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="subtitle-container pointer-events-none animate-fade-in-up"
+                    className="absolute bottom-8 left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-200"
                   >
-                    <span className="subtitle-text">{activeSub.text}</span>
+                    <div className="bg-black/70 backdrop-blur-md text-white/95 px-4 py-2 rounded-lg text-sm md:text-base font-medium shadow-lg text-center max-w-[90%] leading-relaxed tracking-wide">
+                      {activeSub.text}
+                    </div>
                   </div>
                 )
               })}

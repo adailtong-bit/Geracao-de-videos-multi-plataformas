@@ -242,7 +242,6 @@ export function AiCreatorPanel({
             ]
 
       let currentStartTime = 0
-      let currentSourceStart = 15
 
       scenes = Array.from({ length: numSegments }).map((_, i) => {
         const text = interviewTexts[i % interviewTexts.length]
@@ -250,10 +249,16 @@ export function AiCreatorPanel({
         const end = start + segmentDuration
         currentStartTime = end
 
-        const cutSourceStart = currentSourceStart
-        const cutSourceEnd = currentSourceStart + segmentDuration
+        // Simulate multicam detection: alternate between different parts of the source video
+        // to represent different speakers/camera angles, ensuring no repetitions
+        let cutSourceStart = 0
+        if (i % 2 === 0) {
+          cutSourceStart = 50 + i * 20
+        } else {
+          cutSourceStart = 150 + i * 20
+        }
 
-        currentSourceStart = cutSourceEnd + 45 + Math.random() * 60
+        const cutSourceEnd = cutSourceStart + segmentDuration
 
         return {
           id: crypto.randomUUID(),
@@ -274,7 +279,7 @@ export function AiCreatorPanel({
         sourceEnd: s.sourceEnd,
       }))
 
-      rawText = interviewTexts.join(' ')
+      rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
       if (sourceType === 'upload') rawText = defaultTexts[language]
       else if (!rawText) rawText = defaultShortTexts[language]
@@ -358,7 +363,9 @@ export function AiCreatorPanel({
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
     const underlyingVideo =
       sourceType === 'video'
-        ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+        ? videoUrl.endsWith('.mp4')
+          ? videoUrl
+          : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
         : null
 
     const newDraft: Draft = {
@@ -379,12 +386,15 @@ export function AiCreatorPanel({
           facebook: captionText,
         },
         sfx: [],
-        audioTrack: {
-          id: crypto.randomUUID(),
-          name: 'Cinematic Ambient',
-          mood: 'Ambient',
-          url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
-        },
+        audioTrack:
+          sourceType === 'video'
+            ? null
+            : {
+                id: crypto.randomUUID(),
+                name: 'Cinematic Ambient',
+                mood: 'Ambient',
+                url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+              },
         language,
         voiceProfile,
         visualStyle,
@@ -393,8 +403,25 @@ export function AiCreatorPanel({
       },
     }
 
+    // Hard reset editor state by passing the complete snapshot
+    // to wipe out any previous elements/styles from the editor
     update({
-      ...newDraft.snapshot,
+      videoUrl: newDraft.snapshot.videoUrl,
+      videoDuration: newDraft.snapshot.videoDuration,
+      bRolls: newDraft.snapshot.bRolls,
+      aiClips: newDraft.snapshot.aiClips,
+      cuts: newDraft.snapshot.cuts,
+      elements: newDraft.snapshot.elements,
+      globalCaptionStyle: newDraft.snapshot.globalCaptionStyle,
+      captions: newDraft.snapshot.captions,
+      sfx: newDraft.snapshot.sfx,
+      audioTrack: newDraft.snapshot.audioTrack,
+      language: newDraft.snapshot.language,
+      voiceProfile: newDraft.snapshot.voiceProfile,
+      visualStyle: newDraft.snapshot.visualStyle,
+      mood: newDraft.snapshot.mood,
+      noTextMode: newDraft.snapshot.noTextMode,
+
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
     })
