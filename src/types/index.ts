@@ -9,6 +9,7 @@ export interface ProjectElement {
   y: number
   color?: string
   bgColor?: string
+  animationStyle?: 'pop-up' | 'highlight' | 'none'
 }
 
 export interface CutSegment {
@@ -54,6 +55,14 @@ export interface AudioTrack {
   url?: string
 }
 
+export interface SFXTrack {
+  id: string
+  sfxId: string
+  name: string
+  category: string
+  start: number
+}
+
 export interface ScheduledPost {
   id: string
   platform: Platform
@@ -78,6 +87,8 @@ export interface Project {
   energyData?: EnergyPoint[]
   bRolls?: BRoll[]
   audioTrack?: AudioTrack | null
+  sfx?: SFXTrack[]
+  globalCaptionStyle?: 'pop-up' | 'highlight' | 'none'
   scheduledPosts?: ScheduledPost[]
 }
 

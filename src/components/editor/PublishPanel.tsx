@@ -15,12 +15,13 @@ import {
   Instagram,
   Facebook,
   Share2,
-  Eye,
   Loader2,
   CheckCircle2,
   CalendarIcon,
   Clock,
   Trash2,
+  Sparkles,
+  Link as LinkIcon,
 } from 'lucide-react'
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
 
 export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const { toast } = useToast()
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
 
   const [statuses, setStatuses] = useState<
     Record<Platform, 'ready' | 'uploading' | 'published'>
@@ -45,6 +46,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
   const [viewDate, setViewDate] = useState<Date | undefined>(new Date())
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
 
   const totalCuts =
     project.cuts?.reduce((acc, cut) => acc + (cut.end - cut.start), 0) || 0
@@ -59,16 +61,62 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     update({ targetPlatforms: platforms })
   }
 
+  const handleConnect = (p: Platform) => {
+    updateUser({
+      linkedAccounts: {
+        ...user?.linkedAccounts,
+        [p]: 'connected',
+      },
+    })
+    toast({
+      title: 'Conta Conectada',
+      description: `Sua conta do ${p} foi vinculada com sucesso.`,
+    })
+  }
+
+  const handleGenerateAICaptions = () => {
+    setIsGeneratingAi(true)
+    setTimeout(() => {
+      const hashtags = '#viral #dicas #curiosidades #fyp #foryou #trends'
+      const text = `Você não vai acreditar no que descobrimos hoje! 😱🔥 Assista até o final para ver o segredo revelado que poucas pessoas conhecem.\n\n${hashtags}`
+      update({
+        captions: {
+          tiktok: text,
+          instagram: text,
+          facebook: text,
+        },
+      })
+      setIsGeneratingAi(false)
+      toast({ title: 'Copy e Hashtags geradas com IA!' })
+    }, 2000)
+  }
+
   const handleAction = () => {
-    if (!isPro)
-      return toast({ title: 'Recurso Pro Necessário', variant: 'destructive' })
     if (project.targetPlatforms.length === 0)
       return toast({
         title: 'Selecione uma plataforma',
         variant: 'destructive',
       })
 
+    const unconnected = project.targetPlatforms.filter(
+      (p) => !user?.linkedAccounts?.[p],
+    )
+    if (unconnected.length > 0) {
+      return toast({
+        title: 'Contas Desconectadas',
+        description: `Vincule suas contas do ${unconnected.join(', ')} antes de publicar.`,
+        variant: 'destructive',
+      })
+    }
+
     if (publishMode === 'schedule') {
+      if (!isPro)
+        return toast({
+          title: 'Recurso Pro Necessário',
+          description: 'O agendamento de posts é exclusivo do plano Pro.',
+          variant: 'destructive',
+        })
+
       if (!scheduleDate || !scheduleTime)
         return toast({
           title: 'Data e hora obrigatórias',
@@ -95,7 +143,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
     setStatuses(newStatuses)
     toast({
       title: 'Publicando Vídeo',
-      description: `Enviando para as plataformas...`,
+      description: `Enviando para as plataformas selecionadas...`,
     })
 
     setTimeout(() => {
@@ -106,7 +154,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
       setStatuses(finalStatuses)
       toast({
         title: 'Sucesso! 🚀',
-        description: 'Vídeo publicado com sucesso.',
+        description: 'Vídeo exportado e publicado diretamente nas suas redes.',
       })
     }, 3000)
   }
@@ -150,12 +198,62 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
         </Alert>
       )}
 
+      <div className="space-y-4 bg-background p-5 rounded-xl border shadow-sm">
+        <h3 className="font-semibold text-base flex items-center gap-2">
+          <LinkIcon className="w-5 h-5 text-blue-500" /> Contas Sociais
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Conecte suas contas para publicar ou agendar diretamente pelo
+          aplicativo, sem precisar baixar o vídeo.
+        </p>
+        <div className="grid grid-cols-1 gap-3">
+          {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => {
+            const isConnected = user?.linkedAccounts?.[p]
+            return (
+              <div
+                key={p}
+                className="flex items-center justify-between p-3 rounded-lg border bg-muted/20"
+              >
+                <span className="capitalize font-medium text-sm flex items-center gap-2">
+                  {p === 'tiktok' && (
+                    <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">
+                      t
+                    </div>
+                  )}
+                  {p === 'instagram' && (
+                    <Instagram className="w-5 h-5 text-pink-600" />
+                  )}
+                  {p === 'facebook' && (
+                    <Facebook className="w-5 h-5 text-blue-600" />
+                  )}
+                  {p}
+                </span>
+                {isConnected ? (
+                  <span className="text-xs font-semibold text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" /> Conectado
+                  </span>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-semibold"
+                    onClick={() => handleConnect(p)}
+                  >
+                    Vincular Conta
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
           <Share2 className="w-5 h-5 text-primary" /> Roteamento Multiplataforma
         </h3>
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
-          {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => (
+          {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => (
             <div
               key={p}
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
@@ -192,7 +290,23 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
 
       {project.targetPlatforms.length > 0 && (
         <div className="space-y-5">
-          <h3 className="font-semibold text-lg">Legendas Únicas</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-lg">Legendas & Hashtags</h3>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleGenerateAICaptions}
+              disabled={isGeneratingAi || !project.videoUrl}
+              className="font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
+            >
+              {isGeneratingAi ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              AI Copywriter
+            </Button>
+          </div>
           {project.targetPlatforms.map((p) => (
             <div
               key={p}
@@ -210,7 +324,7 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
                     captions: { ...project.captions, [p]: e.target.value },
                   })
                 }
-                className="resize-none h-20 mt-2 border-muted text-sm"
+                className="resize-none h-28 mt-2 border-muted text-sm"
               />
             </div>
           ))}
@@ -268,8 +382,8 @@ export function PublishPanel({ project, update, onPreviewClick }: Props) {
           ) : null}
           {publishMode === 'now'
             ? isPublishing
-              ? 'Publicando...'
-              : 'Publicar nos Selecionados'
+              ? 'Exportando & Publicando...'
+              : 'Publicar Direto nas Redes'
             : 'Agendar Posts'}
         </Button>
       </div>

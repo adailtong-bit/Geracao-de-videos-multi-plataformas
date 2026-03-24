@@ -40,12 +40,24 @@ function SubtitleOverlay({ project }: { project: Project }) {
 
   if (!currentSubtitle) return null
 
+  const animClass =
+    project.globalCaptionStyle === 'pop-up'
+      ? 'animate-caption-pop-up'
+      : project.globalCaptionStyle === 'highlight'
+        ? 'animate-caption-highlight'
+        : ''
+
   return (
     <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 z-40 text-center w-[90%] pointer-events-none transition-all duration-75">
       <span
-        className="text-white px-3 py-1 text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tighter leading-tight inline-block transform scale-110"
+        key={currentSubtitle.id}
+        className={cn(
+          'text-white px-3 py-1 text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tighter leading-tight inline-block transform scale-110',
+          animClass,
+        )}
         style={{
-          color: '#facc15', // Vibrant yellow typical of short-form content
+          color:
+            project.globalCaptionStyle === 'highlight' ? '#ffffff' : '#facc15',
           WebkitTextStroke: '1.5px black',
           textShadow: '3px 4px 8px rgba(0,0,0,0.8), 0px 0px 4px rgba(0,0,0,1)',
         }}
@@ -203,34 +215,54 @@ export function PreviewCanvas({
 
         <SubtitleOverlay project={project} />
 
-        {project.elements.map((el) => (
-          <div
-            key={el.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out z-50 cursor-default"
-            style={{ left: `${el.x}%`, top: `${el.y}%` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {el.type === 'text' || el.type === 'caption' ? (
-              <span
-                className={cn(
-                  'font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] whitespace-nowrap text-xl sm:text-2xl md:text-3xl',
-                  el.type === 'caption' &&
-                    'bg-black/60 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg font-black border border-white/10',
-                )}
-                style={{ color: el.color || '#ffffff' }}
-              >
-                {el.content || 'Texto'}
-              </span>
-            ) : (
-              <div
-                className="text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold text-sm sm:text-xl whitespace-nowrap shadow-[0_8px_16px_rgba(0,0,0,0.5)] border border-white/20"
-                style={{ backgroundColor: el.bgColor || '#e11d48' }}
-              >
-                {el.content || 'Banner'}
-              </div>
-            )}
-          </div>
-        ))}
+        {project.elements.map((el) => {
+          const isAnimated =
+            el.type === 'caption' &&
+            el.animationStyle &&
+            el.animationStyle !== 'none'
+          const animClass =
+            el.animationStyle === 'pop-up'
+              ? 'animate-caption-pop-up'
+              : el.animationStyle === 'highlight'
+                ? 'animate-caption-highlight'
+                : ''
+
+          return (
+            <div
+              key={el.id}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out z-50 cursor-default"
+              style={{ left: `${el.x}%`, top: `${el.y}%` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {el.type === 'text' || el.type === 'caption' ? (
+                <span
+                  key={isPlaying ? el.id : `static-${el.id}`}
+                  className={cn(
+                    'font-bold drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] whitespace-nowrap text-xl sm:text-2xl md:text-3xl',
+                    el.type === 'caption' &&
+                      'bg-black/60 px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg font-black border border-white/10',
+                    isAnimated && animClass,
+                  )}
+                  style={{
+                    color:
+                      el.animationStyle === 'highlight'
+                        ? '#ffffff'
+                        : el.color || '#ffffff',
+                  }}
+                >
+                  {el.content || 'Texto'}
+                </span>
+              ) : (
+                <div
+                  className="text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold text-sm sm:text-xl whitespace-nowrap shadow-[0_8px_16px_rgba(0,0,0,0.5)] border border-white/20"
+                  style={{ backgroundColor: el.bgColor || '#e11d48' }}
+                >
+                  {el.content || 'Banner'}
+                </div>
+              )}
+            </div>
+          )
+        })}
 
         {showSafeZones && project.videoUrl && (
           <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-end text-white p-4 pb-6 bg-gradient-to-t from-black/60 via-transparent to-black/30">

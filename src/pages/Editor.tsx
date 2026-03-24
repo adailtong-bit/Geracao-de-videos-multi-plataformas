@@ -245,6 +245,18 @@ function TimelinePlayer({
                 />
               )
             })}
+            {project.sfx?.map((sfx) => {
+              const left = (sfx.start / duration) * 100
+              return (
+                <div
+                  key={sfx.id}
+                  className="absolute top-1.5 h-2 w-2 bg-yellow-400 rounded-full z-30 shadow-[0_0_5px_rgba(250,204,21,0.8)] -translate-x-1 cursor-pointer hover:scale-150 transition-transform pointer-events-auto"
+                  style={{ left: `${left}%` }}
+                  title={`SFX: ${sfx.name} (${sfx.category})`}
+                  onClick={() => seek(sfx.start)}
+                />
+              )
+            })}
             {pendingMark !== null && (
               <div
                 className="absolute top-0 h-2 w-2 bg-red-500 rounded-full -translate-x-1 shadow-sm"

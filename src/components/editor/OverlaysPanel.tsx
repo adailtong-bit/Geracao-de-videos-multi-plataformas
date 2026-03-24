@@ -4,7 +4,21 @@ import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Type, Square, Trash2, GripHorizontal, Wand2 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Type,
+  Square,
+  Trash2,
+  GripHorizontal,
+  Wand2,
+  Sparkles,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface Props {
@@ -15,15 +29,16 @@ interface Props {
 export function OverlaysPanel({ project, update }: Props) {
   const { toast } = useToast()
 
-  const addElement = (type: 'text' | 'banner') => {
+  const addElement = (type: 'text' | 'banner' | 'caption') => {
     const el: ProjectElement = {
       id: crypto.randomUUID(),
       type,
-      content: type === 'text' ? 'Gancho Engajador!' : 'Inscreva-se',
+      content: type === 'banner' ? 'Inscreva-se' : 'Gancho Engajador!',
       x: 50,
       y: 50,
       color: '#ffffff',
       bgColor: '#e11d48',
+      animationStyle: 'none',
     }
     update({ elements: [...project.elements, el] })
   }
@@ -53,6 +68,7 @@ export function OverlaysPanel({ project, update }: Props) {
             x: 50,
             y: 75,
             color: '#ffffff',
+            animationStyle: 'pop-up',
           },
           {
             id: crypto.randomUUID(),
@@ -61,6 +77,7 @@ export function OverlaysPanel({ project, update }: Props) {
             x: 50,
             y: 75,
             color: '#facc15',
+            animationStyle: 'highlight',
           },
         ],
       })
@@ -82,17 +99,45 @@ export function OverlaysPanel({ project, update }: Props) {
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
-      <div className="flex gap-2">
+      <div className="space-y-4 bg-background p-4 rounded-xl border shadow-sm">
+        <div className="flex items-center justify-between">
+          <Label className="font-bold flex items-center gap-2 text-sm">
+            <Sparkles className="w-4 h-4 text-purple-500" /> Animação de
+            Legendas (Global)
+          </Label>
+        </div>
+        <Select
+          value={project.globalCaptionStyle || 'none'}
+          onValueChange={(v: any) => update({ globalCaptionStyle: v })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sem Animação" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhuma (Estática)</SelectItem>
+            <SelectItem value="pop-up">Pop-up (Salto Rápido)</SelectItem>
+            <SelectItem value="highlight">
+              Highlight (Palavras Destaque)
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          Aplica movimento automático para as legendas inteligentes geradas por
+          IA.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
         <Button
-          onClick={() => addElement('text')}
-          className="flex-1 shadow-sm"
+          onClick={() => addElement('caption')}
+          className="shadow-sm font-medium"
           variant="secondary"
         >
-          <Type className="w-4 h-4 mr-2" /> Texto
+          <Type className="w-4 h-4 mr-2" /> Nova Legenda
         </Button>
         <Button
           onClick={() => addElement('banner')}
-          className="flex-1 shadow-sm"
+          className="shadow-sm font-medium"
           variant="secondary"
         >
           <Square className="w-4 h-4 mr-2" /> Banner CTA
@@ -101,9 +146,9 @@ export function OverlaysPanel({ project, update }: Props) {
 
       <Button
         onClick={handleGenerateCaptions}
-        className="w-full h-12 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 transition-all hover:scale-[1.02]"
+        className="w-full h-12 shadow-md bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-0 transition-all hover:scale-[1.02] font-bold"
       >
-        <Wand2 className="w-4 h-4 mr-2" /> Gerar Legendas Automáticas
+        <Wand2 className="w-5 h-5 mr-2" /> Gerar Legendas com IA
       </Button>
 
       <div className="space-y-4 mt-8">
@@ -116,7 +161,7 @@ export function OverlaysPanel({ project, update }: Props) {
           project.elements.map((el, i) => (
             <Card
               key={el.id}
-              className="relative overflow-hidden shadow-sm border-l-4"
+              className="relative overflow-hidden shadow-sm border-l-4 transition-colors"
               style={{
                 borderLeftColor:
                   el.type === 'text' || el.type === 'caption'
@@ -128,7 +173,12 @@ export function OverlaysPanel({ project, update }: Props) {
                 <div className="flex items-center justify-between">
                   <Label className="font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                    {el.type === 'banner' ? 'Banner CTA' : el.type} {i + 1}
+                    {el.type === 'banner'
+                      ? 'Banner CTA'
+                      : el.type === 'caption'
+                        ? 'Legenda'
+                        : 'Texto'}{' '}
+                    {i + 1}
                   </Label>
                   <Button
                     variant="ghost"
@@ -175,25 +225,54 @@ export function OverlaysPanel({ project, update }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Label className="text-xs font-medium">Cor</Label>
-                  <Input
-                    type="color"
-                    value={
-                      el.type === 'text' || el.type === 'caption'
-                        ? el.color
-                        : el.bgColor
-                    }
-                    onChange={(e) =>
-                      updateElement(
-                        el.id,
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs font-medium">Cor</Label>
+                    <Input
+                      type="color"
+                      value={
                         el.type === 'text' || el.type === 'caption'
-                          ? { color: e.target.value }
-                          : { bgColor: e.target.value },
-                      )
-                    }
-                    className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer rounded-md overflow-hidden"
-                  />
+                          ? el.color
+                          : el.bgColor
+                      }
+                      onChange={(e) =>
+                        updateElement(
+                          el.id,
+                          el.type === 'text' || el.type === 'caption'
+                            ? { color: e.target.value }
+                            : { bgColor: e.target.value },
+                        )
+                      }
+                      className="w-8 h-8 p-0 border-none bg-transparent cursor-pointer rounded-md overflow-hidden"
+                    />
+                  </div>
+
+                  {(el.type === 'caption' || el.type === 'text') && (
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Estilo</Label>
+                      <Select
+                        value={el.animationStyle || 'none'}
+                        onValueChange={(v: any) =>
+                          updateElement(el.id, { animationStyle: v })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Estilo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" className="text-xs">
+                            Estático
+                          </SelectItem>
+                          <SelectItem value="pop-up" className="text-xs">
+                            Pop-up
+                          </SelectItem>
+                          <SelectItem value="highlight" className="text-xs">
+                            Highlight
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
