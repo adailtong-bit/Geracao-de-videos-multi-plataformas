@@ -1,6 +1,6 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
-import { Wand2, Play, Pause } from 'lucide-react'
+import { Wand2, Play, Pause, ShieldAlert } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   usePlayerControls,
@@ -37,10 +37,15 @@ export function PreviewCanvas({
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false)
+  const [videoError, setVideoError] = useState(false)
 
   const hasContent =
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
+
+  useEffect(() => {
+    setVideoError(false)
+  }, [project.videoUrl])
 
   useEffect(() => {
     setVideoElement(videoRef.current)
@@ -66,7 +71,7 @@ export function PreviewCanvas({
   }
 
   const togglePlay = () => {
-    if (!hasContent) return
+    if (!hasContent || videoError) return
     if (isPlaying) pause()
     else play()
   }
@@ -84,7 +89,7 @@ export function PreviewCanvas({
       const delta = (time - lastTime) / 1000
       lastTime = time
 
-      if (isPlaying) {
+      if (isPlaying && !videoError) {
         const nextTime = currentTimeRef.current + delta
         if (nextTime >= (project.videoDuration || 0)) {
           setPlayerState({
@@ -131,7 +136,7 @@ export function PreviewCanvas({
       }
     }
 
-    if (isPlaying) {
+    if (isPlaying && !videoError) {
       lastTime = performance.now()
       frameId = requestAnimationFrame(tick)
       if (videoRef.current && videoRef.current.paused) {
@@ -143,10 +148,10 @@ export function PreviewCanvas({
       }
     }
     return () => cancelAnimationFrame(frameId)
-  }, [isPlaying, project.videoDuration, project.cuts])
+  }, [isPlaying, project.videoDuration, project.cuts, videoError])
 
   useEffect(() => {
-    if (!isPlaying && videoRef.current) {
+    if (!isPlaying && videoRef.current && !videoError) {
       const hasCuts = project.cuts && project.cuts.length > 0
       if (hasCuts) {
         const activeCut = project.cuts!.find(
@@ -160,7 +165,7 @@ export function PreviewCanvas({
         videoRef.current.currentTime = currentTime
       }
     }
-  }, [currentTime, isPlaying, project.cuts])
+  }, [currentTime, isPlaying, project.cuts, videoError])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -344,6 +349,17 @@ export function PreviewCanvas({
 
         {hasContent ? (
           <>
+            {videoError && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-900/95 text-white p-6 text-center animate-in fade-in">
+                <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
+                <h3 className="font-bold text-xl mb-2">Erro de Reprodução</h3>
+                <p className="text-sm text-zinc-400 max-w-[260px]">
+                  Não foi possível carregar o vídeo original. O link pode estar
+                  quebrado ou a mídia indisponível.
+                </p>
+              </div>
+            )}
+
             {project.audioTrack?.url && (
               <audio
                 ref={audioRef}
@@ -354,13 +370,14 @@ export function PreviewCanvas({
               />
             )}
 
-            {project.videoUrl && (
+            {project.videoUrl && !videoError && (
               <video
                 ref={videoRef}
                 src={project.videoUrl}
                 className="w-full h-full object-cover opacity-90 relative z-0"
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={handleEnded}
+                onError={() => setVideoError(true)}
                 playsInline
                 controls={false}
               />
@@ -390,6 +407,7 @@ export function PreviewCanvas({
               </div>
             )}
 
+            {/* Hardcoded Subtitles Styling: Pure minimalist format always at bottom */}
             {!project.noTextMode &&
               project.aiClips?.map((clip) => {
                 const activeSub = clip.subtitles.find(
@@ -399,16 +417,16 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-8 left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-200"
+                    className="absolute bottom-[20px] left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-200"
                   >
-                    <div className="bg-black/70 backdrop-blur-md text-white/95 px-4 py-2 rounded-lg text-sm md:text-base font-medium shadow-lg text-center max-w-[90%] leading-relaxed tracking-wide">
+                    <div className="bg-black/60 backdrop-blur-sm text-white/90 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium shadow-sm text-center max-w-[85%] leading-snug tracking-wide">
                       {activeSub.text}
                     </div>
                   </div>
                 )
               })}
 
-            {!isPlaying && (
+            {!isPlaying && !videoError && (
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 transition-all pointer-events-none">
                 <div className="w-20 h-20 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
                   <Play className="w-10 h-10 ml-2 fill-current" />

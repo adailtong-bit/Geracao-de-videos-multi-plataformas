@@ -39,6 +39,7 @@ import {
   EyeOff,
   Globe,
   Clock,
+  Scissors,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -169,26 +170,32 @@ export function AiCreatorPanel({
 
     const initialText =
       sourceType === 'video'
-        ? 'Acessando link e ingerindo vídeo...'
+        ? 'Acessando link e aplicando Hard Reset no editor...'
         : 'Extraindo contexto semântico...'
     setStatusText(initialText)
 
     const steps =
       sourceType === 'video'
         ? [
-            { p: 20, t: `Ingerindo vídeo completo da URL...` },
+            {
+              p: 20,
+              t: `Ingerindo vídeo completo da URL (Modo Edição Pura)...`,
+            },
             {
               p: 40,
-              t: `Motor de IA analisando densidade de áudio e transições...`,
+              t: `IA detectando ângulos e alternância de locutores...`,
             },
             {
               p: 60,
-              t: `Selecionando cortes únicos (Smart Highlights) de ${targetDuration}s...`,
+              t: `Extraindo cortes (Smart Highlights) focados no diálogo original...`,
             },
-            { p: 80, t: `Posicionando legendas minimalistas no rodapé...` },
+            {
+              p: 80,
+              t: `Desativando mídia externa e fixando legendas minimalistas...`,
+            },
             {
               p: 100,
-              t: 'Gerando sequência HD final e aplicando hard reset...',
+              t: 'Limpando estado anterior e aplicando sequência limpa...',
             },
           ]
         : [
@@ -243,19 +250,19 @@ export function AiCreatorPanel({
 
       let currentStartTime = 0
 
+      // Dynamic Multicam Detection logic based solely on original video source
       scenes = Array.from({ length: numSegments }).map((_, i) => {
         const text = interviewTexts[i % interviewTexts.length]
         const start = currentStartTime
         const end = start + segmentDuration
         currentStartTime = end
 
-        // Simulate multicam detection: alternate between different parts of the source video
-        // to represent different speakers/camera angles, ensuring no repetitions
+        // AI logic identifies and alternates between speakers (mocked via source offsets)
         let cutSourceStart = 0
         if (i % 2 === 0) {
-          cutSourceStart = 50 + i * 20
+          cutSourceStart = 50 + i * 20 // Speaker 1 focus
         } else {
-          cutSourceStart = 150 + i * 20
+          cutSourceStart = 150 + i * 20 // Speaker 2 focus
         }
 
         const cutSourceEnd = cutSourceStart + segmentDuration
@@ -279,6 +286,8 @@ export function AiCreatorPanel({
         sourceEnd: s.sourceEnd,
       }))
 
+      // Pure Editing Mode: Ensure zero external B-rolls are added
+      bRolls = []
       rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
       if (sourceType === 'upload') rawText = defaultTexts[language]
@@ -339,7 +348,10 @@ export function AiCreatorPanel({
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo dinâmico processado com IA em ${language}.`,
+      description:
+        sourceType === 'video'
+          ? `Cortes extraídos e formatados da fonte original em ${language}.`
+          : `Vídeo dinâmico processado com IA em ${language}.`,
       hashtags: `#historia #ia #cinematic`,
     }
 
@@ -378,14 +390,14 @@ export function AiCreatorPanel({
         bRolls,
         aiClips,
         cuts,
-        elements: [],
+        elements: [], // UI Reset: Clear elements from previous sessions
         globalCaptionStyle: 'none',
         captions: {
           tiktok: captionText,
           instagram: captionText,
           facebook: captionText,
         },
-        sfx: [],
+        sfx: [], // UI Reset: clear SFX
         audioTrack:
           sourceType === 'video'
             ? null
@@ -403,19 +415,19 @@ export function AiCreatorPanel({
       },
     }
 
-    // Hard reset editor state by passing the complete snapshot
-    // to wipe out any previous elements/styles from the editor
+    // State & Cache Management: Hard Reset
+    // Passing the complete clean snapshot to completely overwrite old state/styles
     update({
       videoUrl: newDraft.snapshot.videoUrl,
       videoDuration: newDraft.snapshot.videoDuration,
-      bRolls: newDraft.snapshot.bRolls,
+      bRolls: newDraft.snapshot.bRolls || [],
       aiClips: newDraft.snapshot.aiClips,
-      cuts: newDraft.snapshot.cuts,
-      elements: newDraft.snapshot.elements,
-      globalCaptionStyle: newDraft.snapshot.globalCaptionStyle,
+      cuts: newDraft.snapshot.cuts || [],
+      elements: [],
+      globalCaptionStyle: 'none',
       captions: newDraft.snapshot.captions,
-      sfx: newDraft.snapshot.sfx,
-      audioTrack: newDraft.snapshot.audioTrack,
+      sfx: [],
+      audioTrack: newDraft.snapshot.audioTrack || null,
       language: newDraft.snapshot.language,
       voiceProfile: newDraft.snapshot.voiceProfile,
       visualStyle: newDraft.snapshot.visualStyle,
@@ -436,10 +448,18 @@ export function AiCreatorPanel({
     return (
       <div className="flex flex-col items-center justify-center space-y-6 py-12 animate-fade-in text-center px-4">
         <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center animate-pulse">
-          <Wand2 className="w-8 h-8 text-blue-500" />
+          {sourceType === 'video' ? (
+            <Scissors className="w-8 h-8 text-blue-500" />
+          ) : (
+            <Wand2 className="w-8 h-8 text-blue-500" />
+          )}
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">Processamento Inteligente</h3>
+          <h3 className="font-bold text-lg">
+            {sourceType === 'video'
+              ? 'Cortes Inteligentes'
+              : 'Processamento Inteligente'}
+          </h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -452,7 +472,11 @@ export function AiCreatorPanel({
       <div className="space-y-6 animate-fade-in-up pb-8">
         <div className="flex items-center justify-between bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-500/20">
           <div className="flex items-center gap-2">
-            <Wand2 className="w-5 h-5" />
+            {sourceType === 'video' ? (
+              <Scissors className="w-5 h-5" />
+            ) : (
+              <Wand2 className="w-5 h-5" />
+            )}
             <span className="font-bold">Mídia Processada</span>
           </div>
           <Button
@@ -497,8 +521,8 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Gere conteúdo a partir de qualquer fonte. O sistema aplicará um Hard
-          Reset isolando o projeto, aplicando cortes únicos e formatando
-          legendas minimalistas no rodapé.
+          Reset isolando o projeto, garantindo uso exclusivo do material
+          original (Modo Edição Pura) se uma URL for fornecida.
         </p>
 
         <Tabs
@@ -543,9 +567,9 @@ export function AiCreatorPanel({
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                A IA ingerirá o vídeo completo (até 2 horas) e aplicará o motor
-                de cortes inteligentes extraindo entrevistas únicas sem
-                repetição de conteúdo.
+                Modo Edição Pura: O motor ingerirá o vídeo aplicando Hard Reset.
+                Mídias externas são desativadas e cortes multicâmera baseados em
+                diálogo serão gerados automaticamente.
               </p>
             </div>
           </TabsContent>
@@ -607,6 +631,7 @@ export function AiCreatorPanel({
             <Select
               value={voiceProfile}
               onValueChange={(v) => setVoiceProfile(v as VoiceProfile)}
+              disabled={sourceType === 'video'}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -626,6 +651,7 @@ export function AiCreatorPanel({
             <Select
               value={visualStyle}
               onValueChange={(v) => setVisualStyle(v as VisualStyle)}
+              disabled={sourceType === 'video'}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -675,7 +701,14 @@ export function AiCreatorPanel({
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-6"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Gerar Sequência HD
+          {sourceType === 'video' ? (
+            <Scissors className="w-5 h-5 mr-2" />
+          ) : (
+            <Wand2 className="w-5 h-5 mr-2" />
+          )}
+          {sourceType === 'video'
+            ? 'Processar Cortes Originais'
+            : 'Gerar Sequência HD'}
         </Button>
       </div>
     </div>
