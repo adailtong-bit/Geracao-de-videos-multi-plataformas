@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sidebar'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
+import { TimelinePanel } from '@/components/editor/TimelinePanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,7 @@ import {
   CheckCircle2,
   Clock,
   Send,
+  Film,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
@@ -139,7 +141,7 @@ function VersionsSidebar({
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     <p className="text-sm font-bold text-primary">
-                      Gerando novo vídeo...
+                      Gerando nova narrativa...
                     </p>
                   </div>
                   <Skeleton className="h-24 w-full rounded-md bg-primary/10" />
@@ -231,7 +233,7 @@ function VersionsSidebar({
                     Nenhum vídeo ainda
                   </p>
                   <p className="text-xs mt-2 text-balance leading-relaxed">
-                    Comece gerando sua história no painel ao lado.
+                    Comece gerando sua história orgânica no painel ao lado.
                   </p>
                 </div>
               )}
@@ -372,7 +374,13 @@ export default function Editor() {
                     value="ai-creator"
                     className="shrink-0 min-w-[90px] text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold h-10"
                   >
-                    <Wand2 className="w-4 h-4 mr-2" /> Criar História
+                    <Wand2 className="w-4 h-4 mr-2" /> Criar
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="timeline"
+                    className="shrink-0 min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-10"
+                  >
+                    <Film className="w-4 h-4 mr-2" /> Sequência
                   </TabsTrigger>
                   <TabsTrigger
                     value="publish"
@@ -391,8 +399,17 @@ export default function Editor() {
                         <AiCreatorPanel
                           project={project}
                           update={update}
-                          onNext={() => setActiveTab('publish')}
+                          onNext={() => setActiveTab('timeline')}
                           onStatusChange={setAiStatus}
+                        />
+                      </TabsContent>
+                      <TabsContent
+                        value="timeline"
+                        className="mt-0 outline-none"
+                      >
+                        <TimelinePanel
+                          project={project}
+                          onNext={() => setActiveTab('publish')}
                         />
                       </TabsContent>
                       <TabsContent
