@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Project } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -58,6 +58,17 @@ export function MediaPanel({ project, update }: Props) {
     }, 1500)
   }
 
+  useEffect(() => {
+    if (
+      importUrl.trim() &&
+      isValidVideoUrl(importUrl) &&
+      !isImporting &&
+      !project.videoUrl
+    ) {
+      handleImportUrl()
+    }
+  }, [importUrl, isImporting, project.videoUrl])
+
   const handleFakeUpload = () => {
     update({
       videoUrl:
@@ -95,7 +106,7 @@ export function MediaPanel({ project, update }: Props) {
                 </p>
                 <div className="space-y-3">
                   <Input
-                    placeholder="https://..."
+                    placeholder="Paste Video Link here"
                     value={importUrl}
                     onChange={(e) => setImportUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImportUrl()}
@@ -211,20 +222,6 @@ export function MediaPanel({ project, update }: Props) {
                   disabled={!project.videoUrl}
                 />
               </div>
-            </div>
-
-            <div className="px-2">
-              <Slider
-                value={[project.trimStart, project.trimEnd]}
-                max={project.videoDuration || 100}
-                step={1}
-                disabled={!project.videoUrl}
-                onValueChange={([start, end]) => {
-                  if (end - start >= 1) {
-                    update({ trimStart: start, trimEnd: end })
-                  }
-                }}
-              />
             </div>
 
             <div className="flex justify-between items-center pt-2">

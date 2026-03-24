@@ -1,18 +1,31 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
-import { Link as LinkIcon } from 'lucide-react'
+import {
+  Link as LinkIcon,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Music,
+} from 'lucide-react'
 
-export function PreviewCanvas({ project }: { project: Project }) {
+export function PreviewCanvas({
+  project,
+  showSafeZones = false,
+}: {
+  project: Project
+  showSafeZones?: boolean
+}) {
   const getRatioStyle = () => {
     switch (project.aspectRatio) {
       case '9:16':
-        return { aspectRatio: '9/16', height: '100%' }
+        return { aspectRatio: '9/16', height: '100%', maxWidth: '100%' }
       case '1:1':
-        return { aspectRatio: '1/1', width: '100%' }
+        return { aspectRatio: '1/1', width: '100%', maxHeight: '100%' }
       case '4:5':
-        return { aspectRatio: '4/5', height: '100%' }
+        return { aspectRatio: '4/5', height: '100%', maxWidth: '100%' }
       default:
-        return { aspectRatio: '9/16', height: '100%' }
+        return { aspectRatio: '9/16', height: '100%', maxWidth: '100%' }
     }
   }
 
@@ -22,17 +35,13 @@ export function PreviewCanvas({ project }: { project: Project }) {
         className={cn(
           'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0',
         )}
-        style={{
-          ...getRatioStyle(),
-          maxHeight: '100%',
-          maxWidth: '100%',
-        }}
+        style={getRatioStyle()}
       >
         {project.videoUrl ? (
           <img
             src={project.videoUrl}
             alt="Video preview"
-            className="w-full h-full object-cover opacity-80"
+            className="w-full h-full object-cover opacity-90"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-6 sm:p-8 text-center bg-zinc-900/50 space-y-4">
@@ -79,11 +88,60 @@ export function PreviewCanvas({ project }: { project: Project }) {
           </div>
         ))}
 
-        {project.videoUrl && (
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none opacity-60 z-0 flex items-end justify-center pb-4">
-            <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold drop-shadow-sm">
-              Zona Segura
-            </span>
+        {showSafeZones && project.videoUrl && (
+          <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-end text-white p-4 pb-6 bg-gradient-to-t from-black/60 via-transparent to-black/30">
+            <div className="absolute top-4 left-4 right-4 flex justify-between items-center opacity-80">
+              <span className="text-sm font-bold drop-shadow">
+                Following | For You
+              </span>
+              <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm" />
+            </div>
+
+            <div className="flex items-end justify-between w-full opacity-90">
+              <div className="space-y-3 w-2/3">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-white/30 backdrop-blur-sm border border-white/50 overflow-hidden">
+                    <img
+                      src="https://img.usecurling.com/ppl/thumbnail?seed=1"
+                      alt="User"
+                    />
+                  </div>
+                  <span className="font-bold text-sm drop-shadow">
+                    @creator
+                  </span>
+                </div>
+                <div className="h-4 w-3/4 bg-white/20 backdrop-blur-sm rounded drop-shadow" />
+                <div className="h-4 w-1/2 bg-white/20 backdrop-blur-sm rounded drop-shadow" />
+                <div className="flex items-center gap-2 text-xs font-semibold drop-shadow mt-1">
+                  <Music className="w-3 h-3" /> Original Sound
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-4 pb-2">
+                <div className="flex flex-col items-center gap-1">
+                  <Heart className="w-7 h-7 drop-shadow-md fill-white" />
+                  <span className="text-[10px] font-medium">1.2M</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <MessageCircle className="w-7 h-7 drop-shadow-md fill-white" />
+                  <span className="text-[10px] font-medium">10K</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Bookmark className="w-7 h-7 drop-shadow-md fill-white" />
+                  <span className="text-[10px] font-medium">50K</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Share2 className="w-7 h-7 drop-shadow-md" />
+                  <span className="text-[10px] font-medium">Share</span>
+                </div>
+                <div className="w-9 h-9 mt-2 rounded-full bg-black/50 border-2 border-white/80 p-1 animate-[spin_4s_linear_infinite]">
+                  <div className="w-full h-full rounded-full bg-white/40" />
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-red-500/80 text-white text-xs font-bold rounded-full uppercase tracking-widest backdrop-blur-sm border border-white/20 shadow-lg">
+              Safe Zone Preview
+            </div>
           </div>
         )}
       </div>

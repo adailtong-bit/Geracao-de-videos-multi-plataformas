@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '@/hooks/useProjects'
 import { Button } from '@/components/ui/button'
@@ -84,6 +84,12 @@ export default function Index() {
     }, 1500)
   }
 
+  useEffect(() => {
+    if (heroUrl.trim() && isValidVideoUrl(heroUrl) && !isHeroLoading) {
+      handleHeroImport()
+    }
+  }, [heroUrl, isHeroLoading])
+
   const handleCreate = () => {
     if (!newProjectName.trim()) return
     if (projects.length >= maxProjects) {
@@ -167,7 +173,7 @@ export default function Index() {
             <div className="relative flex-1 group">
               <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
-                placeholder="Cole o link do vídeo aqui..."
+                placeholder="Paste Video Link here"
                 value={heroUrl}
                 onChange={(e) => setHeroUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleHeroImport()}
