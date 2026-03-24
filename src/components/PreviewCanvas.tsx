@@ -191,7 +191,7 @@ export function PreviewCanvas({
 
         if (textToSpeak) {
           const utterance = new SpeechSynthesisUtterance(textToSpeak)
-          utterance.lang = 'pt-BR'
+          utterance.lang = project.language || 'pt-BR'
 
           // Voice Profile & Mood Adjustments
           let rate = 1.0
@@ -336,9 +336,9 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-[10%] left-0 right-0 z-30 px-6 pointer-events-none flex justify-center animate-fade-in-up"
+                    className="absolute bottom-6 left-0 right-0 z-30 px-6 pointer-events-none flex justify-center animate-fade-in-up"
                   >
-                    <span className="bg-black/60 text-white font-bold text-lg sm:text-xl md:text-2xl px-4 py-2 rounded-lg text-center backdrop-blur-sm shadow-lg leading-tight text-balance">
+                    <span className="bg-black/50 text-white/90 font-medium text-xs sm:text-sm px-3 py-1.5 rounded-md backdrop-blur-md shadow-sm text-center max-w-[85%] leading-snug text-balance">
                       {activeSub.text}
                     </span>
                   </div>

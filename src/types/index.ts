@@ -1,6 +1,7 @@
 export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube'
 export type AspectRatio = '9:16' | '1:1' | '4:5'
 
+export type Language = 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT'
 export type VoiceProfile = 'deep' | 'soft' | 'announcer'
 export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
 export type Mood = 'inspirational' | 'dramatic' | 'calm'
@@ -112,6 +113,7 @@ export interface Project {
   scheduledPosts?: ScheduledPost[]
   drafts?: Draft[]
   activeDraftId?: string | null
+  language?: Language
   voiceProfile?: VoiceProfile
   visualStyle?: VisualStyle
   mood?: Mood

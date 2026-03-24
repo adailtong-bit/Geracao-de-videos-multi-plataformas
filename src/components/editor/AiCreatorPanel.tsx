@@ -4,6 +4,7 @@ import {
   BRoll,
   AiClip,
   Draft,
+  Language,
   VoiceProfile,
   VisualStyle,
   Mood,
@@ -35,6 +36,7 @@ import {
   Type,
   Activity,
   EyeOff,
+  Globe,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -54,23 +56,56 @@ interface GeneratedResult {
 const extractEnglishVisualKeyword = (t: string, style: string): string => {
   const lower = t.toLowerCase()
   let base = 'epic landscape'
-  if (lower.match(/sol|pôr do sol|entardecer|amanhecer|luz/))
+  if (lower.match(/sol|pôr do sol|entardecer|amanhecer|luz|sun|light|sunset/))
     base = 'sunset light'
-  else if (lower.match(/mar|oceano|água|onda|praia|rio/)) base = 'ocean water'
-  else if (lower.match(/montanha|colina|pico|pedra|rocha/))
+  else if (lower.match(/mar|oceano|água|onda|praia|rio|ocean|water|sea|beach/))
+    base = 'ocean water'
+  else if (lower.match(/montanha|colina|pico|pedra|rocha|mountain|rock/))
     base = 'mountain peak'
-  else if (lower.match(/cidade|urbano|rua|prédio|metrópole/))
+  else if (lower.match(/cidade|urbano|rua|prédio|metrópole|city|urban|street/))
     base = 'urban city'
-  else if (lower.match(/floresta|árvore|mato|natureza|selva|folha/))
+  else if (
+    lower.match(/floresta|árvore|mato|natureza|selva|folha|forest|nature|tree/)
+  )
     base = 'forest nature'
-  else if (lower.match(/céu|nuvem|estrela|espaço|galáxia|universo/))
+  else if (
+    lower.match(/céu|nuvem|estrela|espaço|galáxia|universo|sky|star|space/)
+  )
     base = 'night sky stars'
-  else if (lower.match(/pessoas|homem|mulher|rosto|olhos|multidão|criança/))
+  else if (
+    lower.match(
+      /pessoas|homem|mulher|rosto|olhos|multidão|criança|people|man|woman|face/,
+    )
+  )
     base = 'people portrait'
-  else if (lower.match(/tecnologia|computador|ia|futuro/))
+  else if (lower.match(/tecnologia|computador|ia|futuro|tech|future/))
     base = 'futuristic technology'
 
   return `${base} ${style}`
+}
+
+const defaultTexts: Record<Language, string> = {
+  'pt-BR':
+    'A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas.',
+  'en-US':
+    'Artificial intelligence detects the high points of the speech, the tone of voice, and the central themes covered. Based on this, we create perfect cuts and align cinematic images.',
+  'es-ES':
+    'La inteligencia artificial detecta los puntos altos de la oratoria, el tono de voz y los temas centrales abordados. En base a esto, creamos cortes perfectos y alineamos imágenes cinematográficas.',
+  'fr-FR':
+    "L'intelligence artificielle détecte les points forts du discours, le ton de la voix et les thèmes centraux abordés. Sur cette base, nous créons des coupes parfaites et alignons des images cinématiques.",
+  'de-DE':
+    'Künstliche Intelligenz erkennt die Höhepunkte der Rede, den Tonfall und die zentralen behandelten Themen. Darauf basierend erstellen wir perfekte Schnitte und richten kinoreife Bilder aus.',
+  'it-IT':
+    "L'intelligenza artificiale rileva i punti salienti del discorso, il tono di voce e i temi centrali trattati. Sulla base di questo, creiamo tagli perfetti e allineiamo immagini cinematografiche.",
+}
+
+const defaultShortTexts: Record<Language, string> = {
+  'pt-BR': 'A história começa aqui. Novas descobertas nos aguardam.',
+  'en-US': 'The story begins here. New discoveries await us.',
+  'es-ES': 'La historia comienza aquí. Nuevos descubrimientos nos esperan.',
+  'fr-FR': "L'histoire commence ici. De nouvelles découvertes nous attendent.",
+  'de-DE': 'Die Geschichte beginnt hier. Neue Entdeckungen erwarten uns.',
+  'it-IT': 'La storia inizia qui. Nuove scoperte ci attendono.',
 }
 
 export function AiCreatorPanel({
@@ -84,10 +119,13 @@ export function AiCreatorPanel({
   )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [language, setLanguage] = useState<Language>(
+    project.language || 'pt-BR',
+  )
   const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>('deep')
   const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
   const [mood, setMood] = useState<Mood>('inspirational')
-  const [noTextMode, setNoTextMode] = useState(true)
+  const [noTextMode, setNoTextMode] = useState(project.noTextMode ?? false)
 
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
@@ -127,7 +165,7 @@ export function AiCreatorPanel({
     const steps = [
       { p: 25, t: `Ajustando emoção para modo ${mood}...` },
       { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
-      { p: 75, t: `Renderizando oratória ${voiceProfile}...` },
+      { p: 75, t: `Renderizando oratória ${language}...` },
       { p: 100, t: 'Garantindo transições orgânicas...' },
     ]
 
@@ -148,10 +186,9 @@ export function AiCreatorPanel({
     let rawText = prompt.trim()
 
     if (sourceType !== 'text') {
-      rawText =
-        'A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas.'
+      rawText = defaultTexts[language]
     } else if (!rawText) {
-      rawText = 'A história começa aqui. Novas descobertas nos aguardam.'
+      rawText = defaultShortTexts[language]
     }
 
     const clauses = rawText
@@ -200,7 +237,7 @@ export function AiCreatorPanel({
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo com narração contínua e semântica visual.`,
+      description: `Vídeo com narração contínua e semântica visual em ${language}.`,
       hashtags: `#historia #ia #cinematic`,
     }
 
@@ -250,6 +287,7 @@ export function AiCreatorPanel({
           mood: 'Ambient',
           url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
         },
+        language,
         voiceProfile,
         visualStyle,
         mood,
@@ -334,7 +372,7 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Gere conteúdo a partir de qualquer fonte com narração fluida e visuais
-          cinematográficos livres de letreiros.
+          cinematográficos livres de letreiros invasivos.
         </p>
 
         <Tabs
@@ -389,7 +427,29 @@ export function AiCreatorPanel({
           </TabsContent>
         </Tabs>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-border/50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" /> Idioma
+            </Label>
+            <Select
+              value={language}
+              onValueChange={(v) => setLanguage(v as Language)}
+            >
+              <SelectTrigger className="bg-background/50 h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                <SelectItem value="en-US">English (US)</SelectItem>
+                <SelectItem value="es-ES">Español</SelectItem>
+                <SelectItem value="fr-FR">Français</SelectItem>
+                <SelectItem value="de-DE">Deutsch</SelectItem>
+                <SelectItem value="it-IT">Italiano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
               <Mic className="w-4 h-4 text-primary" /> Perfil de Voz
@@ -444,8 +504,8 @@ export function AiCreatorPanel({
             </Select>
           </div>
 
-          <div className="space-y-3 flex flex-col justify-center">
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors">
+          <div className="space-y-3 flex flex-col justify-center lg:col-span-2">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors h-10">
               <Label
                 htmlFor="no-text-mode"
                 className="flex items-center gap-2 cursor-pointer font-semibold text-sm"

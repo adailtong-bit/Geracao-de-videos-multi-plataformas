@@ -25,6 +25,7 @@ export const getProjects = (): Project[] => {
     trimEnd: 10,
     cuts: [],
     elements: [],
+    language: 'pt-BR',
     aiClips: [
       {
         id: crypto.randomUUID(),
@@ -79,6 +80,7 @@ export const getProjects = (): Project[] => {
         targetPlatforms: defaultProject.targetPlatforms,
         aspectRatio: defaultProject.aspectRatio,
         captions: defaultProject.captions,
+        language: defaultProject.language,
       },
     },
   ]
@@ -123,6 +125,7 @@ export const createProject = (
     aspectRatio: '9:16',
     captions: { instagram: '', tiktok: '', facebook: '' },
     createdAt: Date.now(),
+    language: 'pt-BR',
     drafts: [],
     ...options,
   }
