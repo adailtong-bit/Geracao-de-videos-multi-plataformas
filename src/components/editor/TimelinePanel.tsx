@@ -1,6 +1,12 @@
 import { Project } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Clock, Film, Send, Image as ImageIcon } from 'lucide-react'
+import {
+  Clock,
+  Film,
+  Send,
+  Image as ImageIcon,
+  CheckCircle2,
+} from 'lucide-react'
 
 interface Props {
   project: Project
@@ -33,8 +39,8 @@ export function TimelinePanel({ project, onNext }: Props) {
           Nenhuma sequência visual gerada
         </p>
         <p className="text-xs mt-1 max-w-[200px] leading-relaxed">
-          Crie sua história na aba anterior para ver a correlação entre texto e
-          imagem.
+          Crie ou importe sua história na aba anterior para ver a correlação
+          visual limpa.
         </p>
       </div>
     )
@@ -48,15 +54,19 @@ export function TimelinePanel({ project, onNext }: Props) {
 
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Film className="w-5 h-5 text-indigo-500" /> Sequência Visual (IA)
+          <Film className="w-5 h-5 text-indigo-500" /> Sequência Visual Limpa
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Verifique a correlação semântica entre sua narração e as imagens
-          selecionadas. A estética e as transições mantêm o fluxo natural da
-          história.
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Verifique a correlação semântica entre o áudio contínuo e as imagens.
+          Nenhum texto será sobreposto ao vídeo final, garantindo uma estética
+          100% focada na história.
         </p>
+        <div className="flex items-center gap-2 text-xs font-semibold text-green-600 bg-green-500/10 p-2 rounded-md border border-green-500/20">
+          <CheckCircle2 className="w-4 h-4" />
+          Textos removidos da tela. Transições orgânicas aplicadas.
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -86,14 +96,14 @@ export function TimelinePanel({ project, onNext }: Props) {
             <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                  <Film className="w-3 h-3" /> Cena {idx + 1}
+                  <Film className="w-3 h-3" /> Cena Visual {idx + 1}
                 </p>
                 <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
                   {(seg.end - seg.start).toFixed(1)}s
                 </span>
               </div>
               <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2">
-                "{seg.text}"
+                Áudio de fundo: "{seg.text}"
               </p>
             </div>
           </div>

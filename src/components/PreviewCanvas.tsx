@@ -1,7 +1,7 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
 import { Wand2, Play, Pause } from 'lucide-react'
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import {
   usePlayerControls,
   setPlayerState,
@@ -36,6 +36,7 @@ export function PreviewCanvas({
   const { isPlaying, currentTime, volume } = usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const [isTtsSpeaking, setIsTtsSpeaking] = useState(false)
 
   const hasContent =
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
@@ -135,19 +136,29 @@ export function PreviewCanvas({
     }
   }, [currentTime])
 
-  // Volume ducking for narration clarity
+  // Intelligent Audio Ducking
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume * 0.15 // Lowered background music
-    }
-    if (videoRef.current) {
-      videoRef.current.volume = volume * 0.1
-    }
+    const duckingInterval = setInterval(() => {
+      if (!audioRef.current) return
+      const speaking =
+        'speechSynthesis' in window && window.speechSynthesis.speaking
+      setIsTtsSpeaking(speaking)
+
+      const targetVolume = speaking ? volume * 0.05 : volume * 0.25
+      const currentVol = audioRef.current.volume
+
+      if (Math.abs(currentVol - targetVolume) > 0.01) {
+        audioRef.current.volume = currentVol + (targetVolume - currentVol) * 0.1
+      }
+    }, 100)
+
+    return () => clearInterval(duckingInterval)
   }, [volume])
 
-  // Text-to-Speech Generation for Continuous Narration
+  // Text-to-Speech Generation for Continuous Narration (Orator Style)
   const prevIsPlayingRef = useRef(isPlaying)
   const prevTimeRef = useRef(currentTime)
+  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   useEffect(() => {
     if (!('speechSynthesis' in window)) return
@@ -165,7 +176,9 @@ export function PreviewCanvas({
 
       // Slight delay allows TTS engine to fully reset before beginning new continuous utterance
       setTimeout(() => {
-        if (!project.aiClips) return
+        if (!project.aiClips || project.aiClips.length === 0) return
+
+        // Find the active text chunk based on current time
         let textToSpeak = ''
         for (const clip of project.aiClips) {
           if (currentTime >= clip.start && currentTime < clip.end) {
@@ -176,11 +189,15 @@ export function PreviewCanvas({
             break
           }
         }
+
         if (textToSpeak) {
           const utterance = new SpeechSynthesisUtterance(textToSpeak)
           utterance.lang = 'pt-BR'
-          utterance.rate = 1.05
+          utterance.rate = 0.95 // Slightly slower for orator feel
+          utterance.pitch = 0.9 // Deeper, more resonant tone
           utterance.volume = volume
+
+          currentUtteranceRef.current = utterance
           window.speechSynthesis.speak(utterance)
         }
       }, 50)
@@ -212,12 +229,6 @@ export function PreviewCanvas({
     }
   }
 
-  const activeBRoll = useMemo(() => {
-    return project.bRolls?.find(
-      (br) => currentTime >= br.start && currentTime <= br.end,
-    )
-  }, [project.bRolls, currentTime])
-
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <PlaybackController project={project} />
@@ -244,10 +255,11 @@ export function PreviewCanvas({
                 <Wand2 className="w-8 h-8 sm:w-10 sm:h-10 text-blue-500" />
               </div>
               <h3 className="font-bold text-xl sm:text-2xl mb-2 text-center drop-shadow-sm">
-                Gerando Rascunho...
+                Alinhando Semântica...
               </h3>
-              <p className="text-sm sm:text-base text-zinc-400 text-center max-w-[250px]">
-                A inteligência artificial está processando sua nova história.
+              <p className="text-sm sm:text-base text-zinc-400 text-center max-w-[280px]">
+                Processando áudio e mapeando o contexto visual para sua
+                história.
               </p>
             </div>
 
@@ -286,22 +298,36 @@ export function PreviewCanvas({
               />
             )}
 
-            {activeBRoll ? (
-              <div className="absolute inset-0 z-10 bg-black flex items-center justify-center overflow-hidden">
-                <img
-                  key={activeBRoll.id}
-                  src={activeBRoll.url}
-                  alt="B-Roll"
-                  className="w-full h-full object-cover opacity-100 animate-in fade-in duration-700 slide-in-from-bottom-1"
-                />
-              </div>
-            ) : (
-              !project.videoUrl && (
+            {/* Organic Cinematic Crossfades for Semantic Visuals */}
+            <div className="absolute inset-0 z-10 pointer-events-none bg-black/40">
+              {project.bRolls?.map((br) => {
+                const isActive = currentTime >= br.start && currentTime < br.end
+                // Keep rendering for a moment after to allow smooth fade out
+                const isRendered =
+                  currentTime >= br.start - 0.5 && currentTime <= br.end + 1.5
+
+                if (!isRendered) return null
+
+                return (
+                  <img
+                    key={br.id}
+                    src={br.url}
+                    alt="Semantic B-Roll"
+                    className={cn(
+                      'absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out',
+                      isActive ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                )
+              })}
+            </div>
+
+            {!project.videoUrl &&
+              (!project.bRolls || project.bRolls.length === 0) && (
                 <div className="absolute inset-0 z-10 bg-zinc-900 flex items-center justify-center">
                   <span className="text-zinc-600 text-sm">Sem Mídia</span>
                 </div>
-              )
-            )}
+              )}
 
             {!isPlaying && (
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-all pointer-events-none">
@@ -327,11 +353,11 @@ export function PreviewCanvas({
               </div>
               <div>
                 <span className="block text-zinc-200 font-semibold text-base sm:text-lg mb-1.5">
-                  Comece a criar com IA
+                  Processamento Visual Limpo
                 </span>
-                <span className="block text-xs sm:text-sm max-w-[250px] text-zinc-400 leading-relaxed mx-auto">
-                  Gere sua primeira história na barra lateral para carregar o
-                  vídeo.
+                <span className="block text-xs sm:text-sm max-w-[280px] text-zinc-400 leading-relaxed mx-auto">
+                  Gere ou importe seu vídeo. Aplicaremos uma curadoria de
+                  imagens semânticas e narração com transições orgânicas.
                 </span>
               </div>
             </div>

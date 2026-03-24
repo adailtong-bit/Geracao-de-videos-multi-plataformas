@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -26,6 +28,9 @@ import {
   Hash,
   Film,
   Palette,
+  Youtube,
+  Upload,
+  Type,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -67,6 +72,9 @@ const extractEnglishVisualKeyword = (t: string): string => {
     return 'peaceful beautiful'
   if (lower.match(/dinheiro|ouro|riqueza|tesouro/)) return 'gold treasure'
   if (lower.match(/carro|esporte|corrida|velocidade/)) return 'sports car'
+  if (lower.match(/tecnologia|computador|ia|futuro/))
+    return 'futuristic technology'
+  if (lower.match(/comida|cozinhar|restaurante|sabor/)) return 'delicious food'
 
   const themes = [
     'epic landscape',
@@ -84,7 +92,9 @@ export function AiCreatorPanel({
   onNext,
   onStatusChange,
 }: Props) {
+  const [sourceType, setSourceType] = useState<'text' | 'video'>('text')
   const [prompt, setPrompt] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [voice, setVoice] = useState('documentary')
   const [artStyle, setArtStyle] = useState('cinematic')
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
@@ -96,7 +106,7 @@ export function AiCreatorPanel({
   const { toast } = useToast()
 
   const handleGenerate = () => {
-    if (!prompt.trim()) {
+    if (sourceType === 'text' && !prompt.trim()) {
       return toast({
         title: 'Faltando informações',
         description:
@@ -105,16 +115,29 @@ export function AiCreatorPanel({
       })
     }
 
+    if (sourceType === 'video' && !videoUrl.trim()) {
+      return toast({
+        title: 'Faltando informações',
+        description: 'Cole a URL do vídeo ou envie um arquivo primeiro.',
+        variant: 'destructive',
+      })
+    }
+
     setStatus('generating')
     if (onStatusChange) onStatusChange('generating')
     setProgress(0)
-    setStatusText('Extraindo contexto semântico do texto...')
+
+    if (sourceType === 'video') {
+      setStatusText('Processando URL do vídeo e extraindo transcrição...')
+    } else {
+      setStatusText('Extraindo contexto semântico do texto...')
+    }
 
     const steps = [
-      { p: 25, t: 'Mapeando narração contínua...' },
-      { p: 50, t: 'Aplicando correlação texto-imagem...' },
-      { p: 75, t: `Garantindo estética visual unificada (${artStyle})...` },
-      { p: 100, t: 'Sincronizando imagens e áudio de forma orgânica...' },
+      { p: 25, t: 'Mapeando emoções e narrativa...' },
+      { p: 50, t: 'Buscando recursos visuais semanticamente alinhados...' },
+      { p: 75, t: `Aplicando estética visual unificada (${artStyle})...` },
+      { p: 100, t: 'Garantindo oratória orgânica e transições fluidas...' },
     ]
 
     let currentStep = 0
@@ -131,8 +154,16 @@ export function AiCreatorPanel({
   }
 
   const finishGeneration = () => {
-    const rawText =
-      prompt.trim() || 'A história começa aqui. Novas descobertas nos aguardam.'
+    let rawText = prompt.trim()
+
+    // If it's a video source, we mock the extracted transcript to apply the SAME universal standards
+    if (sourceType === 'video') {
+      rawText =
+        'Este é um trecho extraído do vídeo original. A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas para sobrepor aos momentos onde a mensagem precisa de reforço visual.'
+    } else if (!rawText) {
+      rawText =
+        'A história começa aqui. Novas descobertas nos aguardam em nossa jornada.'
+    }
 
     // Break exact text into continuous sentences for visual transitions
     const clauses = rawText
@@ -163,7 +194,6 @@ export function AiCreatorPanel({
         text,
         start,
         end,
-        // Using high pixel density and unique seed for organic but high-quality visual flow
         imageUrl: `https://img.usecurling.com/p/800/1200?q=${query}&dpr=2&seed=${i + Date.now()}`,
       }
     })
@@ -175,14 +205,14 @@ export function AiCreatorPanel({
       start: s.start,
       end: s.end,
       url: s.imageUrl,
-      keyword: 'contextual-generated',
+      keyword: 'semantic-alignment',
     }))
 
     const titleWords = rawText.split(' ').slice(0, 4).join(' ')
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
-      description: `Vídeo focado em imagens imersivas e narração contínua gerado com IA a partir do seu texto.`,
-      hashtags: `#historia #ia #narracao`,
+      description: `Vídeo com narração contínua e semântica visual avançada. Sem distrações de texto.`,
+      hashtags: `#historia #ia #cinematic`,
     }
 
     const aiClips: AiClip[] = [
@@ -192,7 +222,7 @@ export function AiCreatorPanel({
         end: totalDuration,
         title: generatedResult.title,
         description: generatedResult.description,
-        keywords: ['ia', 'historia'],
+        keywords: ['ia', 'narracao'],
         subtitles: scenes.map((s) => ({
           id: s.id,
           start: s.start,
@@ -204,12 +234,18 @@ export function AiCreatorPanel({
 
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
 
+    // If source is video, attach a mock underlying video url so B-rolls can fade over it
+    const underlyingVideo =
+      sourceType === 'video'
+        ? 'https://www.w3schools.com/html/mov_bbb.mp4'
+        : null
+
     const newDraft: Draft = {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
       name: generatedResult.title,
       snapshot: {
-        videoUrl: null, // Forces image+audio playback simulation
+        videoUrl: underlyingVideo,
         videoDuration: totalDuration,
         bRolls,
         aiClips,
@@ -218,12 +254,12 @@ export function AiCreatorPanel({
           instagram: captionText,
           facebook: captionText,
         },
-        elements: [],
+        elements: [], // Explicitly clearing any text elements for clean visual output
         cuts: [],
         sfx: [],
         audioTrack: {
           id: crypto.randomUUID(),
-          name: 'Ambient Background',
+          name: 'Cinematic Ambient',
           mood: 'Ambient',
           url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
         },
@@ -239,7 +275,7 @@ export function AiCreatorPanel({
     setResult(generatedResult)
     setStatus('success')
     if (onStatusChange) onStatusChange('success')
-    toast({ title: 'História mapeada visualmente com sucesso!' })
+    toast({ title: 'Análise semântica e oratória concluída!' })
   }
 
   if (status === 'generating') {
@@ -249,7 +285,7 @@ export function AiCreatorPanel({
           <Wand2 className="w-8 h-8 text-blue-500" />
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">Criando sua história</h3>
+          <h3 className="font-bold text-lg">Processamento Universal</h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -263,7 +299,7 @@ export function AiCreatorPanel({
         <div className="flex items-center justify-between bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-500/20">
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5" />
-            <span className="font-bold">Correlação IA Concluída</span>
+            <span className="font-bold">Mapeamento Visual Concluído</span>
           </div>
           <Button
             variant="ghost"
@@ -274,13 +310,13 @@ export function AiCreatorPanel({
             }}
             className="h-8 hover:bg-green-500/20 text-green-800 dark:text-green-300"
           >
-            <RefreshCcw className="w-4 h-4 mr-2" /> Nova Ideia
+            <RefreshCcw className="w-4 h-4 mr-2" /> Novo Projeto
           </Button>
         </div>
 
         <div className="space-y-4 bg-muted/30 p-4 rounded-xl border">
           <h4 className="font-bold flex items-center gap-2 text-sm">
-            <FileText className="w-4 h-4 text-primary" /> Título Gerado
+            <FileText className="w-4 h-4 text-primary" /> Título Semântico
           </h4>
           <p className="font-medium text-foreground text-sm">{result.title}</p>
 
@@ -297,7 +333,7 @@ export function AiCreatorPanel({
             className="w-full font-bold h-12 shadow-md bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:-translate-y-0.5"
             onClick={onNext}
           >
-            <Film className="w-5 h-5 mr-2" /> Revisar Sequência Visual
+            <Film className="w-5 h-5 mr-2" /> Revisar Sequência Visual Limpa
           </Button>
         </div>
       </div>
@@ -307,33 +343,92 @@ export function AiCreatorPanel({
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-4">
-        <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-blue-500" /> Criador de Histórias (IA)
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg flex items-center gap-2">
+            <Wand2 className="w-5 h-5 text-blue-500" /> Processamento Oratório
+          </h3>
+        </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Nossa IA analisa o contexto semântico do seu texto para gerar a
-          narração exata e mapear perfeitamente as imagens mais cativantes para
-          cada cena, de forma orgânica e sem textos sobrepostos.
+          Nossa engine aplica padrões universais de qualidade: extrai o
+          contexto, gera uma voz natural sem pausas artificiais e mapeia imagens
+          orgânicas, garantindo um visual limpo sem letreiros.
         </p>
 
-        <div className="space-y-3">
-          <Label htmlFor="prompt" className="font-semibold text-sm">
-            Texto Completo da Narração
-          </Label>
-          <Textarea
-            id="prompt"
-            placeholder="Cole seu texto longo aqui (Ex: reflexões, contos, Salmos). O vídeo terá o fluxo natural da oratória."
-            className="min-h-[160px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-        </div>
+        <Tabs
+          value={sourceType}
+          onValueChange={(v) => setSourceType(v as any)}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="text" className="text-xs font-semibold">
+              <Type className="w-4 h-4 mr-2" />
+              Texto para Vídeo
+            </TabsTrigger>
+            <TabsTrigger value="video" className="text-xs font-semibold">
+              <Youtube className="w-4 h-4 mr-2" />
+              YouTube / Upload
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TabsContent value="text" className="space-y-3 mt-0">
+            <Label htmlFor="prompt" className="font-semibold text-sm">
+              Texto Completo da Narração
+            </Label>
+            <Textarea
+              id="prompt"
+              placeholder="Cole seu texto longo aqui (Ex: reflexões, contos, palestras). O vídeo terá o fluxo natural da oratória."
+              className="min-h-[160px] resize-none text-sm bg-background/50 focus-visible:ring-blue-500"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+            />
+          </TabsContent>
+
+          <TabsContent value="video" className="space-y-4 mt-0">
+            <div className="space-y-3">
+              <Label htmlFor="video-url" className="font-semibold text-sm">
+                Link do Vídeo
+              </Label>
+              <Input
+                id="video-url"
+                placeholder="Cole a URL do YouTube, TikTok ou Instagram..."
+                className="bg-background/50 h-11"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground font-semibold">
+                  Ou
+                </span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full h-11 border-dashed border-2 hover:bg-muted/50"
+            >
+              <Upload className="w-4 h-4 mr-2 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                Fazer upload de arquivo
+              </span>
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              A IA irá transcrever o vídeo e aplicar a mesma análise semântica
+              para gerar transições visuais.
+            </p>
+          </TabsContent>
+        </Tabs>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="font-semibold text-sm flex items-center gap-2">
-                <Mic className="w-4 h-4 text-primary" /> Tom da Voz
+                <Mic className="w-4 h-4 text-primary" /> Tom de Oratória
               </Label>
             </div>
             <Select value={voice} onValueChange={setVoice}>
@@ -343,7 +438,7 @@ export function AiCreatorPanel({
               <SelectContent>
                 <SelectItem value="documentary">Calmo e Reflexivo</SelectItem>
                 <SelectItem value="enthusiastic">Voz Entusiasmada</SelectItem>
-                <SelectItem value="suspense">Sério / Documentário</SelectItem>
+                <SelectItem value="suspense">Sério / Palestrante</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -385,9 +480,9 @@ export function AiCreatorPanel({
 
         <Button
           onClick={handleGenerate}
-          className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-4"
+          className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-6"
         >
-          <Wand2 className="w-5 h-5 mr-2" /> Gerar Sequência Narrada
+          <Wand2 className="w-5 h-5 mr-2" /> Aplicar Processamento Universal
         </Button>
       </div>
     </div>
