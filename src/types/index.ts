@@ -140,6 +140,7 @@ export interface SubtitleStyle {
   color: string
   backgroundColor: string
   fontSize: number
+  enabled?: boolean
 }
 
 export interface Draft {

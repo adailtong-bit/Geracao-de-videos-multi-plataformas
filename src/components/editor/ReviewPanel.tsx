@@ -111,7 +111,8 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     const current = project.subtitleStyle || {
       color: '#ffffff',
       backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 14,
+      fontSize: 12,
+      enabled: true,
     }
     update({
       subtitleStyle: { ...current, [key]: value },
@@ -271,7 +272,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
   }
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
-  const subSize = project.subtitleStyle?.fontSize || 14
+  const subSize = project.subtitleStyle?.fontSize || 12
 
   const statusConfig = {
     review: {
@@ -516,52 +517,76 @@ export function ReviewPanel({ project, update, onNext }: Props) {
             </span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Cor do Texto</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="color"
-                    value={subColor}
-                    onChange={(e) => updateSubStyle('color', e.target.value)}
-                    className="p-1 h-8 w-8 rounded cursor-pointer border-none"
-                  />
-                  <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                    {subColor}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Cor de Fundo</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="color"
-                    value={subBg}
-                    onChange={(e) =>
-                      updateSubStyle('backgroundColor', e.target.value)
-                    }
-                    className="p-1 h-8 w-8 rounded cursor-pointer border-none"
-                  />
-                  <span className="text-[10px] text-muted-foreground uppercase font-mono">
-                    {subBg}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3 pt-2">
-              <div className="flex justify-between items-center">
-                <Label className="text-xs">Tamanho da Fonte</Label>
-                <span className="text-xs font-mono text-muted-foreground">
-                  {subSize}px
+            <div className="flex items-center justify-between bg-primary/5 p-3 rounded-lg border border-primary/20">
+              <div className="flex flex-col">
+                <Label className="font-semibold text-sm text-primary">
+                  Exibir Legendas Visuais
+                </Label>
+                <span className="text-[10px] text-muted-foreground mt-0.5">
+                  Se desativado, o áudio da narração continuará sendo
+                  reproduzido normalmente.
                 </span>
               </div>
-              <Slider
-                value={[subSize]}
-                min={10}
-                max={40}
-                step={1}
-                onValueChange={([v]) => updateSubStyle('fontSize', v)}
+              <Switch
+                checked={project.subtitleStyle?.enabled !== false}
+                onCheckedChange={(v) => updateSubStyle('enabled', v)}
               />
+            </div>
+
+            <div
+              className={cn(
+                'space-y-4 transition-opacity',
+                project.subtitleStyle?.enabled === false &&
+                  'opacity-50 pointer-events-none grayscale',
+              )}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">Cor do Texto</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="color"
+                      value={subColor}
+                      onChange={(e) => updateSubStyle('color', e.target.value)}
+                      className="p-1 h-8 w-8 rounded cursor-pointer border-none"
+                    />
+                    <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                      {subColor}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Cor de Fundo</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="color"
+                      value={subBg}
+                      onChange={(e) =>
+                        updateSubStyle('backgroundColor', e.target.value)
+                      }
+                      className="p-1 h-8 w-8 rounded cursor-pointer border-none"
+                    />
+                    <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                      {subBg}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Tamanho da Fonte</Label>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {subSize}px
+                  </span>
+                </div>
+                <Slider
+                  value={[subSize]}
+                  min={8}
+                  max={40}
+                  step={1}
+                  onValueChange={([v]) => updateSubStyle('fontSize', v)}
+                />
+              </div>
             </div>
 
             <div className="pt-4 border-t mt-4 space-y-3 max-h-[250px] overflow-y-auto pr-2">

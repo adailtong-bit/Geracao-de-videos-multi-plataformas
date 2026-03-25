@@ -38,7 +38,8 @@ export const getProjects = (): Project[] => {
     subtitleStyle: {
       color: '#ffffff',
       backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 14,
+      fontSize: 12,
+      enabled: true,
     },
     glossary: [],
     aiClips: [
@@ -158,7 +159,8 @@ export const createProject = (
     subtitleStyle: {
       color: '#ffffff',
       backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 14,
+      fontSize: 12,
+      enabled: true,
     },
     glossary: [],
     ...options,

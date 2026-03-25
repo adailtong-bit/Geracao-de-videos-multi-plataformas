@@ -74,7 +74,7 @@ export function PreviewCanvas({
   const hasSourceVideo = !!project.videoUrl
   const canPlay = hasSourceVideo ? !videoError && isVideoLoaded : true
 
-  const shouldShowSubtitles = true
+  const showSubtitles = project.subtitleStyle?.enabled !== false
 
   useEffect(() => {
     if (!isDraggingAvatar) {
@@ -495,7 +495,7 @@ export function PreviewCanvas({
 
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
-  const subSize = project.subtitleStyle?.fontSize || 14
+  const subSize = project.subtitleStyle?.fontSize || 12
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -971,7 +971,7 @@ export function PreviewCanvas({
                   </div>
                 )}
 
-                {shouldShowSubtitles &&
+                {showSubtitles &&
                   project.aiClips?.map((clip) => {
                     const activeSub = clip.subtitles.find(
                       (s) => currentTime >= s.start && currentTime < s.end,
@@ -980,16 +980,16 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-[15%] px-4 sm:px-8"
+                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-8 px-4 sm:px-8"
                       >
                         <div
-                          className="px-5 py-2.5 rounded-lg font-bold shadow-2xl text-center max-w-[90%] leading-relaxed tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
+                          className="px-3 py-1.5 rounded-md font-medium shadow-md text-center max-w-[90%] leading-snug tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
                           style={{
                             color: subColor,
                             backgroundColor: subBg,
                             fontSize: `${subSize}px`,
-                            textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            textShadow: '0px 1px 2px rgba(0,0,0,0.8)',
+                            border: '1px solid rgba(255,255,255,0.05)',
                           }}
                         >
                           {activeSub.text}

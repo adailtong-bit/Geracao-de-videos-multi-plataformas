@@ -514,7 +514,8 @@ export function AiCreatorPanel({
         subtitleStyle: project.subtitleStyle || {
           color: '#ffffff',
           backgroundColor: 'rgba(0,0,0,0.75)',
-          fontSize: 14,
+          fontSize: 12,
+          enabled: true,
         },
         glossary: project.glossary || [],
       },
