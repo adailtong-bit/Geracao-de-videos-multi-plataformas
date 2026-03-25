@@ -495,7 +495,7 @@ export function PreviewCanvas({
 
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
-  const subSize = project.subtitleStyle?.fontSize || 12
+  const subSize = project.subtitleStyle?.fontSize || 10
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -949,25 +949,6 @@ export function PreviewCanvas({
                       crossOrigin="anonymous"
                       className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
                     />
-                    {isTalking && (
-                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[9px] px-2.5 py-1 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-xl border border-indigo-400/50 flex items-center gap-1.5 pointer-events-none transition-all">
-                        <div className="flex items-end gap-0.5 h-2">
-                          <div
-                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate]"
-                            style={{ height: '100%' }}
-                          />
-                          <div
-                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate_0.2s]"
-                            style={{ height: '60%' }}
-                          />
-                          <div
-                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate_0.4s]"
-                            style={{ height: '80%' }}
-                          />
-                        </div>
-                        Lip-Sync Fonético
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -980,10 +961,10 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-8 px-4 sm:px-8"
+                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-2 px-2"
                       >
                         <div
-                          className="px-3 py-1.5 rounded-md font-medium shadow-md text-center max-w-[90%] leading-snug tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
+                          className="px-2.5 py-1 rounded-md font-medium shadow-md text-center max-w-[95%] leading-snug tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
                           style={{
                             color: subColor,
                             backgroundColor: subBg,

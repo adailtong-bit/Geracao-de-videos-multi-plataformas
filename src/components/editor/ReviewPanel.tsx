@@ -111,7 +111,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     const current = project.subtitleStyle || {
       color: '#ffffff',
       backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 12,
+      fontSize: 10,
       enabled: true,
     }
     update({
@@ -272,7 +272,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
   }
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
-  const subSize = project.subtitleStyle?.fontSize || 12
+  const subSize = project.subtitleStyle?.fontSize || 10
 
   const statusConfig = {
     review: {
