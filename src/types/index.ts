@@ -162,6 +162,7 @@ export type ApprovalStatus = 'review' | 'revised' | 'approved'
 export interface Project {
   id: string
   name: string
+  draftPrompt?: string
   videoUrl: string | null
   videoDuration: number
   trimStart: number

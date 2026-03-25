@@ -7,6 +7,8 @@ interface PlayerState {
   volume: number
   videoElement: HTMLVideoElement | null
   activeClipId: string | null
+  videoError: boolean
+  isVideoLoaded: boolean
 }
 
 let currentState: PlayerState = {
@@ -16,6 +18,8 @@ let currentState: PlayerState = {
   volume: 1,
   videoElement: null,
   activeClipId: null,
+  videoError: false,
+  isVideoLoaded: false,
 }
 
 const listeners = new Set<(state: PlayerState) => void>()

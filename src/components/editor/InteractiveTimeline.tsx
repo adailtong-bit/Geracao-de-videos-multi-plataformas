@@ -25,7 +25,8 @@ export function InteractiveTimeline({
   project: Project
   update: (updates: Partial<Project>) => void
 }) {
-  const { currentTime, duration, isPlaying } = usePlayerState()
+  const { currentTime, duration, isPlaying, videoError, isVideoLoaded } =
+    usePlayerState()
   const { play, pause, seek } = usePlayerControls()
 
   const PIXELS_PER_SEC = 40
@@ -58,14 +59,14 @@ export function InteractiveTimeline({
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  // Compliance Check Calculation
   const totalDuration =
     project.cuts?.reduce((sum, c) => sum + (c.end - c.start), 0) ||
     project.videoDuration ||
     0
   const isExceedingMax = format?.max !== undefined && totalDuration > format.max
   const isBelowMin = format?.min !== undefined && totalDuration < format.min
-  const isCompliant = !isExceedingMax && !isBelowMin
+  const isCompliant =
+    !isExceedingMax && !isBelowMin && !videoError && isVideoLoaded
 
   return (
     <div className="h-64 bg-background border-t flex flex-col shrink-0 z-10 shadow-[0_-5px_20px_rgba(0,0,0,0.02)] relative select-none">
@@ -86,12 +87,27 @@ export function InteractiveTimeline({
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
 
-        {/* Compliance Status Badge */}
         <div className="flex items-center gap-3 px-4 border-l h-full ml-2">
           <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
             Status:
           </span>
-          {isCompliant ? (
+          {videoError ? (
+            <Badge
+              variant="outline"
+              className="bg-red-500/10 text-red-600 border-red-500/20 shadow-none gap-1"
+            >
+              <AlertTriangle className="w-3 h-3" />{' '}
+              <span className="hidden sm:inline">Erro de Mídia</span>
+            </Badge>
+          ) : !isVideoLoaded ? (
+            <Badge
+              variant="outline"
+              className="bg-blue-500/10 text-blue-600 border-blue-500/20 shadow-none gap-1 animate-pulse"
+            >
+              <span className="w-3 h-3 rounded-full border-2 border-blue-600 border-t-transparent animate-spin inline-block" />{' '}
+              <span className="hidden sm:inline">Processando</span>
+            </Badge>
+          ) : isCompliant ? (
             <Badge
               variant="outline"
               className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shadow-none gap-1"
@@ -105,7 +121,7 @@ export function InteractiveTimeline({
               className="bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-none gap-1"
             >
               <AlertTriangle className="w-3 h-3" />{' '}
-              <span className="hidden sm:inline">Aviso</span>
+              <span className="hidden sm:inline">Aviso (Duração)</span>
             </Badge>
           )}
         </div>
@@ -131,7 +147,7 @@ export function InteractiveTimeline({
               onClick={handleSeek}
             />
 
-            {/* Monetization Safety Zone (Minimum Duration Requirement) */}
+            {/* Monetization Safety Zone */}
             {format?.min && (
               <div
                 className="absolute top-0 bottom-0 bg-emerald-500/10 border-l-2 border-emerald-500/50 z-10 pointer-events-none transition-all"
@@ -149,7 +165,7 @@ export function InteractiveTimeline({
               </div>
             )}
 
-            {/* Hard Limit Marker (Maximum Duration Requirement) */}
+            {/* Hard Limit Marker */}
             {format?.max && (
               <div
                 className="absolute top-0 bottom-0 border-r-2 border-red-500/80 border-dashed z-40 pointer-events-none transition-all bg-red-500/5"

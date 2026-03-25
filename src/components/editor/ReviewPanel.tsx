@@ -213,7 +213,8 @@ export function ReviewPanel({ project, update, onNext }: Props) {
         setAvatarPrompt('')
         toast({
           title: 'Persona Aplicada',
-          description: 'Corpo reconstruído e motor neural conectado.',
+          description:
+            'Corpo reconstruído e motor neural conectado com sucesso.',
         })
       }, 2000)
     }, 1500)
@@ -764,8 +765,13 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                             </Label>
                           </div>
                           {isProcessingAvatar ? (
-                            <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                              Segmentação Alpha e Inpainting Anatômico...
+                            <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse flex flex-col gap-1 items-center">
+                              <Loader2 className="w-4 h-4 animate-spin mb-1" />
+                              <span>Segmentação Alpha de Alta Precisão...</span>
+                              <span>
+                                Reconstruindo Tronco e Ombros (Inpainting
+                                Generativo)...
+                              </span>
                             </div>
                           ) : (
                             <Input

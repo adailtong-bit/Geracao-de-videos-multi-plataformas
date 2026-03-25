@@ -45,15 +45,14 @@ export function PreviewCanvas({
   update?: (updates: Partial<Project>) => void
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
-  const { isPlaying, currentTime, volume } = usePlayerState()
+  const { isPlaying, currentTime, volume, videoError, isVideoLoaded } =
+    usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
 
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false)
-  const [videoError, setVideoError] = useState(false)
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [isSplitView, setIsSplitView] = useState(false)
 
   const [isDraggingAvatar, setIsDraggingAvatar] = useState(false)
@@ -79,8 +78,7 @@ export function PreviewCanvas({
   }, [project.avatar?.positionX, project.avatar?.positionY, isDraggingAvatar])
 
   useEffect(() => {
-    setVideoError(false)
-    setIsVideoLoaded(false)
+    setPlayerState({ videoError: false, isVideoLoaded: false })
   }, [project.videoUrl])
 
   useEffect(() => {
@@ -100,11 +98,15 @@ export function PreviewCanvas({
         duration: videoRef.current.duration,
       })
     }
-    setIsVideoLoaded(true)
+    setPlayerState({ isVideoLoaded: true })
   }
 
   const handleCanPlay = () => {
-    setIsVideoLoaded(true)
+    setPlayerState({ isVideoLoaded: true })
+  }
+
+  const handleError = () => {
+    setPlayerState({ videoError: true })
   }
 
   const handleEnded = () => {
@@ -449,7 +451,6 @@ export function PreviewCanvas({
     window.dispatchEvent(new CustomEvent('set_tab', { detail: 'ai-creator' }))
   }
 
-  // --- NEW AVATAR & LISTENER LOGIC ---
   const avatarScale = project.avatar?.scale ?? 1
   const avatarZIndex = project.avatar?.zIndex ?? 20
   const tone = project.avatar?.tone || 'neutral'
@@ -459,8 +460,7 @@ export function PreviewCanvas({
   let toneFilter = ''
   if (tone === 'suspense') {
     animDuration = '6s'
-    toneFilter =
-      'drop-shadow(0 20px 30px rgba(0,0,0,0.8)) contrast(1.1) brightness(0.85)'
+    toneFilter = 'contrast(1.1) brightness(0.85)'
   } else if (tone === 'joy') {
     animDuration = '2s'
     toneFilter = 'brightness(1.1) saturate(1.2)'
@@ -472,9 +472,11 @@ export function PreviewCanvas({
   const getAvatarFilter = () => {
     let f = toneFilter
     if (atmosphere === 'campfire')
-      f += ' drop-shadow(0 10px 30px rgba(234, 88, 12, 0.5))'
+      f +=
+        ' drop-shadow(0 15px 35px rgba(234, 88, 12, 0.7)) sepia(0.3) brightness(0.9)'
     if (atmosphere === 'neon')
-      f += ' drop-shadow(0 10px 30px rgba(6, 182, 212, 0.5))'
+      f +=
+        ' drop-shadow(0 15px 35px rgba(6, 182, 212, 0.7)) contrast(1.2) brightness(0.95)'
     return f.trim()
   }
 
@@ -495,9 +497,13 @@ export function PreviewCanvas({
     return () => clearInterval(int)
   }, [isTalking])
 
-  const activeGestureClass = isTalking
+  let activeGestureClass = isTalking
     ? gestureClasses[gestureIdx]
     : 'anim-neural-idle'
+
+  if (isTalking && tone === 'suspense') {
+    activeGestureClass = 'anim-gesture-suspense'
+  }
 
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
@@ -546,6 +552,14 @@ export function PreviewCanvas({
           30%, 70% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1)*1.02)) translateY(-5px); }
         }
 
+        @keyframes gesture-suspense {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) skewX(0deg) perspective(500px); }
+          25% { transform: translate(-50%, -49%) scale(calc(var(--scale, 1)*1.02)) rotate(-1deg) skewX(-1deg) perspective(500px); }
+          35% { transform: translate(-50%, -49%) scale(calc(var(--scale, 1)*1.02)) rotate(-1deg) skewX(-1deg) perspective(500px); }
+          65% { transform: translate(-49%, -50%) scale(calc(var(--scale, 1)*0.98)) rotate(1deg) skewX(1deg) perspective(500px) translateY(-2px); }
+          75% { transform: translate(-49%, -50%) scale(calc(var(--scale, 1)*0.98)) rotate(1deg) skewX(1deg) perspective(500px) translateY(-2px); }
+        }
+
         @keyframes reaction-gasp {
           0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 0.6)); filter: brightness(1); }
           10%, 90% { transform: translate(-50%, -52%) scale(calc(var(--scale, 0.6)*1.05)) rotate(-2deg); filter: brightness(1.2); }
@@ -572,6 +586,7 @@ export function PreviewCanvas({
         .anim-gesture-emphasize { animation: gesture-emphasize var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
         .anim-gesture-ponder { animation: gesture-ponder var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
         .anim-gesture-shrug { animation: gesture-shrug var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-suspense { animation: gesture-suspense var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
 
         .anim-reaction-gasp { animation: reaction-gasp 2s ease-out forwards; transform-origin: 50% 100%; }
         .anim-reaction-nod { animation: reaction-nod 2s ease-in-out infinite; transform-origin: 50% 100%; }
@@ -579,7 +594,6 @@ export function PreviewCanvas({
       `}</style>
       <PlaybackController project={project} />
 
-      {/* Voltar para Correção Button (Correction Workflow) */}
       {!isPlaying && !isGenerating && (
         <div className="absolute top-4 left-4 z-50 animate-in fade-in slide-in-from-left-2">
           <Button
@@ -594,7 +608,6 @@ export function PreviewCanvas({
         </div>
       )}
 
-      {/* Toggle Split View */}
       {hasContent && (
         <div className="absolute top-4 right-4 z-50">
           <Button
@@ -622,7 +635,6 @@ export function PreviewCanvas({
           isSplitView ? 'gap-4 sm:gap-8 max-w-5xl' : '',
         )}
       >
-        {/* RAW Stream */}
         {isSplitView && project.videoUrl && (
           <div className="flex-1 h-full flex flex-col items-center justify-center animate-in slide-in-from-left-4 fade-in min-w-0">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 bg-background/50 px-3 py-1 rounded-full border shadow-sm backdrop-blur-md">
@@ -644,7 +656,6 @@ export function PreviewCanvas({
           </div>
         )}
 
-        {/* Pure Editing Stream */}
         <div
           className={cn(
             'flex flex-col items-center justify-center h-full min-w-0 transition-all',
@@ -696,7 +707,6 @@ export function PreviewCanvas({
                   onClick={togglePlay}
                 />
 
-                {/* Atmosphere Overlay Layer */}
                 {atmosphere !== 'none' && (
                   <div
                     className={cn(
@@ -759,7 +769,7 @@ export function PreviewCanvas({
                     onLoadedMetadata={handleLoadedMetadata}
                     onCanPlay={handleCanPlay}
                     onEnded={handleEnded}
-                    onError={() => setVideoError(true)}
+                    onError={handleError}
                     playsInline
                     controls={false}
                     crossOrigin="anonymous"
@@ -798,7 +808,6 @@ export function PreviewCanvas({
                     </div>
                   )}
 
-                {/* Listeners (Audience Reactions) rendered behind main avatar */}
                 {project.avatar?.listeners?.map((listener) => {
                   const isReacting =
                     currentTime >= listener.reactionTime &&
@@ -816,7 +825,7 @@ export function PreviewCanvas({
                       )}
                       style={
                         {
-                          zIndex: 15, // Default listener zIndex
+                          zIndex: 15,
                           left: `${listener.positionX}%`,
                           top: `${listener.positionY}%`,
                           '--scale': listener.scale,
@@ -841,7 +850,6 @@ export function PreviewCanvas({
                   )
                 })}
 
-                {/* Avatar Overlay with dynamic scaling, z-index, dragging, and neural motion */}
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
                     onPointerDown={(e) => {
@@ -875,7 +883,7 @@ export function PreviewCanvas({
                       src={project.avatar.imageUrl}
                       alt="Avatar"
                       crossOrigin="anonymous"
-                      className="w-full h-full object-contain pointer-events-none"
+                      className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
                     />
                     {isTalking && (
                       <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[9px] px-2.5 py-1 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-xl border border-indigo-400/50 flex items-center gap-1.5 pointer-events-none transition-all">

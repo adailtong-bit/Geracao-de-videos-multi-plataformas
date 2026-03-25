@@ -113,7 +113,7 @@ export function AiCreatorPanel({
   const [sourceType, setSourceType] = useState<'text' | 'video' | 'upload'>(
     'text',
   )
-  const [prompt, setPrompt] = useState('')
+  const [prompt, setPrompt] = useState(project.draftPrompt || '')
   const [videoUrl, setVideoUrl] = useState('')
   const [uploadedDataUrl, setUploadedDataUrl] = useState('')
 
@@ -215,6 +215,25 @@ export function AiCreatorPanel({
         title: 'Duração Ajustada',
         description: `Duração reduzida para o máximo permitido pelo ${selectedFormatObj.label} (${finalDuration}s).`,
       })
+    }
+
+    // Simulate generation error test
+    if (sourceType === 'text' && prompt.toLowerCase().includes('erro')) {
+      setStatus('generating')
+      if (onStatusChange) onStatusChange('generating')
+      setStatusText('Processando semântica e analisando falhas de rede...')
+
+      setTimeout(() => {
+        setStatus('idle')
+        if (onStatusChange) onStatusChange('idle')
+        toast({
+          title: 'Erro na Geração',
+          description:
+            'A conexão de rede falhou, mas seu texto foi preservado no rascunho com segurança.',
+          variant: 'destructive',
+        })
+      }, 2000)
+      return
     }
 
     setStatus('generating')
@@ -600,7 +619,10 @@ export function AiCreatorPanel({
               placeholder="Cole seu texto longo aqui..."
               className="min-h-[120px] resize-none text-sm bg-background/50"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                setPrompt(e.target.value)
+                update({ draftPrompt: e.target.value })
+              }}
             />
           </TabsContent>
 
