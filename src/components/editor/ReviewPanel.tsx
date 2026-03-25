@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
+import { cn, AVATAR_MASK, CHECKERBOARD_BG } from '@/lib/utils'
 import {
   CheckCircle2,
   Eye,
@@ -157,7 +157,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
           })
           setIsProcessingAvatar(false)
           toast({
-            title: 'Modelo 3D Gerado',
+            title: 'Fundo Falso Aplicado',
             description: 'O avatar foi processado e salvo na sua biblioteca.',
           })
         }, 1500)
@@ -566,20 +566,37 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     className="grid grid-cols-4 gap-2 mt-3"
                   >
                     {presets.map((p) => (
-                      <img
+                      <div
                         key={p.id}
-                        src={p.imageUrl}
-                        crossOrigin="anonymous"
-                        title={p.name}
-                        onClick={() => updateAvatar('imageUrl', p.imageUrl)}
-                        className={cn(
-                          'rounded-md cursor-pointer border-2 transition-all hover:scale-105 aspect-square object-cover',
-                          project.avatar?.imageUrl === p.imageUrl
-                            ? 'border-primary shadow-md scale-105'
-                            : 'border-transparent opacity-70 hover:opacity-100',
+                        className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
+                        style={{
+                          backgroundImage: CHECKERBOARD_BG,
+                          backgroundSize: '10px 10px',
+                        }}
+                      >
+                        <img
+                          src={p.imageUrl}
+                          crossOrigin="anonymous"
+                          title={p.name}
+                          onClick={() => updateAvatar('imageUrl', p.imageUrl)}
+                          className={cn(
+                            'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
+                            project.avatar?.imageUrl === p.imageUrl
+                              ? 'opacity-100 scale-105'
+                              : 'opacity-80 hover:opacity-100',
+                          )}
+                          style={{
+                            WebkitMaskImage: AVATAR_MASK,
+                            WebkitMaskSize: 'contain',
+                            WebkitMaskPosition: 'bottom',
+                            WebkitMaskRepeat: 'no-repeat',
+                          }}
+                          alt={p.name}
+                        />
+                        {project.avatar?.imageUrl === p.imageUrl && (
+                          <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
                         )}
-                        alt={p.name}
-                      />
+                      </div>
                     ))}
                   </TabsContent>
 
@@ -590,7 +607,14 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     <div className="grid grid-cols-4 gap-2">
                       {customs.length > 0 ? (
                         customs.map((p) => (
-                          <div key={p.id} className="relative group">
+                          <div
+                            key={p.id}
+                            className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
+                            style={{
+                              backgroundImage: CHECKERBOARD_BG,
+                              backgroundSize: '10px 10px',
+                            }}
+                          >
                             <img
                               src={p.imageUrl}
                               crossOrigin="anonymous"
@@ -600,20 +624,35 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                                 updateAvatar('imageUrl', p.imageUrl)
                               }
                               className={cn(
-                                'rounded-md cursor-pointer border-2 transition-all hover:scale-105 aspect-square object-cover w-full',
+                                'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
                                 project.avatar?.imageUrl === p.imageUrl
-                                  ? 'border-primary shadow-md scale-105'
-                                  : 'border-transparent opacity-70 hover:opacity-100',
+                                  ? 'opacity-100 scale-105'
+                                  : 'opacity-80 hover:opacity-100',
                                 p.status !== 'ready' &&
                                   'opacity-50 grayscale cursor-not-allowed',
                               )}
+                              style={{
+                                WebkitMaskImage: AVATAR_MASK,
+                                WebkitMaskSize: 'contain',
+                                WebkitMaskPosition: 'bottom',
+                                WebkitMaskRepeat: 'no-repeat',
+                              }}
                               alt={p.name}
                             />
                             {p.status === 'processing' && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+                                <Loader2 className="w-4 h-4 animate-spin text-white mb-1" />
+                                <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
+                                  Removendo
+                                  <br />
+                                  Fundo
+                                </span>
                               </div>
                             )}
+                            {project.avatar?.imageUrl === p.imageUrl &&
+                              p.status === 'ready' && (
+                                <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
+                              )}
                           </div>
                         ))
                       ) : (
@@ -644,11 +683,11 @@ export function ReviewPanel({ project, update, onNext }: Props) {
 
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold">
-                        Transformar Foto em 3D
+                        Transformar Foto em Fundo Falso
                       </Label>
                       {isProcessingAvatar ? (
                         <div className="p-3 text-center text-xs font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                          Mapeando estrutura facial...
+                          Removendo fundo e treinando animações...
                         </div>
                       ) : (
                         <Input

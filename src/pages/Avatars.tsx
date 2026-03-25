@@ -31,7 +31,7 @@ import {
 import useAvatarStore from '@/stores/useAvatarStore'
 import { useToast } from '@/hooks/use-toast'
 import { AvatarModel } from '@/types'
-import { cn } from '@/lib/utils'
+import { cn, AVATAR_MASK, CHECKERBOARD_BG } from '@/lib/utils'
 
 export default function Avatars() {
   const { avatars, addAvatar, updateAvatar, removeAvatar } = useAvatarStore()
@@ -72,8 +72,8 @@ export default function Avatars() {
     setTimeout(() => {
       updateAvatar(created.id, { status: 'ready' })
       toast({
-        title: 'Avatar Concluído',
-        description: `O clone "${newName}" está pronto para uso em seus vídeos.`,
+        title: 'Fundo Removido & Avatar Treinado',
+        description: `O clone "${newName}" agora tem fundo transparente e animações realistas.`,
       })
     }, 4000)
   }
@@ -116,20 +116,30 @@ export default function Avatars() {
               key={avatar.id}
               className="overflow-hidden shadow-subtle hover:shadow-elevation transition-all group flex flex-col"
             >
-              <div className="aspect-square bg-muted relative border-b overflow-hidden">
+              <div
+                className="aspect-square bg-muted relative border-b overflow-hidden flex items-center justify-center"
+                style={{ backgroundImage: CHECKERBOARD_BG }}
+              >
                 <img
                   src={avatar.imageUrl}
                   className={cn(
                     'w-full h-full object-cover transition-transform duration-500 group-hover:scale-105',
                     avatar.status === 'processing' && 'opacity-50 grayscale',
                   )}
+                  style={{
+                    WebkitMaskImage: AVATAR_MASK,
+                    WebkitMaskSize: 'contain',
+                    WebkitMaskPosition: 'bottom',
+                    WebkitMaskRepeat: 'no-repeat',
+                  }}
                   alt={avatar.name}
                 />
                 {avatar.status === 'processing' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 text-white backdrop-blur-sm">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-sm">
                     <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                    <span className="text-xs font-bold uppercase tracking-wider">
-                      Mapeando Rosto...
+                    <span className="text-xs font-bold uppercase tracking-wider text-center px-2">
+                      Removendo Fundo &<br />
+                      Treinando IA...
                     </span>
                   </div>
                 )}
@@ -248,32 +258,51 @@ export default function Avatars() {
           <DialogHeader>
             <DialogTitle>Visualizar Avatar</DialogTitle>
             <DialogDescription>
-              Teste de lip-sync e estabilidade do clone digital.
+              Teste de lip-sync e gesticulação do clone digital.
             </DialogDescription>
           </DialogHeader>
           {previewAvatar && (
             <div className="flex flex-col items-center justify-center p-6 space-y-6">
               <style>{`
-                @keyframes avatar-talking-preview {
-                  0%, 100% { transform: scale(1) rotate(0deg); }
-                  25% { transform: scale(1.02) rotate(-1deg); }
-                  50% { transform: scale(1.04) rotate(1deg); }
-                  75% { transform: scale(1.02) rotate(-0.5deg); }
+                @keyframes realistic-talking {
+                  0% { transform: scale(1) rotate(0deg) translateY(0px); }
+                  20% { transform: scale(1) rotate(-1.5deg) translateY(-2px); }
+                  40% { transform: scale(1.02) rotate(1deg) translateY(1px); }
+                  60% { transform: scale(1) rotate(-0.5deg) translateY(-1px); }
+                  80% { transform: scale(1.01) rotate(1.5deg) translateY(0px); }
+                  100% { transform: scale(1) rotate(0deg) translateY(0px); }
                 }
-                .animate-avatar-talking-preview {
-                  animation: avatar-talking-preview 2s ease-in-out infinite;
+                @keyframes realistic-idle {
+                  0%, 100% { transform: scale(1) translateY(0px); }
+                  50% { transform: scale(1) translateY(-4px); }
+                }
+                .animate-realistic-talking {
+                  animation: realistic-talking 2.5s ease-in-out infinite;
+                }
+                .animate-realistic-idle {
+                  animation: realistic-idle 4s ease-in-out infinite;
                 }
               `}</style>
               <div
                 className={cn(
-                  'w-48 h-48 rounded-full overflow-hidden border-[4px] border-primary/20 shadow-2xl transition-all duration-300 bg-muted',
-                  isPreviewPlaying &&
-                    'animate-avatar-talking-preview border-primary shadow-primary/30',
+                  'w-48 h-48 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 relative border border-border',
+                  isPreviewPlaying
+                    ? 'animate-realistic-talking ring-4 ring-primary/30'
+                    : 'animate-realistic-idle',
                 )}
+                style={{
+                  backgroundImage: CHECKERBOARD_BG,
+                }}
               >
                 <img
                   src={previewAvatar.imageUrl}
                   className="w-full h-full object-cover"
+                  style={{
+                    WebkitMaskImage: AVATAR_MASK,
+                    WebkitMaskSize: 'contain',
+                    WebkitMaskPosition: 'bottom',
+                    WebkitMaskRepeat: 'no-repeat',
+                  }}
                   alt="Preview"
                 />
               </div>
@@ -288,8 +317,8 @@ export default function Avatars() {
                   <Play className="w-5 h-5 mr-2" />
                 )}
                 {isPreviewPlaying
-                  ? 'Testando Animação e Lip-Sync...'
-                  : 'Testar Animação'}
+                  ? 'Testando Gesticulação e Lip-Sync...'
+                  : 'Testar Animação Realista'}
               </Button>
             </div>
           )}
@@ -303,7 +332,7 @@ export default function Avatars() {
             <DialogTitle>Novo Avatar Digital</DialogTitle>
             <DialogDescription>
               Faça o upload de uma foto frontal com boa iluminação para criar
-              seu clone.
+              seu clone. A IA removerá o fundo automaticamente.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -318,7 +347,7 @@ export default function Avatars() {
             <div className="space-y-2">
               <Label>Foto Frontal (JPG/PNG)</Label>
               {newImage ? (
-                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-muted">
+                <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden border-4 border-muted">
                   <img
                     src={newImage}
                     className="w-full h-full object-cover"
@@ -327,7 +356,7 @@ export default function Avatars() {
                   <Button
                     size="icon"
                     variant="destructive"
-                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full"
+                    className="absolute bottom-1 right-1 w-8 h-8 rounded-full"
                     onClick={() => setNewImage('')}
                   >
                     <Trash2 className="w-4 h-4" />

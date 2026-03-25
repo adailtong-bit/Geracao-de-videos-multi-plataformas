@@ -1,5 +1,5 @@
 import { Project } from '@/types'
-import { cn } from '@/lib/utils'
+import { cn, AVATAR_MASK } from '@/lib/utils'
 import {
   Wand2,
   Play,
@@ -411,14 +411,23 @@ export function PreviewCanvas({
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
-        @keyframes avatar-talking {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg); }
-          25% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(-1deg); }
-          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.04)) rotate(1deg); }
-          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(-0.5deg); }
+        @keyframes realistic-talking {
+          0% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0px); }
+          20% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(-1.5deg) translateY(-2px); }
+          40% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(1deg) translateY(1px); }
+          60% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(-0.5deg) translateY(-1px); }
+          80% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(1.5deg) translateY(0px); }
+          100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0px); }
         }
-        .animate-avatar-talking {
-          animation: avatar-talking 2s ease-in-out infinite;
+        @keyframes realistic-idle {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(0px); }
+          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(-4px); }
+        }
+        .animate-realistic-talking {
+          animation: realistic-talking 2.5s ease-in-out infinite;
+        }
+        .animate-realistic-idle {
+          animation: realistic-idle 4s ease-in-out infinite;
         }
       `}</style>
       <PlaybackController project={project} />
@@ -625,21 +634,20 @@ export function PreviewCanvas({
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
                     className={cn(
-                      'absolute z-20 pointer-events-none rounded-full overflow-hidden border-[3px] border-white/20 shadow-2xl bg-black/50 backdrop-blur-md',
-                      isTalking ? 'animate-avatar-talking' : '',
+                      'absolute z-20 pointer-events-none drop-shadow-2xl',
+                      isTalking
+                        ? 'animate-realistic-talking'
+                        : 'animate-realistic-idle',
                     )}
                     style={
                       {
                         left: `${avatarX}%`,
                         top: `${avatarY}%`,
                         '--scale': avatarScale,
-                        transform: !isTalking
-                          ? `translate(-50%, -50%) scale(${avatarScale})`
-                          : undefined,
-                        width: '120px',
-                        height: '120px',
-                        transition:
-                          'left 0.3s ease-out, top 0.3s ease-out, transform 0.3s ease-out',
+                        transform: `translate(-50%, -50%) scale(${avatarScale})`,
+                        width: '180px',
+                        height: '180px',
+                        transition: 'left 0.3s ease-out, top 0.3s ease-out',
                       } as any
                     }
                   >
@@ -648,9 +656,19 @@ export function PreviewCanvas({
                       alt="Avatar"
                       crossOrigin="anonymous"
                       className="w-full h-full object-cover"
+                      style={{
+                        WebkitMaskImage: AVATAR_MASK,
+                        WebkitMaskSize: 'contain',
+                        WebkitMaskPosition: 'bottom',
+                        WebkitMaskRepeat: 'no-repeat',
+                        maskImage: AVATAR_MASK,
+                        maskSize: 'contain',
+                        maskPosition: 'bottom',
+                        maskRepeat: 'no-repeat',
+                      }}
                     />
                     {isTalking && (
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50">
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50">
                         Lip-Sync Ativo
                       </div>
                     )}
