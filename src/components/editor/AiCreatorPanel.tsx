@@ -129,10 +129,10 @@ export function AiCreatorPanel({
   const [videoUrl, setVideoUrl] = useState('')
 
   const [targetFormat, setTargetFormat] = useState<string>(
-    project.targetFormat || 'custom',
+    project.targetFormat || 'yt_shorts',
   )
   const [targetDuration, setTargetDuration] = useState<number>(
-    project.videoDuration || 60,
+    project.videoDuration || 55,
   )
 
   const [sourceLanguage, setSourceLanguage] = useState<Language>(
@@ -158,16 +158,18 @@ export function AiCreatorPanel({
     setTargetFormat(v)
     const f = VIDEO_FORMATS.find((x) => x.id === v)
     if (f) {
-      if (f.max) setTargetDuration(f.max)
-      else if (f.min) setTargetDuration(f.min)
+      if (f.max) setTargetDuration(Math.min(f.max - 2, 60))
+      else if (f.min) setTargetDuration(f.min + 60)
     }
   }
 
   const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
   const isExceedingMax =
-    selectedFormatObj?.max && targetDuration > selectedFormatObj.max
+    selectedFormatObj?.max !== undefined &&
+    targetDuration > selectedFormatObj.max
   const isBelowMin =
-    selectedFormatObj?.min && targetDuration < selectedFormatObj.min
+    selectedFormatObj?.min !== undefined &&
+    targetDuration < selectedFormatObj.min
 
   const handleGenerate = () => {
     if (sourceType === 'text' && !prompt.trim()) {
@@ -194,11 +196,14 @@ export function AiCreatorPanel({
       })
     }
 
-    if (isExceedingMax) {
+    // Force limit constraint on generation
+    let finalDuration = targetDuration
+    if (isExceedingMax && selectedFormatObj?.max) {
+      finalDuration = selectedFormatObj.max
+      setTargetDuration(finalDuration)
       toast({
-        title: 'Aviso de Limite da Plataforma',
-        description: `O vídeo gerado excederá o limite do formato ${selectedFormatObj?.label}.`,
-        variant: 'destructive',
+        title: 'Duração Ajustada',
+        description: `Duração reduzida para o máximo permitido pelo ${selectedFormatObj.label} (${finalDuration}s).`,
       })
     }
 
@@ -251,12 +256,12 @@ export function AiCreatorPanel({
         currentStep++
       } else {
         clearInterval(interval)
-        finishGeneration()
+        finishGeneration(finalDuration)
       }
     }, 1000)
   }
 
-  const finishGeneration = () => {
+  const finishGeneration = (targetDur: number) => {
     let totalDuration = 0
     let cuts: CutSegment[] = []
     let bRolls: BRoll[] = []
@@ -264,10 +269,10 @@ export function AiCreatorPanel({
     let rawText = prompt.trim()
 
     if (sourceType === 'video') {
-      totalDuration = targetDuration
+      totalDuration = targetDur
 
-      const numSegments = Math.max(3, Math.floor(targetDuration / 10))
-      const segmentDuration = targetDuration / numSegments
+      const numSegments = Math.max(3, Math.floor(targetDur / 10))
+      const segmentDuration = targetDur / numSegments
 
       const interviewTexts =
         sourceLanguage === 'pt-BR'
@@ -360,7 +365,7 @@ export function AiCreatorPanel({
       })
 
       const sumDuration = scenes.reduce((sum, s) => sum + (s.end - s.start), 0)
-      const scale = targetDuration / sumDuration
+      const scale = targetDur / sumDuration
       let currentStartScaled = 0
       scenes = scenes.map((s) => {
         const dur = (s.end - s.start) * scale
@@ -370,7 +375,7 @@ export function AiCreatorPanel({
         return { ...s, start: nStart, end: nEnd }
       })
 
-      totalDuration = targetDuration
+      totalDuration = targetDur
       bRolls = scenes.map((s) => ({
         id: crypto.randomUUID(),
         start: s.start,
@@ -626,8 +631,8 @@ export function AiCreatorPanel({
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 space-y-3">
                 <Label className="font-semibold text-sm flex items-center gap-2">
-                  <MonitorPlay className="w-4 h-4 text-primary" /> Plataforma
-                  Alvo
+                  <MonitorPlay className="w-4 h-4 text-primary" /> Destino
+                  (Plataforma)
                 </Label>
                 <Select value={targetFormat} onValueChange={handleFormatChange}>
                   <SelectTrigger className="bg-background/50 h-10">
@@ -674,18 +679,18 @@ export function AiCreatorPanel({
                 <ShieldAlert className="w-4 h-4" />
                 <AlertDescription className="text-xs ml-2">
                   O formato <strong>{selectedFormatObj.label}</strong> exige
-                  duração máxima de {selectedFormatObj.max}s. Seu corte atual
-                  pode impedir a monetização ou publicação.
+                  duração máxima de {selectedFormatObj.max}s. O sistema irá
+                  ajustar automaticamente.
                 </AlertDescription>
               </Alert>
             )}
             {isBelowMin && selectedFormatObj && (
-              <Alert className="py-2 px-3 bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300 animate-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 text-blue-500" />
-                <AlertDescription className="text-xs ml-2">
-                  Para elegibilidade de mid-roll no{' '}
-                  <strong>{selectedFormatObj.label}</strong>, o vídeo deve ter
-                  no mínimo {selectedFormatObj.min}s.
+              <Alert className="py-2 px-3 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400 animate-in slide-in-from-top-2">
+                <AlertCircle className="w-4 h-4 text-emerald-600" />
+                <AlertDescription className="text-xs ml-2 font-medium">
+                  Para monetização (Mid-roll) no{' '}
+                  <strong>{selectedFormatObj.label}</strong>, a duração ideal
+                  deve ultrapassar {selectedFormatObj.min}s.
                 </AlertDescription>
               </Alert>
             )}
@@ -725,7 +730,7 @@ export function AiCreatorPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sem Legenda</SelectItem>
+                <SelectItem value="none">Sem Legenda (Padrão)</SelectItem>
                 <SelectItem value="pt-BR">Português (BR)</SelectItem>
                 <SelectItem value="en-US">English (US)</SelectItem>
                 <SelectItem value="es-ES">Español</SelectItem>
@@ -734,6 +739,9 @@ export function AiCreatorPanel({
                 <SelectItem value="it-IT">Italiano</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Legendas estilo Cinema no rodapé, ativadas apenas se configuradas.
+            </p>
           </div>
 
           <div className="space-y-3">

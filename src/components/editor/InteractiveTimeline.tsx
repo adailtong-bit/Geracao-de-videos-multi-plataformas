@@ -1,8 +1,16 @@
 import { Project, TransitionStyle } from '@/types'
 import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { Play, Pause, Scissors, Image as ImageIcon } from 'lucide-react'
+import {
+  Play,
+  Pause,
+  Scissors,
+  Image as ImageIcon,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Popover,
   PopoverTrigger,
@@ -50,6 +58,15 @@ export function InteractiveTimeline({
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  // Compliance Check Calculation
+  const totalDuration =
+    project.cuts?.reduce((sum, c) => sum + (c.end - c.start), 0) ||
+    project.videoDuration ||
+    0
+  const isExceedingMax = format?.max !== undefined && totalDuration > format.max
+  const isBelowMin = format?.min !== undefined && totalDuration < format.min
+  const isCompliant = !isExceedingMax && !isBelowMin
+
   return (
     <div className="h-64 bg-background border-t flex flex-col shrink-0 z-10 shadow-[0_-5px_20px_rgba(0,0,0,0.02)] relative select-none">
       <div className="h-12 border-b flex items-center px-4 gap-4 bg-card shrink-0">
@@ -68,6 +85,30 @@ export function InteractiveTimeline({
         <span className="text-sm font-mono font-medium text-muted-foreground w-24 text-center shrink-0">
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
+
+        {/* Compliance Status Badge */}
+        <div className="flex items-center gap-3 px-4 border-l h-full ml-2">
+          <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
+            Status:
+          </span>
+          {isCompliant ? (
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 shadow-none gap-1"
+            >
+              <CheckCircle2 className="w-3 h-3" />{' '}
+              <span className="hidden sm:inline">Válido</span>
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="bg-amber-500/10 text-amber-600 border-amber-500/20 shadow-none gap-1"
+            >
+              <AlertTriangle className="w-3 h-3" />{' '}
+              <span className="hidden sm:inline">Aviso</span>
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 relative bg-muted/5 overflow-hidden">
@@ -90,29 +131,43 @@ export function InteractiveTimeline({
               onClick={handleSeek}
             />
 
-            {/* Safe Zone Markers */}
-            {format?.max && (
-              <div
-                className="absolute top-0 bottom-0 border-r-2 border-red-500/80 border-dashed z-40 pointer-events-none transition-all"
-                style={{ left: format.max * PIXELS_PER_SEC }}
-              >
-                <div className="absolute top-2 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  Limite: {format.label}
-                </div>
-              </div>
-            )}
+            {/* Monetization Safety Zone (Minimum Duration Requirement) */}
             {format?.min && (
               <div
-                className="absolute top-0 bottom-0 border-r-2 border-blue-500/80 border-dashed z-40 pointer-events-none transition-all"
-                style={{ left: format.min * PIXELS_PER_SEC }}
+                className="absolute top-0 bottom-0 bg-emerald-500/10 border-l-2 border-emerald-500/50 z-10 pointer-events-none transition-all"
+                style={{
+                  left: format.min * PIXELS_PER_SEC,
+                  width: Math.max(
+                    0,
+                    (maxFormatTime - format.min) * PIXELS_PER_SEC,
+                  ),
+                }}
               >
-                <div className="absolute top-8 left-1 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
-                  Mínimo: {format.label}
+                <div className="absolute top-1 left-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded backdrop-blur-sm whitespace-nowrap shadow-sm border border-emerald-500/20">
+                  Zona Segura ({format.label})
                 </div>
               </div>
             )}
 
-            <div className="pt-6 px-4 space-y-3 pointer-events-none">
+            {/* Hard Limit Marker (Maximum Duration Requirement) */}
+            {format?.max && (
+              <div
+                className="absolute top-0 bottom-0 border-r-2 border-red-500/80 border-dashed z-40 pointer-events-none transition-all bg-red-500/5"
+                style={{
+                  left: format.max * PIXELS_PER_SEC,
+                  width: Math.max(
+                    0,
+                    (maxFormatTime - format.max) * PIXELS_PER_SEC,
+                  ),
+                }}
+              >
+                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  Limite Máx ({format.label})
+                </div>
+              </div>
+            )}
+
+            <div className="pt-6 px-4 space-y-3 pointer-events-none z-20 relative">
               {/* Visuals Track */}
               {project.bRolls && project.bRolls.length > 0 && (
                 <div className="relative h-16 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
@@ -136,7 +191,6 @@ export function InteractiveTimeline({
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
                           <ImageIcon className="w-5 h-5 text-white" />
                         </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-indigo-500/50" />
                       </div>
                       {i < (project.bRolls?.length || 0) - 1 && (
                         <div
@@ -212,7 +266,6 @@ export function InteractiveTimeline({
                       }}
                     >
                       <span className="truncate w-full">{sub.text}</span>
-                      <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-500/50" />
                     </div>
                   )),
                 )}
@@ -227,7 +280,7 @@ export function InteractiveTimeline({
                   {project.cuts.map((cut, i) => (
                     <div
                       key={cut.id}
-                      className="absolute top-1 bottom-1 bg-green-500/20 border border-green-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-green-800 dark:text-green-200 font-medium overflow-hidden shadow-sm group hover:bg-green-500/30 transition-colors"
+                      className="absolute top-1 bottom-1 bg-emerald-500/20 border border-emerald-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-emerald-800 dark:text-emerald-200 font-medium overflow-hidden shadow-sm group hover:bg-emerald-500/30 transition-colors"
                       style={{
                         left: cut.start * PIXELS_PER_SEC,
                         width: (cut.end - cut.start) * PIXELS_PER_SEC,
@@ -241,7 +294,6 @@ export function InteractiveTimeline({
                       <span className="truncate w-full font-bold px-1">
                         Corte #{i + 1}
                       </span>
-                      <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-green-500/50" />
                     </div>
                   ))}
                 </div>

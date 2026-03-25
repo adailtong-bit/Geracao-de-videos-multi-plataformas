@@ -1,6 +1,6 @@
 import { Project } from '@/types'
 import { cn } from '@/lib/utils'
-import { Wand2, Play, Pause, ShieldAlert } from 'lucide-react'
+import { Wand2, Play, Pause, ShieldAlert, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   usePlayerControls,
@@ -38,15 +38,15 @@ export function PreviewCanvas({
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false)
   const [videoError, setVideoError] = useState(false)
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false)
 
   const hasContent =
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
 
-  // Determine if this is Pure Edition mode based on cuts mapping back to source video
   const isPureEdition = project.cuts?.some((c) => c.sourceStart !== undefined)
 
-  // Subtitles only show if explicitly set and different from source language
+  // Cinema-style subtitles: Off by default unless languages are explicitly set and different
   const shouldShowSubtitles =
     project.sourceLanguage &&
     project.subtitleLanguage &&
@@ -55,6 +55,7 @@ export function PreviewCanvas({
 
   useEffect(() => {
     setVideoError(false)
+    setIsVideoLoaded(false)
   }, [project.videoUrl])
 
   useEffect(() => {
@@ -74,6 +75,11 @@ export function PreviewCanvas({
         duration: videoRef.current.duration,
       })
     }
+    setIsVideoLoaded(true)
+  }
+
+  const handleCanPlay = () => {
+    setIsVideoLoaded(true)
   }
 
   const handleEnded = () => {
@@ -81,7 +87,7 @@ export function PreviewCanvas({
   }
 
   const togglePlay = () => {
-    if (!hasContent || videoError) return
+    if (!hasContent || videoError || !isVideoLoaded) return
     if (isPlaying) pause()
     else play()
   }
@@ -99,7 +105,7 @@ export function PreviewCanvas({
       const delta = (time - lastTime) / 1000
       lastTime = time
 
-      if (isPlaying && !videoError) {
+      if (isPlaying && !videoError && isVideoLoaded) {
         const nextTime = currentTimeRef.current + delta
         if (nextTime >= (project.videoDuration || 0)) {
           setPlayerState({
@@ -146,7 +152,7 @@ export function PreviewCanvas({
       }
     }
 
-    if (isPlaying && !videoError) {
+    if (isPlaying && !videoError && isVideoLoaded) {
       lastTime = performance.now()
       frameId = requestAnimationFrame(tick)
       if (videoRef.current && videoRef.current.paused) {
@@ -158,10 +164,16 @@ export function PreviewCanvas({
       }
     }
     return () => cancelAnimationFrame(frameId)
-  }, [isPlaying, project.videoDuration, project.cuts, videoError])
+  }, [
+    isPlaying,
+    project.videoDuration,
+    project.cuts,
+    videoError,
+    isVideoLoaded,
+  ])
 
   useEffect(() => {
-    if (!isPlaying && videoRef.current && !videoError) {
+    if (!isPlaying && videoRef.current && !videoError && isVideoLoaded) {
       const hasCuts = project.cuts && project.cuts.length > 0
       if (hasCuts) {
         const activeCut = project.cuts!.find(
@@ -175,7 +187,7 @@ export function PreviewCanvas({
         videoRef.current.currentTime = currentTime
       }
     }
-  }, [currentTime, isPlaying, project.cuts, videoError])
+  }, [currentTime, isPlaying, project.cuts, videoError, isVideoLoaded])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -370,6 +382,22 @@ export function PreviewCanvas({
               </div>
             )}
 
+            {/* Robust Video Loader Lock */}
+            {project.videoUrl &&
+              !isVideoLoaded &&
+              !videoError &&
+              !isGenerating && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/90 text-white p-6 text-center">
+                  <Loader2 className="w-10 h-10 text-blue-500 mb-4 animate-spin" />
+                  <h3 className="font-bold text-lg mb-1">
+                    Carregando Mídia RAW
+                  </h3>
+                  <p className="text-xs text-zinc-400 max-w-[240px]">
+                    Handshake direto com a fonte para garantir integridade.
+                  </p>
+                </div>
+              )}
+
             {project.audioTrack?.url && (
               <audio
                 ref={audioRef}
@@ -384,12 +412,18 @@ export function PreviewCanvas({
               <video
                 ref={videoRef}
                 src={project.videoUrl}
-                className="w-full h-full object-cover opacity-90 relative z-0"
+                className={cn(
+                  'w-full h-full object-cover opacity-90 relative z-0 transition-opacity duration-300',
+                  !isVideoLoaded && 'opacity-0',
+                )}
                 onLoadedMetadata={handleLoadedMetadata}
+                onCanPlay={handleCanPlay}
                 onEnded={handleEnded}
                 onError={() => setVideoError(true)}
                 playsInline
                 controls={false}
+                crossOrigin="anonymous"
+                preload="auto"
               />
             )}
 
@@ -417,7 +451,7 @@ export function PreviewCanvas({
               </div>
             )}
 
-            {/* Strict Movie-Style Subtitle Format - Passing Gradually */}
+            {/* Strict Cinema-Style Subtitle Format - Bottom Aligned */}
             {shouldShowSubtitles &&
               project.aiClips?.map((clip) => {
                 const activeSub = clip.subtitles.find(
@@ -427,11 +461,11 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-[20px] left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-150"
+                    className="absolute bottom-4 left-0 right-0 z-20 flex justify-center pointer-events-none animate-in fade-in duration-150"
                   >
                     <div
-                      className="bg-black/75 backdrop-blur-md text-[#f8f8f8] px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold shadow-lg text-center max-w-[80%] leading-relaxed tracking-wide border border-white/10"
-                      style={{ textShadow: '0px 1px 3px rgba(0,0,0,0.9)' }}
+                      className="bg-black/75 backdrop-blur-sm text-white px-3 py-1.5 rounded-sm text-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10"
+                      style={{ textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}
                     >
                       {activeSub.text}
                     </div>
@@ -439,7 +473,7 @@ export function PreviewCanvas({
                 )
               })}
 
-            {!isPlaying && !videoError && (
+            {!isPlaying && !videoError && isVideoLoaded && (
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 transition-all pointer-events-none">
                 <div className="w-20 h-20 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
                   <Play className="w-10 h-10 ml-2 fill-current" />
