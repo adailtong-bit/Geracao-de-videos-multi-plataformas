@@ -8,6 +8,18 @@ export type Mood = 'inspirational' | 'dramatic' | 'calm'
 export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
 export type MediaType = 'image-sequence' | 'context-video'
 
+export type AvatarType = 'preset' | 'custom'
+export type AvatarStatus = 'processing' | 'ready' | 'failed'
+
+export interface AvatarModel {
+  id: string
+  name: string
+  type: AvatarType
+  imageUrl: string
+  status: AvatarStatus
+  createdAt: number
+}
+
 export interface ProjectElement {
   id: string
   type: 'text' | 'banner' | 'caption'

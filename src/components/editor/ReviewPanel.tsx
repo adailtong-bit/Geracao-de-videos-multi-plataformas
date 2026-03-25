@@ -24,6 +24,7 @@ import {
   Globe,
   Send,
   User,
+  Loader2,
 } from 'lucide-react'
 import {
   Accordion,
@@ -31,13 +32,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-
-const PRESETS = [
-  'https://img.usecurling.com/ppl/medium?gender=female&seed=10',
-  'https://img.usecurling.com/ppl/medium?gender=male&seed=20',
-  'https://img.usecurling.com/ppl/medium?gender=female&seed=30',
-  'https://img.usecurling.com/ppl/medium?gender=male&seed=40',
-]
+import useAvatarStore from '@/stores/useAvatarStore'
+import { Link } from 'react-router-dom'
 
 interface Props {
   project: Project
@@ -49,6 +45,16 @@ export function ReviewPanel({ project, update, onNext }: Props) {
   const { toast } = useToast()
   const [isProcessingAvatar, setIsProcessingAvatar] = useState(false)
   const [avatarPrompt, setAvatarPrompt] = useState('')
+
+  const {
+    avatars,
+    addAvatar,
+    updateAvatar: updateStoreAvatar,
+  } = useAvatarStore()
+  const presets = avatars.filter(
+    (a) => a.type === 'preset' && a.status === 'ready',
+  )
+  const customs = avatars.filter((a) => a.type === 'custom')
 
   const handleLanguageChange = (
     field: 'sourceLanguage' | 'subtitleLanguage',
@@ -124,8 +130,14 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       const file = e.target.files[0]
       const reader = new FileReader()
       reader.onloadend = () => {
+        const url = reader.result as string
+        const newAv = addAvatar({
+          name: 'Clone Rápido (Editor)',
+          imageUrl: url,
+          status: 'processing',
+        })
         setTimeout(() => {
-          const url = reader.result as string
+          updateStoreAvatar(newAv.id, { status: 'ready' })
           const current = project.avatar || {
             enabled: false,
             mode: 'preset',
@@ -146,11 +158,10 @@ export function ReviewPanel({ project, update, onNext }: Props) {
           setIsProcessingAvatar(false)
           toast({
             title: 'Modelo 3D Gerado',
-            description: 'O avatar foi processado com sucesso.',
+            description: 'O avatar foi processado e salvo na sua biblioteca.',
           })
         }, 1500)
       }
-      // Read as Data URL to ensure cross-session persistence and avoid blob fetch errors
       reader.readAsDataURL(file)
     }
   }
@@ -159,6 +170,11 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     setIsProcessingAvatar(true)
     setTimeout(() => {
       const url = `https://img.usecurling.com/p/400/400?q=portrait,${encodeURIComponent(avatarPrompt.slice(0, 20))}&dpr=2&seed=${Date.now()}`
+      addAvatar({
+        name: `Gerado: ${avatarPrompt.slice(0, 10)}`,
+        imageUrl: url,
+        status: 'ready',
+      })
       const current = project.avatar || {}
       update({
         avatar: {
@@ -173,7 +189,8 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       setAvatarPrompt('')
       toast({
         title: 'Modelo 3D Gerado',
-        description: 'Avatar criado a partir da descrição.',
+        description:
+          'Avatar criado a partir da descrição e salvo na biblioteca.',
       })
     }, 2000)
   }
@@ -548,19 +565,20 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     value="presets"
                     className="grid grid-cols-4 gap-2 mt-3"
                   >
-                    {PRESETS.map((p) => (
+                    {presets.map((p) => (
                       <img
-                        key={p}
-                        src={p}
+                        key={p.id}
+                        src={p.imageUrl}
                         crossOrigin="anonymous"
-                        onClick={() => updateAvatar('imageUrl', p)}
+                        title={p.name}
+                        onClick={() => updateAvatar('imageUrl', p.imageUrl)}
                         className={cn(
-                          'rounded-md cursor-pointer border-2 transition-all hover:scale-105',
-                          project.avatar?.imageUrl === p
+                          'rounded-md cursor-pointer border-2 transition-all hover:scale-105 aspect-square object-cover',
+                          project.avatar?.imageUrl === p.imageUrl
                             ? 'border-primary shadow-md scale-105'
                             : 'border-transparent opacity-70 hover:opacity-100',
                         )}
-                        alt="Preset"
+                        alt={p.name}
                       />
                     ))}
                   </TabsContent>
@@ -569,6 +587,61 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     value="custom"
                     className="space-y-4 mt-3 bg-muted/20 p-3 rounded-lg border border-border/50"
                   >
+                    <div className="grid grid-cols-4 gap-2">
+                      {customs.length > 0 ? (
+                        customs.map((p) => (
+                          <div key={p.id} className="relative group">
+                            <img
+                              src={p.imageUrl}
+                              crossOrigin="anonymous"
+                              title={p.name}
+                              onClick={() =>
+                                p.status === 'ready' &&
+                                updateAvatar('imageUrl', p.imageUrl)
+                              }
+                              className={cn(
+                                'rounded-md cursor-pointer border-2 transition-all hover:scale-105 aspect-square object-cover w-full',
+                                project.avatar?.imageUrl === p.imageUrl
+                                  ? 'border-primary shadow-md scale-105'
+                                  : 'border-transparent opacity-70 hover:opacity-100',
+                                p.status !== 'ready' &&
+                                  'opacity-50 grayscale cursor-not-allowed',
+                              )}
+                              alt={p.name}
+                            />
+                            {p.status === 'processing' && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-4 text-center p-4 text-sm text-muted-foreground">
+                          Nenhum clone encontrado.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full bg-background"
+                        asChild
+                      >
+                        <Link to="/avatars">Gerenciar na Biblioteca</Link>
+                      </Button>
+                    </div>
+
+                    <div className="relative flex items-center py-1">
+                      <div className="flex-grow border-t border-border"></div>
+                      <span className="flex-shrink-0 mx-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                        Ou Criar Rápido
+                      </span>
+                      <div className="flex-grow border-t border-border"></div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold">
                         Transformar Foto em 3D
@@ -585,14 +658,6 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           className="text-xs h-9 bg-background file:text-xs file:font-medium"
                         />
                       )}
-                    </div>
-
-                    <div className="relative flex items-center py-1">
-                      <div className="flex-grow border-t border-border"></div>
-                      <span className="flex-shrink-0 mx-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        OU
-                      </span>
-                      <div className="flex-grow border-t border-border"></div>
                     </div>
 
                     <div className="space-y-2">

@@ -10,6 +10,7 @@ import Profile from './pages/Profile'
 import Integrations from './pages/Integrations'
 import Billing from './pages/Billing'
 import Analytics from './pages/Analytics'
+import Avatars from './pages/Avatars'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import useAuthStore from './stores/useAuthStore'
@@ -38,6 +39,7 @@ const App = () => (
         >
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/avatars" element={<Avatars />} />
           <Route path="/editor/:id" element={<Editor />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/integrations" element={<Integrations />} />
