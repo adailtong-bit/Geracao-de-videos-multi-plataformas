@@ -8,6 +8,7 @@ import {
   Trash2,
   Loader2,
   Info,
+  Activity,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -72,8 +73,8 @@ export default function Avatars() {
     setTimeout(() => {
       updateAvatar(created.id, { status: 'ready' })
       toast({
-        title: 'Fundo Removido & Avatar Treinado',
-        description: `O clone "${newName}" agora tem fundo transparente e animações realistas.`,
+        title: 'Persona Digital Pronta',
+        description: `O avatar "${newName}" teve o fundo removido e os gestos neurais mapeados.`,
       })
     }, 4000)
   }
@@ -135,11 +136,11 @@ export default function Avatars() {
                   alt={avatar.name}
                 />
                 {avatar.status === 'processing' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white backdrop-blur-sm">
-                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-center px-2">
-                      Removendo Fundo &<br />
-                      Treinando IA...
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white backdrop-blur-md z-10">
+                    <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-center px-2 animate-pulse leading-snug">
+                      Segmentando Corpo &<br />
+                      Mapeando Gestos...
                     </span>
                   </div>
                 )}
@@ -221,11 +222,11 @@ export default function Avatars() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <User className="w-8 h-8 text-primary" /> Meus Avatares
+            <User className="w-8 h-8 text-primary" /> Minhas Personas (Avatares)
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie seus clones digitais e modelos de IA para aplicar em seus
-            vídeos.
+            Gerencie seus clones digitais com canal alfa (fundo transparente) e
+            síntese de movimento.
           </p>
         </div>
         <Button
@@ -256,39 +257,26 @@ export default function Avatars() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Visualizar Avatar</DialogTitle>
+            <DialogTitle>Visualizar Persona Digital</DialogTitle>
             <DialogDescription>
-              Teste de lip-sync e gesticulação do clone digital.
+              Teste a segmentação do torso e o motor neural de lip-sync.
             </DialogDescription>
           </DialogHeader>
           {previewAvatar && (
             <div className="flex flex-col items-center justify-center p-6 space-y-6">
               <style>{`
-                @keyframes realistic-talking {
-                  0% { transform: scale(1) rotate(0deg) translateY(0px); }
-                  20% { transform: scale(1) rotate(-1.5deg) translateY(-2px); }
-                  40% { transform: scale(1.02) rotate(1deg) translateY(1px); }
-                  60% { transform: scale(1) rotate(-0.5deg) translateY(-1px); }
-                  80% { transform: scale(1.01) rotate(1.5deg) translateY(0px); }
-                  100% { transform: scale(1) rotate(0deg) translateY(0px); }
-                }
-                @keyframes realistic-idle {
+                @keyframes organic-breathing {
                   0%, 100% { transform: scale(1) translateY(0px); }
-                  50% { transform: scale(1) translateY(-4px); }
+                  50% { transform: scale(1.02) translateY(-3px); }
                 }
-                .animate-realistic-talking {
-                  animation: realistic-talking 2.5s ease-in-out infinite;
-                }
-                .animate-realistic-idle {
-                  animation: realistic-idle 4s ease-in-out infinite;
+                .animate-organic-breathing {
+                  animation: organic-breathing 4s ease-in-out infinite;
                 }
               `}</style>
               <div
                 className={cn(
-                  'w-48 h-48 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 relative border border-border',
-                  isPreviewPlaying
-                    ? 'animate-realistic-talking ring-4 ring-primary/30'
-                    : 'animate-realistic-idle',
+                  'w-48 h-48 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 relative border border-border animate-organic-breathing',
+                  isPreviewPlaying && 'ring-4 ring-primary/30',
                 )}
                 style={{
                   backgroundImage: CHECKERBOARD_BG,
@@ -305,6 +293,12 @@ export default function Avatars() {
                   }}
                   alt="Preview"
                 />
+                {isPreviewPlaying && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[10px] px-3 py-1 rounded-t-lg backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border-t border-x border-blue-400/50 flex items-center gap-1.5">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    Lip-Sync Neural
+                  </div>
+                )}
               </div>
               <Button
                 onClick={handlePreviewPlay}
@@ -317,8 +311,8 @@ export default function Avatars() {
                   <Play className="w-5 h-5 mr-2" />
                 )}
                 {isPreviewPlaying
-                  ? 'Testando Gesticulação e Lip-Sync...'
-                  : 'Testar Animação Realista'}
+                  ? 'Sintetizando Movimento & Fala...'
+                  : 'Testar Motor Neural'}
               </Button>
             </div>
           )}
@@ -329,10 +323,10 @@ export default function Avatars() {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Avatar Digital</DialogTitle>
+            <DialogTitle>Nova Persona Digital</DialogTitle>
             <DialogDescription>
-              Faça o upload de uma foto frontal com boa iluminação para criar
-              seu clone. A IA removerá o fundo automaticamente.
+              Faça o upload de uma foto frontal. Nossa IA manterá a integridade
+              dos ombros e da cabeça, isolando o fundo em canal alfa.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -383,7 +377,7 @@ export default function Avatars() {
               Cancelar
             </Button>
             <Button onClick={handleCreate} disabled={!newName || !newImage}>
-              Criar Clone
+              Processar e Extrair Alfa
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -544,9 +544,14 @@ export function ReviewPanel({ project, update, onNext }: Props) {
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-4 space-y-4">
             <div className="flex items-center justify-between bg-primary/5 p-3 rounded-lg border border-primary/20">
-              <Label className="font-semibold text-sm text-primary">
-                Ativar Avatar na Cena
-              </Label>
+              <div className="flex flex-col">
+                <Label className="font-semibold text-sm text-primary">
+                  Ativar Persona em Cena
+                </Label>
+                <span className="text-[10px] text-muted-foreground mt-0.5">
+                  Top layer com canal alfa e lip-sync automático
+                </span>
+              </div>
               <Switch
                 checked={project.avatar?.enabled}
                 onCheckedChange={(v) => updateAvatar('enabled', v)}
@@ -640,12 +645,12 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                               alt={p.name}
                             />
                             {p.status === 'processing' && (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
-                                <Loader2 className="w-4 h-4 animate-spin text-white mb-1" />
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
                                 <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
-                                  Removendo
+                                  Extraindo
                                   <br />
-                                  Fundo
+                                  Alfa
                                 </span>
                               </div>
                             )}
@@ -687,7 +692,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                       </Label>
                       {isProcessingAvatar ? (
                         <div className="p-3 text-center text-xs font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                          Removendo fundo e treinando animações...
+                          Segmentando corpo e mapeando gestos neurais...
                         </div>
                       ) : (
                         <Input

@@ -9,6 +9,7 @@ import {
   Columns,
   Eye,
   ArrowLeft,
+  Activity,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -411,23 +412,12 @@ export function PreviewCanvas({
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
-        @keyframes realistic-talking {
-          0% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0px); }
-          20% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(-1.5deg) translateY(-2px); }
-          40% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(1deg) translateY(1px); }
-          60% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(-0.5deg) translateY(-1px); }
-          80% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(1.5deg) translateY(0px); }
-          100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0px); }
-        }
-        @keyframes realistic-idle {
+        @keyframes organic-breathing {
           0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(0px); }
-          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(-4px); }
+          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) translateY(-2px); }
         }
-        .animate-realistic-talking {
-          animation: realistic-talking 2.5s ease-in-out infinite;
-        }
-        .animate-realistic-idle {
-          animation: realistic-idle 4s ease-in-out infinite;
+        .animate-organic-breathing {
+          animation: organic-breathing 4s ease-in-out infinite;
         }
       `}</style>
       <PlaybackController project={project} />
@@ -634,10 +624,7 @@ export function PreviewCanvas({
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
                     className={cn(
-                      'absolute z-20 pointer-events-none drop-shadow-2xl',
-                      isTalking
-                        ? 'animate-realistic-talking'
-                        : 'animate-realistic-idle',
+                      'absolute z-20 pointer-events-none drop-shadow-2xl animate-organic-breathing',
                     )}
                     style={
                       {
@@ -645,8 +632,8 @@ export function PreviewCanvas({
                         top: `${avatarY}%`,
                         '--scale': avatarScale,
                         transform: `translate(-50%, -50%) scale(${avatarScale})`,
-                        width: '180px',
-                        height: '180px',
+                        width: '240px',
+                        height: '240px',
                         transition: 'left 0.3s ease-out, top 0.3s ease-out',
                       } as any
                     }
@@ -668,8 +655,9 @@ export function PreviewCanvas({
                       }}
                     />
                     {isTalking && (
-                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50">
-                        Lip-Sync Ativo
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50 flex items-center gap-1">
+                        <Activity className="w-3 h-3 animate-pulse" />
+                        Neural Lip-Sync Ativo
                       </div>
                     )}
                   </div>
