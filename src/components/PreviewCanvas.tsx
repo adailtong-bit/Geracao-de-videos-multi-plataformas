@@ -43,6 +43,16 @@ export function PreviewCanvas({
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
 
+  // Determine if this is Pure Edition mode based on cuts mapping back to source video
+  const isPureEdition = project.cuts?.some((c) => c.sourceStart !== undefined)
+
+  // Subtitles only show if explicitly set and different from source language
+  const shouldShowSubtitles =
+    project.sourceLanguage &&
+    project.subtitleLanguage &&
+    project.subtitleLanguage !== 'none' &&
+    project.sourceLanguage !== project.subtitleLanguage
+
   useEffect(() => {
     setVideoError(false)
   }, [project.videoUrl])
@@ -258,7 +268,7 @@ export function PreviewCanvas({
 
         if (textToSpeak) {
           const utterance = new SpeechSynthesisUtterance(textToSpeak)
-          utterance.lang = project.language || 'pt-BR'
+          utterance.lang = project.sourceLanguage || project.language || 'pt-BR'
 
           let rate = 1.0
           let pitch = 1.0
@@ -383,7 +393,7 @@ export function PreviewCanvas({
               />
             )}
 
-            {project.bRolls && project.bRolls.length > 0 && (
+            {!isPureEdition && project.bRolls && project.bRolls.length > 0 && (
               <div className="absolute inset-0 z-10 pointer-events-none bg-black/20">
                 {project.bRolls.map((br) => {
                   const isActive =
@@ -407,8 +417,8 @@ export function PreviewCanvas({
               </div>
             )}
 
-            {/* Hardcoded Subtitles Styling: Pure minimalist format always at bottom */}
-            {!project.noTextMode &&
+            {/* Strict Movie-Style Subtitle Format - Passing Gradually */}
+            {shouldShowSubtitles &&
               project.aiClips?.map((clip) => {
                 const activeSub = clip.subtitles.find(
                   (s) => currentTime >= s.start && currentTime < s.end,
@@ -417,9 +427,12 @@ export function PreviewCanvas({
                 return (
                   <div
                     key={clip.id}
-                    className="absolute bottom-[20px] left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-200"
+                    className="absolute bottom-[20px] left-4 right-4 z-20 flex justify-center pointer-events-none animate-in fade-in duration-150"
                   >
-                    <div className="bg-black/60 backdrop-blur-sm text-white/90 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium shadow-sm text-center max-w-[85%] leading-snug tracking-wide">
+                    <div
+                      className="bg-black/75 backdrop-blur-md text-[#f8f8f8] px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold shadow-lg text-center max-w-[80%] leading-relaxed tracking-wide border border-white/10"
+                      style={{ textShadow: '0px 1px 3px rgba(0,0,0,0.9)' }}
+                    >
                       {activeSub.text}
                     </div>
                   </div>

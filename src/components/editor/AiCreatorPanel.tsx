@@ -15,7 +15,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
@@ -36,7 +35,6 @@ import {
   Upload,
   Type,
   Activity,
-  EyeOff,
   Globe,
   Clock,
   Scissors,
@@ -123,13 +121,17 @@ export function AiCreatorPanel({
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [targetDuration, setTargetDuration] = useState<number>(60)
-  const [language, setLanguage] = useState<Language>(
-    project.language || 'pt-BR',
+
+  const [sourceLanguage, setSourceLanguage] = useState<Language>(
+    project.sourceLanguage || project.language || 'pt-BR',
   )
+  const [subtitleLanguage, setSubtitleLanguage] = useState<Language | 'none'>(
+    project.subtitleLanguage || 'none',
+  )
+
   const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>('deep')
   const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
   const [mood, setMood] = useState<Mood>('inspirational')
-  const [noTextMode, setNoTextMode] = useState(project.noTextMode ?? false)
 
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
@@ -201,7 +203,7 @@ export function AiCreatorPanel({
         : [
             { p: 25, t: `Ajustando emoção para modo ${mood}...` },
             { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
-            { p: 75, t: `Sincronizando áudio e texto em ${language}...` },
+            { p: 75, t: `Sincronizando áudio e texto em ${sourceLanguage}...` },
             { p: 100, t: 'Garantindo transições orgânicas...' },
           ]
 
@@ -232,7 +234,7 @@ export function AiCreatorPanel({
       const segmentDuration = targetDuration / numSegments
 
       const interviewTexts =
-        language === 'pt-BR'
+        sourceLanguage === 'pt-BR'
           ? [
               'Para mim, a grande virada de chave foi focar no que realmente importa.',
               'Quando começamos, não tínhamos os recursos, mas tínhamos a visão.',
@@ -290,8 +292,8 @@ export function AiCreatorPanel({
       bRolls = []
       rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
-      if (sourceType === 'upload') rawText = defaultTexts[language]
-      else if (!rawText) rawText = defaultShortTexts[language]
+      if (sourceType === 'upload') rawText = defaultTexts[sourceLanguage]
+      else if (!rawText) rawText = defaultShortTexts[sourceLanguage]
 
       const clauses = rawText
         .replace(/[\n\r]+/g, ' ')
@@ -350,8 +352,8 @@ export function AiCreatorPanel({
       title: `${titleWords}...`,
       description:
         sourceType === 'video'
-          ? `Cortes extraídos e formatados da fonte original em ${language}.`
-          : `Vídeo dinâmico processado com IA em ${language}.`,
+          ? `Cortes extraídos e formatados da fonte original em ${sourceLanguage}.`
+          : `Vídeo dinâmico processado com IA em ${sourceLanguage}.`,
       hashtags: `#historia #ia #cinematic`,
     }
 
@@ -407,11 +409,11 @@ export function AiCreatorPanel({
                 mood: 'Ambient',
                 url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
               },
-        language,
+        sourceLanguage,
+        subtitleLanguage,
         voiceProfile,
         visualStyle,
         mood,
-        noTextMode,
       },
     }
 
@@ -428,11 +430,11 @@ export function AiCreatorPanel({
       captions: newDraft.snapshot.captions,
       sfx: [],
       audioTrack: newDraft.snapshot.audioTrack || null,
-      language: newDraft.snapshot.language,
+      sourceLanguage: newDraft.snapshot.sourceLanguage,
+      subtitleLanguage: newDraft.snapshot.subtitleLanguage,
       voiceProfile: newDraft.snapshot.voiceProfile,
       visualStyle: newDraft.snapshot.visualStyle,
       mood: newDraft.snapshot.mood,
-      noTextMode: newDraft.snapshot.noTextMode,
 
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
@@ -589,11 +591,11 @@ export function AiCreatorPanel({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" /> Idioma
+              <Globe className="w-4 h-4 text-primary" /> Idioma Original
             </Label>
             <Select
-              value={language}
-              onValueChange={(v) => setLanguage(v as Language)}
+              value={sourceLanguage}
+              onValueChange={(v) => setSourceLanguage(v as Language)}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -611,7 +613,30 @@ export function AiCreatorPanel({
 
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" /> Duração Desejada (s)
+              <Type className="w-4 h-4 text-primary" /> Idioma da Legenda
+            </Label>
+            <Select
+              value={subtitleLanguage}
+              onValueChange={(v) => setSubtitleLanguage(v as Language | 'none')}
+            >
+              <SelectTrigger className="bg-background/50 h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem Legenda</SelectItem>
+                <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                <SelectItem value="en-US">English (US)</SelectItem>
+                <SelectItem value="es-ES">Español</SelectItem>
+                <SelectItem value="fr-FR">Français</SelectItem>
+                <SelectItem value="de-DE">Deutsch</SelectItem>
+                <SelectItem value="it-IT">Italiano</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" /> Duração (s)
             </Label>
             <Input
               type="number"
@@ -678,22 +703,6 @@ export function AiCreatorPanel({
                 <SelectItem value="calm">Calmo / Relaxante</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-3 flex flex-col justify-center">
-            <div className="flex items-center justify-between p-3 rounded-lg border bg-background/50 hover:bg-muted/50 transition-colors h-10 mt-6">
-              <Label
-                htmlFor="no-text-mode"
-                className="flex items-center gap-2 cursor-pointer font-semibold text-sm"
-              >
-                <EyeOff className="w-4 h-4 text-primary" /> Modo Sem Texto
-              </Label>
-              <Switch
-                id="no-text-mode"
-                checked={noTextMode}
-                onCheckedChange={setNoTextMode}
-              />
-            </div>
           </div>
         </div>
 

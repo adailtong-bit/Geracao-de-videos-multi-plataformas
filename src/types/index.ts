@@ -115,11 +115,12 @@ export interface Project {
   scheduledPosts?: ScheduledPost[]
   drafts?: Draft[]
   activeDraftId?: string | null
-  language?: Language
+  language?: Language // kept for backward compatibility
+  sourceLanguage?: Language
+  subtitleLanguage?: Language | 'none'
   voiceProfile?: VoiceProfile
   visualStyle?: VisualStyle
   mood?: Mood
-  noTextMode?: boolean
   teamMembers?: TeamMember[]
 }
 
