@@ -13,6 +13,13 @@ import {
   SidebarGroupContent,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { PreviewCanvas } from '@/components/PreviewCanvas'
 import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { TimelinePanel } from '@/components/editor/TimelinePanel'
@@ -22,9 +29,12 @@ import { ReviewPanel } from '@/components/editor/ReviewPanel'
 import { InteractiveTimeline } from '@/components/editor/InteractiveTimeline'
 import { PublishDialog } from '@/components/editor/PublishDialog'
 import { TeamDialog } from '@/components/editor/TeamDialog'
+import { GlossaryPanel } from '@/components/editor/GlossaryPanel'
+import { ScriptEditorPanel } from '@/components/editor/ScriptEditorPanel'
 import { Avatar, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { exportSrt } from '@/lib/srt'
 import {
   ArrowLeft,
   Save,
@@ -39,6 +49,10 @@ import {
   Download,
   Music,
   Settings2,
+  BookA,
+  LayoutTemplate,
+  Columns,
+  FileText,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
@@ -129,7 +143,7 @@ function VersionsSidebar({
                             className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
                             alt="Thumbnail"
                             onError={(e) => {
-                              // Fallback to transparent pixel to prevent external library crashes on dead blobs
+                              // Fallback to transparent pixel
                               e.currentTarget.src =
                                 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
                             }}
@@ -199,6 +213,10 @@ export default function Editor() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'ai-creator'
 
+  const [viewMode, setViewMode] = useState<'standard' | 'side-by-side'>(
+    'standard',
+  )
+
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true })
   }
@@ -212,6 +230,7 @@ export default function Editor() {
   const handleReturnToCorrection = () => {
     setCreatorKey((k) => k + 1)
     setActiveTab('ai-creator')
+    setViewMode('standard')
   }
 
   if (project === null) {
@@ -325,6 +344,33 @@ export default function Editor() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <div className="hidden lg:flex items-center border-r pr-4 mr-2">
+                <ToggleGroup
+                  type="single"
+                  value={viewMode}
+                  onValueChange={(v) =>
+                    v && setViewMode(v as 'standard' | 'side-by-side')
+                  }
+                >
+                  <ToggleGroupItem
+                    value="standard"
+                    aria-label="Modo Padrão"
+                    className="h-8 w-8 px-0"
+                    title="Visualização Padrão"
+                  >
+                    <LayoutTemplate className="w-4 h-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="side-by-side"
+                    aria-label="Edição Lado a Lado"
+                    className="h-8 w-8 px-0"
+                    title="Edição Lado a Lado"
+                  >
+                    <Columns className="w-4 h-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
               <div className="hidden lg:flex items-center -space-x-2 mr-2">
                 {teamMembers.slice(0, 3).map((m) => (
                   <Avatar
@@ -337,14 +383,35 @@ export default function Editor() {
                 ))}
               </div>
               <TeamDialog project={project} update={update} />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="hidden md:flex"
-              >
-                <Download className="w-4 h-4 mr-2" /> Baixar
-              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="hidden md:flex"
+                  >
+                    <Download className="w-4 h-4 mr-2" /> Baixar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={handleDownload}
+                    className="cursor-pointer font-medium"
+                  >
+                    <Video className="w-4 h-4 mr-2 text-indigo-500" />
+                    Vídeo MP4 (HD)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => exportSrt(project)}
+                    className="cursor-pointer font-medium"
+                  >
+                    <FileText className="w-4 h-4 mr-2 text-emerald-600" />
+                    Legendas (.srt)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -358,110 +425,150 @@ export default function Editor() {
           </header>
 
           <div className="flex-1 flex overflow-hidden min-h-0 w-full">
-            <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="flex-1 flex flex-col overflow-hidden"
-              >
-                <TabsList className="w-full justify-start rounded-none border-b h-14 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
-                  <TabsTrigger
-                    value="ai-creator"
-                    className="shrink-0 min-w-[90px] text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold h-10"
+            {viewMode === 'standard' ? (
+              <>
+                <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="flex-1 flex flex-col overflow-hidden"
                   >
-                    <Wand2 className="w-4 h-4 mr-2" /> Criar
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="audio"
-                    className="shrink-0 min-w-[90px] text-sm text-green-600 data-[state=active]:text-green-700 font-bold h-10"
-                  >
-                    <Music className="w-4 h-4 mr-2" /> Áudio
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="timeline"
-                    className="shrink-0 min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-10"
-                  >
-                    <Film className="w-4 h-4 mr-2" /> Sequência
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="review"
-                    className="shrink-0 min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-10"
-                  >
-                    <Settings2 className="w-4 h-4 mr-2" /> Studio
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="publish"
-                    className="shrink-0 min-w-[90px] text-sm h-10 font-medium"
-                  >
-                    <Send className="w-4 h-4 mr-2" /> Publicar
-                  </TabsTrigger>
-                </TabsList>
-                <div className="flex-1 relative overflow-hidden">
-                  <ScrollArea className="absolute inset-0 w-full h-full">
-                    <div className="p-4 md:p-6 pb-12 h-full">
-                      <TabsContent
+                    <TabsList className="w-full justify-start rounded-none border-b h-14 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
+                      <TabsTrigger
                         value="ai-creator"
-                        className="mt-0 outline-none"
+                        className="shrink-0 min-w-[90px] text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold h-10"
                       >
-                        <AiCreatorPanel
-                          key={creatorKey}
-                          project={project}
-                          update={update}
-                          onNext={() => setActiveTab('audio')}
-                          onStatusChange={setAiStatus}
-                        />
-                      </TabsContent>
-                      <TabsContent
+                        <Wand2 className="w-4 h-4 mr-2" /> Criar
+                      </TabsTrigger>
+                      <TabsTrigger
                         value="audio"
-                        className="mt-0 outline-none h-full"
+                        className="shrink-0 min-w-[90px] text-sm text-green-600 data-[state=active]:text-green-700 font-bold h-10"
                       >
-                        <AudioPanel project={project} update={update} />
-                      </TabsContent>
-                      <TabsContent
+                        <Music className="w-4 h-4 mr-2" /> Áudio
+                      </TabsTrigger>
+                      <TabsTrigger
                         value="timeline"
-                        className="mt-0 outline-none"
+                        className="shrink-0 min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-10"
                       >
-                        <TimelinePanel
-                          project={project}
-                          onNext={() => setActiveTab('review')}
-                          update={update}
-                        />
-                      </TabsContent>
-                      <TabsContent value="review" className="mt-0 outline-none">
-                        <ReviewPanel
-                          project={project}
-                          update={update}
-                          onNext={() => setActiveTab('publish')}
-                        />
-                      </TabsContent>
-                      <TabsContent
+                        <Film className="w-4 h-4 mr-2" /> Sequência
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="review"
+                        className="shrink-0 min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-10"
+                      >
+                        <Settings2 className="w-4 h-4 mr-2" /> Studio
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="glossary"
+                        className="shrink-0 min-w-[90px] text-sm text-fuchsia-600 data-[state=active]:text-fuchsia-700 font-bold h-10"
+                      >
+                        <BookA className="w-4 h-4 mr-2" /> Glossário
+                      </TabsTrigger>
+                      <TabsTrigger
                         value="publish"
-                        className="mt-0 outline-none"
+                        className="shrink-0 min-w-[90px] text-sm h-10 font-medium"
                       >
-                        <PublishPanel project={project} update={update} />
-                      </TabsContent>
+                        <Send className="w-4 h-4 mr-2" /> Publicar
+                      </TabsTrigger>
+                    </TabsList>
+                    <div className="flex-1 relative overflow-hidden">
+                      <ScrollArea className="absolute inset-0 w-full h-full">
+                        <div className="p-4 md:p-6 pb-12 h-full">
+                          <TabsContent
+                            value="ai-creator"
+                            className="mt-0 outline-none"
+                          >
+                            <AiCreatorPanel
+                              key={creatorKey}
+                              project={project}
+                              update={update}
+                              onNext={() => setActiveTab('audio')}
+                              onStatusChange={setAiStatus}
+                            />
+                          </TabsContent>
+                          <TabsContent
+                            value="audio"
+                            className="mt-0 outline-none h-full"
+                          >
+                            <AudioPanel project={project} update={update} />
+                          </TabsContent>
+                          <TabsContent
+                            value="timeline"
+                            className="mt-0 outline-none"
+                          >
+                            <TimelinePanel
+                              project={project}
+                              onNext={() => setActiveTab('review')}
+                              update={update}
+                            />
+                          </TabsContent>
+                          <TabsContent
+                            value="review"
+                            className="mt-0 outline-none"
+                          >
+                            <ReviewPanel
+                              project={project}
+                              update={update}
+                              onNext={() => setActiveTab('publish')}
+                            />
+                          </TabsContent>
+                          <TabsContent
+                            value="glossary"
+                            className="mt-0 outline-none h-full"
+                          >
+                            <GlossaryPanel project={project} update={update} />
+                          </TabsContent>
+                          <TabsContent
+                            value="publish"
+                            className="mt-0 outline-none"
+                          >
+                            <PublishPanel project={project} update={update} />
+                          </TabsContent>
+                        </div>
+                      </ScrollArea>
                     </div>
-                  </ScrollArea>
+                  </Tabs>
                 </div>
-              </Tabs>
-            </div>
 
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
-              <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
-                <PreviewCanvas
-                  project={project}
-                  isGenerating={aiStatus === 'generating'}
-                  update={update}
-                  onReturnToCorrection={handleReturnToCorrection}
-                />
-              </div>
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
+                  <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                    <PreviewCanvas
+                      project={project}
+                      isGenerating={aiStatus === 'generating'}
+                      update={update}
+                      onReturnToCorrection={handleReturnToCorrection}
+                    />
+                  </div>
 
-              <InteractiveTimeline
-                project={project}
-                update={update}
-                isGenerating={aiStatus === 'generating'}
-              />
-            </div>
+                  <InteractiveTimeline
+                    project={project}
+                    update={update}
+                    isGenerating={aiStatus === 'generating'}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-[45%] border-r flex flex-col bg-background min-w-0 overflow-hidden z-10 shadow-sm relative">
+                  <ScriptEditorPanel project={project} update={update} />
+                </div>
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
+                  <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                    <PreviewCanvas
+                      project={project}
+                      isGenerating={aiStatus === 'generating'}
+                      update={update}
+                      onReturnToCorrection={handleReturnToCorrection}
+                    />
+                  </div>
+                  <InteractiveTimeline
+                    project={project}
+                    update={update}
+                    isGenerating={aiStatus === 'generating'}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

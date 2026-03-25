@@ -2,7 +2,7 @@ export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube'
 export type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5'
 
 export type Language = 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT'
-export type VoiceProfile = 'deep' | 'soft' | 'announcer'
+export type VoiceProfile = string
 export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
 export type Mood = 'inspirational' | 'dramatic' | 'calm'
 export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
@@ -159,6 +159,12 @@ export interface ColorSettings {
 
 export type ApprovalStatus = 'review' | 'revised' | 'approved'
 
+export interface GlossaryTerm {
+  id: string
+  source: string
+  target: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -195,6 +201,7 @@ export interface Project {
   subtitleStyle?: SubtitleStyle
   colorSettings?: ColorSettings
   approvalStatus?: ApprovalStatus
+  glossary?: GlossaryTerm[]
 }
 
 export interface User {

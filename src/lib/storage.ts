@@ -40,6 +40,7 @@ export const getProjects = (): Project[] => {
       backgroundColor: 'rgba(0,0,0,0.75)',
       fontSize: 14,
     },
+    glossary: [],
     aiClips: [
       {
         id: crypto.randomUUID(),
@@ -98,6 +99,7 @@ export const getProjects = (): Project[] => {
         subtitleLanguage: defaultProject.subtitleLanguage,
         avatar: defaultProject.avatar,
         subtitleStyle: defaultProject.subtitleStyle,
+        glossary: defaultProject.glossary,
       },
     },
   ]
@@ -158,6 +160,7 @@ export const createProject = (
       backgroundColor: 'rgba(0,0,0,0.75)',
       fontSize: 14,
     },
+    glossary: [],
     ...options,
   }
   projects.push(newProject)

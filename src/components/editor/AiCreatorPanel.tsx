@@ -5,7 +5,6 @@ import {
   AiClip,
   Draft,
   Language,
-  VoiceProfile,
   VisualStyle,
   Mood,
   CutSegment,
@@ -46,10 +45,12 @@ import {
   MonitorPlay,
   ShieldAlert,
   AlertCircle,
+  Play,
   Image as ImageIcon,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
+import { VOICES, getGroupedVoices } from '@/lib/voices'
 
 interface Props {
   project: Project
@@ -135,7 +136,9 @@ export function AiCreatorPanel({
     project.subtitleLanguage || 'none',
   )
 
-  const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>('deep')
+  const [voiceProfile, setVoiceProfile] = useState<string>(
+    project.voiceProfile || 'deep',
+  )
   const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
   const [mood, setMood] = useState<Mood>('inspirational')
 
@@ -147,7 +150,6 @@ export function AiCreatorPanel({
   const [result, setResult] = useState<GeneratedResult | null>(null)
   const { toast } = useToast()
 
-  // Make sure prompt state remains in sync with context if it changes unexpectedly
   useEffect(() => {
     if (
       project.draftPrompt &&
@@ -175,6 +177,11 @@ export function AiCreatorPanel({
       }
       reader.readAsDataURL(e.target.files[0])
     }
+  }
+
+  const playSample = (url: string) => {
+    const audio = new Audio(url)
+    audio.play().catch(() => {})
   }
 
   const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
@@ -228,7 +235,6 @@ export function AiCreatorPanel({
       })
     }
 
-    // Simulate generation error test
     if (sourceType === 'text' && prompt.toLowerCase().includes('erro')) {
       setStatus('generating')
       if (onStatusChange) onStatusChange('generating')
@@ -490,6 +496,7 @@ export function AiCreatorPanel({
           backgroundColor: 'rgba(0,0,0,0.75)',
           fontSize: 14,
         },
+        glossary: project.glossary || [],
       },
     }
 
@@ -515,6 +522,7 @@ export function AiCreatorPanel({
       subtitleStyle: newDraft.snapshot.subtitleStyle,
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
+      glossary: newDraft.snapshot.glossary,
     })
 
     setResult(generatedResult)
@@ -768,6 +776,57 @@ export function AiCreatorPanel({
             )}
           </div>
 
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-3">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Mic className="w-4 h-4 text-primary" /> Voz Global / Regional
+            </Label>
+            <div className="flex gap-2">
+              <Select
+                value={voiceProfile}
+                onValueChange={(v) => setVoiceProfile(v)}
+                disabled={sourceType === 'video' || sourceType === 'upload'}
+              >
+                <SelectTrigger className="bg-background/50 h-10 flex-1">
+                  <SelectValue placeholder="Selecione a Voz" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(getGroupedVoices()).map(([group, voices]) => (
+                    <SelectGroup key={group}>
+                      <SelectLabel className="font-bold text-primary">
+                        {group}
+                      </SelectLabel>
+                      {voices.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0 hover:bg-primary/10 hover:text-primary transition-colors"
+                disabled={
+                  !voiceProfile ||
+                  sourceType === 'video' ||
+                  sourceType === 'upload'
+                }
+                onClick={() => {
+                  const v = VOICES.find((x) => x.id === voiceProfile)
+                  if (v && v.sampleUrl) playSample(v.sampleUrl)
+                }}
+                title="Ouvir Amostra"
+              >
+                <Play className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Biblioteca expandida com sotaques regionais e idiomas globais.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" /> Idioma Original
@@ -809,29 +868,6 @@ export function AiCreatorPanel({
                 <SelectItem value="fr-FR">Français</SelectItem>
                 <SelectItem value="de-DE">Deutsch</SelectItem>
                 <SelectItem value="it-IT">Italiano</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground">
-              Legendas estilo Cinema no rodapé, ativadas apenas se configuradas.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm flex items-center gap-2">
-              <Mic className="w-4 h-4 text-primary" /> Perfil de Voz
-            </Label>
-            <Select
-              value={voiceProfile}
-              onValueChange={(v) => setVoiceProfile(v as VoiceProfile)}
-              disabled={sourceType === 'video' || sourceType === 'upload'}
-            >
-              <SelectTrigger className="bg-background/50 h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="deep">Profunda / Solene</SelectItem>
-                <SelectItem value="soft">Suave / Meditação</SelectItem>
-                <SelectItem value="announcer">Comercial / Locutor</SelectItem>
               </SelectContent>
             </Select>
           </div>
