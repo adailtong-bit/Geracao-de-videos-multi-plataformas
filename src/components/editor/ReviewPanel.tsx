@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { Project, ApprovalStatus, Language, AvatarSettings } from '@/types'
+import {
+  Project,
+  ApprovalStatus,
+  Language,
+  AvatarSettings,
+  ListenerPersona,
+} from '@/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -25,6 +31,7 @@ import {
   Send,
   User,
   Loader2,
+  Trash2,
 } from 'lucide-react'
 import {
   Accordion,
@@ -124,6 +131,56 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     update({ avatar: { ...current, [key]: value }, approvalStatus: 'revised' })
   }
 
+  const addListener = () => {
+    const current = project.avatar || {
+      enabled: false,
+      mode: 'preset',
+      position: 'custom',
+      positionX: 50,
+      positionY: 80,
+      scale: 1,
+    }
+    const defaultImages = [
+      'https://img.usecurling.com/ppl/medium?gender=female&seed=11',
+      'https://img.usecurling.com/ppl/medium?gender=male&seed=22',
+      'https://img.usecurling.com/ppl/medium?gender=female&seed=33',
+    ]
+    const newListener: ListenerPersona = {
+      id: crypto.randomUUID(),
+      imageUrl: defaultImages[Math.floor(Math.random() * defaultImages.length)],
+      positionX: 20 + Math.random() * 60,
+      positionY: 60 + Math.random() * 20,
+      scale: 0.5 + Math.random() * 0.3,
+      reactionTime: 5,
+      reactionType: 'gasp',
+    }
+    update({
+      avatar: {
+        ...current,
+        listeners: [...(current.listeners || []), newListener],
+      } as any,
+      approvalStatus: 'revised',
+    })
+  }
+
+  const updateListener = (id: string, updates: Partial<ListenerPersona>) => {
+    const listeners = project.avatar?.listeners?.map((l) =>
+      l.id === id ? { ...l, ...updates } : l,
+    )
+    update({
+      avatar: { ...project.avatar, listeners } as any,
+      approvalStatus: 'revised',
+    })
+  }
+
+  const removeListener = (id: string) => {
+    const listeners = project.avatar?.listeners?.filter((l) => l.id !== id)
+    update({
+      avatar: { ...project.avatar, listeners } as any,
+      approvalStatus: 'revised',
+    })
+  }
+
   const simulateProcessing = (
     avatarId: string,
     url: string,
@@ -155,7 +212,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
         setAvatarPrompt('')
         toast({
           title: 'Persona Aplicada',
-          description: 'Fundo removido e motor neural conectado com sucesso.',
+          description: 'Corpo reconstruído e motor neural conectado.',
         })
       }, 2000)
     }, 1500)
@@ -247,8 +304,8 @@ export function ReviewPanel({ project, update, onNext }: Props) {
           <Settings2 className="w-5 h-5 text-amber-500" /> Studio de Edição
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Verifique textos, adicione seu avatar animado e corrija as cores.
-          Aprove o projeto para liberar a publicação.
+          Verifique textos, adicione avatares e ouvintes reativos, e configure a
+          atmosfera.
         </p>
 
         <div
@@ -532,7 +589,8 @@ export function ReviewPanel({ project, update, onNext }: Props) {
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <span className="flex items-center gap-2 font-semibold text-sm">
-              <User className="w-4 h-4 text-primary" /> Persona e Camada
+              <User className="w-4 h-4 text-primary" /> Persona, Narrativa &
+              Ambiente
             </span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-4 space-y-4">
@@ -542,7 +600,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   Ativar Persona em Cena
                 </Label>
                 <span className="text-[10px] text-muted-foreground mt-0.5">
-                  Top layer com canal alfa livre de frames
+                  Top layer com canal alfa livre de molduras
                 </span>
               </div>
               <Switch
@@ -553,193 +611,394 @@ export function ReviewPanel({ project, update, onNext }: Props) {
 
             {project.avatar?.enabled && (
               <div className="animate-in fade-in slide-in-from-top-2">
-                <Tabs defaultValue="presets" className="w-full">
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="presets">AI Presets</TabsTrigger>
-                    <TabsTrigger value="custom">Meus Avatares</TabsTrigger>
+                <Tabs defaultValue="main" className="w-full pt-2">
+                  <TabsList className="grid grid-cols-3">
+                    <TabsTrigger value="main" className="text-xs">
+                      Principal
+                    </TabsTrigger>
+                    <TabsTrigger value="ambiente" className="text-xs">
+                      Ambiente
+                    </TabsTrigger>
+                    <TabsTrigger value="ouvintes" className="text-xs">
+                      Ouvintes
+                    </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent
-                    value="presets"
-                    className="grid grid-cols-4 gap-2 mt-3"
-                  >
-                    {presets.map((p) => (
-                      <div
-                        key={p.id}
-                        className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
-                        style={{
-                          backgroundImage: CHECKERBOARD_BG,
-                          backgroundSize: '10px 10px',
-                        }}
+                  <TabsContent value="main" className="space-y-4 pt-4">
+                    <Tabs defaultValue="presets" className="w-full">
+                      <TabsList className="grid grid-cols-2">
+                        <TabsTrigger value="presets">AI Presets</TabsTrigger>
+                        <TabsTrigger value="custom">Meus Avatares</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent
+                        value="presets"
+                        className="grid grid-cols-4 gap-2 mt-3"
                       >
-                        <img
-                          src={p.imageUrl}
-                          crossOrigin="anonymous"
-                          title={p.name}
-                          onClick={() =>
-                            updateAvatarSettings('imageUrl', p.imageUrl)
-                          }
-                          className={cn(
-                            'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
-                            project.avatar?.imageUrl === p.imageUrl
-                              ? 'opacity-100 scale-105'
-                              : 'opacity-80 hover:opacity-100',
+                        {presets.map((p) => (
+                          <div
+                            key={p.id}
+                            className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
+                            style={{
+                              backgroundImage: CHECKERBOARD_BG,
+                              backgroundSize: '10px 10px',
+                            }}
+                          >
+                            <img
+                              src={p.imageUrl}
+                              crossOrigin="anonymous"
+                              title={p.name}
+                              onClick={() =>
+                                updateAvatarSettings('imageUrl', p.imageUrl)
+                              }
+                              className={cn(
+                                'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
+                                project.avatar?.imageUrl === p.imageUrl
+                                  ? 'opacity-100 scale-105'
+                                  : 'opacity-80 hover:opacity-100',
+                              )}
+                              alt={p.name}
+                            />
+                            {project.avatar?.imageUrl === p.imageUrl && (
+                              <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
+                            )}
+                          </div>
+                        ))}
+                      </TabsContent>
+
+                      <TabsContent
+                        value="custom"
+                        className="space-y-4 mt-3 bg-muted/20 p-3 rounded-lg border border-border/50"
+                      >
+                        <div className="grid grid-cols-4 gap-2">
+                          {customs.length > 0 ? (
+                            customs.map((p) => {
+                              const isProcessing =
+                                p.status === 'processing_bg' ||
+                                p.status === 'training_motion'
+                              return (
+                                <div
+                                  key={p.id}
+                                  className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
+                                  style={{
+                                    backgroundImage: CHECKERBOARD_BG,
+                                    backgroundSize: '10px 10px',
+                                  }}
+                                >
+                                  <img
+                                    src={p.imageUrl}
+                                    crossOrigin="anonymous"
+                                    title={p.name}
+                                    onClick={() =>
+                                      p.status === 'ready' &&
+                                      updateAvatarSettings(
+                                        'imageUrl',
+                                        p.imageUrl,
+                                      )
+                                    }
+                                    className={cn(
+                                      'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
+                                      project.avatar?.imageUrl === p.imageUrl
+                                        ? 'opacity-100 scale-105'
+                                        : 'opacity-80 hover:opacity-100',
+                                      p.status !== 'ready' &&
+                                        'opacity-50 grayscale cursor-not-allowed',
+                                    )}
+                                    alt={p.name}
+                                  />
+                                  {isProcessing && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                                      <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
+                                      <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
+                                        {p.status === 'processing_bg'
+                                          ? 'Alpha'
+                                          : 'Rigging'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {project.avatar?.imageUrl === p.imageUrl &&
+                                    p.status === 'ready' && (
+                                      <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
+                                    )}
+                                </div>
+                              )
+                            })
+                          ) : (
+                            <div className="col-span-4 text-center p-4 text-sm text-muted-foreground">
+                              Nenhum clone encontrado.
+                            </div>
                           )}
-                          alt={p.name}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-background"
+                            asChild
+                          >
+                            <Link to="/avatars">Gerenciar na Biblioteca</Link>
+                          </Button>
+                        </div>
+
+                        <div className="relative flex items-center py-1">
+                          <div className="flex-grow border-t border-border"></div>
+                          <span className="flex-shrink-0 mx-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                            Ou Criar Rápido
+                          </span>
+                          <div className="flex-grow border-t border-border"></div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Fazer Upload de Foto
+                          </Label>
+                          <p className="text-[10px] text-muted-foreground">
+                            Extração Alpha Perfect livre de frames.
+                          </p>
+                          {isProcessingAvatar ? (
+                            <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
+                              Segmentação Alpha e Inpainting Anatômico...
+                            </div>
+                          ) : (
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleAvatarUpload}
+                              className="text-xs h-9 bg-background file:text-xs file:font-medium"
+                            />
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Gerar com Descrição (Prompt)
+                          </Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Ex: Personagem 3D cartoon..."
+                              className="text-xs h-9 bg-background"
+                              value={avatarPrompt}
+                              onChange={(e) => setAvatarPrompt(e.target.value)}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-9 shrink-0"
+                              onClick={handleAvatarGenerate}
+                              disabled={isProcessingAvatar || !avatarPrompt}
+                            >
+                              Gerar
+                            </Button>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+
+                    <div className="space-y-4 pt-5 mt-4 border-t border-border/50">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-xs">
+                            Redimensionar Camada
+                          </Label>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {project.avatar?.scale?.toFixed(1) || '1.0'}x
+                          </span>
+                        </div>
+                        <Slider
+                          value={[project.avatar?.scale || 1]}
+                          min={0.5}
+                          max={3.0}
+                          step={0.1}
+                          onValueChange={([v]) =>
+                            updateAvatarSettings('scale', v)
+                          }
                         />
-                        {project.avatar?.imageUrl === p.imageUrl && (
-                          <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
-                        )}
+                        <p className="text-[10px] text-muted-foreground pt-1">
+                          Dica: Você pode reposicionar o avatar arrastando-o
+                          diretamente no canvas ao lado.
+                        </p>
                       </div>
-                    ))}
+                    </div>
                   </TabsContent>
 
-                  <TabsContent
-                    value="custom"
-                    className="space-y-4 mt-3 bg-muted/20 p-3 rounded-lg border border-border/50"
-                  >
-                    <div className="grid grid-cols-4 gap-2">
-                      {customs.length > 0 ? (
-                        customs.map((p) => {
-                          const isProcessing =
-                            p.status === 'processing_bg' ||
-                            p.status === 'training_motion'
-                          return (
-                            <div
-                              key={p.id}
-                              className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
-                              style={{
-                                backgroundImage: CHECKERBOARD_BG,
-                                backgroundSize: '10px 10px',
-                              }}
-                            >
-                              <img
-                                src={p.imageUrl}
-                                crossOrigin="anonymous"
-                                title={p.name}
-                                onClick={() =>
-                                  p.status === 'ready' &&
-                                  updateAvatarSettings('imageUrl', p.imageUrl)
-                                }
-                                className={cn(
-                                  'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
-                                  project.avatar?.imageUrl === p.imageUrl
-                                    ? 'opacity-100 scale-105'
-                                    : 'opacity-80 hover:opacity-100',
-                                  p.status !== 'ready' &&
-                                    'opacity-50 grayscale cursor-not-allowed',
-                                )}
-                                alt={p.name}
-                              />
-                              {isProcessing && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10">
-                                  <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
-                                  <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
-                                    {p.status === 'processing_bg'
-                                      ? 'Alpha'
-                                      : 'Rigging'}
-                                  </span>
-                                </div>
-                              )}
-                              {project.avatar?.imageUrl === p.imageUrl &&
-                                p.status === 'ready' && (
-                                  <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
-                                )}
-                            </div>
-                          )
-                        })
-                      ) : (
-                        <div className="col-span-4 text-center p-4 text-sm text-muted-foreground">
-                          Nenhum clone encontrado.
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-background"
-                        asChild
+                  <TabsContent value="ambiente" className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">
+                        Tom Emocional (Sentiment-Sync)
+                      </Label>
+                      <Select
+                        value={project.avatar?.tone || 'neutral'}
+                        onValueChange={(v) => updateAvatarSettings('tone', v)}
                       >
-                        <Link to="/avatars">Gerenciar na Biblioteca</Link>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="neutral">
+                            Neutro (Documentário)
+                          </SelectItem>
+                          <SelectItem value="suspense">
+                            Suspense / Mistério
+                          </SelectItem>
+                          <SelectItem value="joy">
+                            Alegria / Empolgação
+                          </SelectItem>
+                          <SelectItem value="fear">Medo / Tensão</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        A IA ajusta as micro-expressões, velocidade de
+                        gesticulação e tensão corporal com base no tom.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">
+                        Cenário Atmosférico
+                      </Label>
+                      <Select
+                        value={project.avatar?.atmosphere || 'none'}
+                        onValueChange={(v) =>
+                          updateAvatarSettings('atmosphere', v)
+                        }
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            Sem Ambiente (Limpo)
+                          </SelectItem>
+                          <SelectItem value="campfire">
+                            Noite na Fogueira
+                          </SelectItem>
+                          <SelectItem value="neon">Cyberpunk Neon</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Aplica projeção realista de luzes e sombras diretamente
+                        no corpo independente do avatar.
+                      </p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="ouvintes" className="space-y-4 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs font-semibold">
+                          Audiência Reativa
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground">
+                          Adicione ouvintes secundários que reagem à história.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={addListener}
+                      >
+                        + Adicionar
                       </Button>
                     </div>
-
-                    <div className="relative flex items-center py-1">
-                      <div className="flex-grow border-t border-border"></div>
-                      <span className="flex-shrink-0 mx-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        Ou Criar Rápido
-                      </span>
-                      <div className="flex-grow border-t border-border"></div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold">
-                        Fazer Upload de Foto
-                      </Label>
-                      <p className="text-[10px] text-muted-foreground">
-                        Extração Alpha Perfect e Inpainting anatômico.
-                      </p>
-                      {isProcessingAvatar ? (
-                        <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                          Segmentação Alpha e Inpainting Anatômico...
-                        </div>
-                      ) : (
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="text-xs h-9 bg-background file:text-xs file:font-medium"
-                        />
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold">
-                        Gerar com Descrição (Prompt)
-                      </Label>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Ex: Personagem 3D cartoon..."
-                          className="text-xs h-9 bg-background"
-                          value={avatarPrompt}
-                          onChange={(e) => setAvatarPrompt(e.target.value)}
-                        />
-                        <Button
-                          size="sm"
-                          className="h-9 shrink-0"
-                          onClick={handleAvatarGenerate}
-                          disabled={isProcessingAvatar || !avatarPrompt}
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                      {project.avatar?.listeners?.map((l) => (
+                        <div
+                          key={l.id}
+                          className="p-3 bg-muted/20 border rounded-lg space-y-4 relative"
                         >
-                          Gerar
-                        </Button>
-                      </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1 right-1 w-6 h-6 text-destructive"
+                            onClick={() => removeListener(l.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <div className="flex gap-3">
+                            <img
+                              src={l.imageUrl}
+                              className="w-12 h-12 object-cover rounded-md bg-muted"
+                              alt="listener"
+                            />
+                            <div className="flex-1 space-y-2">
+                              <Label className="text-[10px] font-semibold">
+                                Gatilho (Segundos)
+                              </Label>
+                              <Slider
+                                value={[l.reactionTime]}
+                                min={0}
+                                max={project.videoDuration || 60}
+                                step={1}
+                                onValueChange={([v]) =>
+                                  updateListener(l.id, { reactionTime: v })
+                                }
+                              />
+                              <span className="text-[10px] text-muted-foreground font-mono">
+                                {l.reactionTime}s
+                              </span>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px]">Posição X</Label>
+                              <Slider
+                                value={[l.positionX]}
+                                min={0}
+                                max={100}
+                                step={1}
+                                onValueChange={([v]) =>
+                                  updateListener(l.id, { positionX: v })
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-[10px]">Posição Y</Label>
+                              <Slider
+                                value={[l.positionY]}
+                                min={0}
+                                max={100}
+                                step={1}
+                                onValueChange={([v]) =>
+                                  updateListener(l.id, { positionY: v })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-semibold">
+                              Tipo de Reação
+                            </Label>
+                            <Select
+                              value={l.reactionType}
+                              onValueChange={(v) =>
+                                updateListener(l.id, {
+                                  reactionType: v as any,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs bg-background">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="gasp">
+                                  Susto / Surpresa
+                                </SelectItem>
+                                <SelectItem value="nod">Concordar</SelectItem>
+                                <SelectItem value="fear">
+                                  Tremer / Medo
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                      {!project.avatar?.listeners?.length && (
+                        <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-xs">
+                          Nenhum ouvinte adicionado.
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
-
-                <div className="space-y-4 pt-5 mt-4 border-t border-border/50">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs">Redimensionar Camada</Label>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {project.avatar?.scale?.toFixed(1) || '1.0'}x
-                      </span>
-                    </div>
-                    <Slider
-                      value={[project.avatar?.scale || 1]}
-                      min={0.5}
-                      max={3.0}
-                      step={0.1}
-                      onValueChange={([v]) => updateAvatarSettings('scale', v)}
-                    />
-                    <p className="text-[10px] text-muted-foreground pt-1">
-                      Dica: Você pode reposicionar o avatar arrastando-o
-                      diretamente no canvas ao lado.
-                    </p>
-                  </div>
-                </div>
               </div>
             )}
           </AccordionContent>

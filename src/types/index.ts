@@ -8,6 +8,15 @@ export type Mood = 'inspirational' | 'dramatic' | 'calm'
 export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
 export type MediaType = 'image-sequence' | 'context-video'
 
+export type NarrativeTone =
+  | 'neutral'
+  | 'suspense'
+  | 'joy'
+  | 'fear'
+  | 'inspirational'
+export type AtmosphereEnv = 'none' | 'campfire' | 'neon' | 'studio'
+export type ListenerReaction = 'gasp' | 'nod' | 'fear'
+
 export type AvatarType = 'preset' | 'custom'
 export type AvatarStatus =
   | 'processing_bg'
@@ -96,6 +105,16 @@ export interface ScheduledPost {
   status: 'scheduled' | 'published'
 }
 
+export interface ListenerPersona {
+  id: string
+  imageUrl: string
+  positionX: number
+  positionY: number
+  scale: number
+  reactionTime: number
+  reactionType: ListenerReaction
+}
+
 export interface AvatarSettings {
   enabled: boolean
   mode: 'upload' | 'generate' | 'preset'
@@ -105,6 +124,9 @@ export interface AvatarSettings {
   positionX?: number
   positionY?: number
   scale?: number
+  tone?: NarrativeTone
+  atmosphere?: AtmosphereEnv
+  listeners?: ListenerPersona[]
 }
 
 export interface SubtitleStyle {

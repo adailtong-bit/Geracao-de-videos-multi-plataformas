@@ -56,7 +56,6 @@ export function PreviewCanvas({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [isSplitView, setIsSplitView] = useState(false)
 
-  // Avatar drag state
   const [isDraggingAvatar, setIsDraggingAvatar] = useState(false)
   const [localAvatarPos, setLocalAvatarPos] = useState({ x: 50, y: 80 })
 
@@ -70,7 +69,6 @@ export function PreviewCanvas({
     project.subtitleLanguage &&
     project.subtitleLanguage !== 'none'
 
-  // Sync avatar pos when not dragging
   useEffect(() => {
     if (!isDraggingAvatar) {
       setLocalAvatarPos({
@@ -380,7 +378,6 @@ export function PreviewCanvas({
     }
   }, [])
 
-  // Dragging event handlers for canvas wrapper
   const handleCanvasPointerMove = (e: React.PointerEvent) => {
     if (!isDraggingAvatar || !canvasRef.current) return
     const rect = canvasRef.current.getBoundingClientRect()
@@ -447,31 +444,137 @@ export function PreviewCanvas({
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
   const subSize = project.subtitleStyle?.fontSize || 14
 
-  const avatarScale = project.avatar?.scale ?? 1
-
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
     window.dispatchEvent(new CustomEvent('set_tab', { detail: 'ai-creator' }))
   }
 
+  // --- NEW AVATAR & LISTENER LOGIC ---
+  const avatarScale = project.avatar?.scale ?? 1
+  const tone = project.avatar?.tone || 'neutral'
+  const atmosphere = project.avatar?.atmosphere || 'none'
+
+  let animDuration = '3s'
+  let toneFilter = ''
+  if (tone === 'suspense') {
+    animDuration = '5s'
+    toneFilter =
+      'drop-shadow(0 20px 30px rgba(0,0,0,0.8)) contrast(1.1) brightness(0.85)'
+  } else if (tone === 'joy') {
+    animDuration = '2s'
+    toneFilter = 'brightness(1.1) saturate(1.2)'
+  } else if (tone === 'fear') {
+    animDuration = '1.5s'
+    toneFilter = 'grayscale(0.2) contrast(1.15) brightness(0.9)'
+  }
+
+  const getAvatarFilter = () => {
+    let f = toneFilter
+    if (atmosphere === 'campfire')
+      f += ' drop-shadow(0 10px 30px rgba(234, 88, 12, 0.5))'
+    if (atmosphere === 'neon')
+      f += ' drop-shadow(0 10px 30px rgba(6, 182, 212, 0.5))'
+    return f.trim()
+  }
+
+  const gestureClasses = [
+    'anim-gesture-explain',
+    'anim-gesture-point',
+    'anim-gesture-emphasize',
+    'anim-gesture-ponder',
+    'anim-gesture-shrug',
+  ]
+  const [gestureIdx, setGestureIdx] = useState(0)
+
+  useEffect(() => {
+    if (!isTalking) return
+    const int = setInterval(() => {
+      setGestureIdx((prev) => (prev + 1) % gestureClasses.length)
+    }, 3500)
+    return () => clearInterval(int)
+  }, [isTalking])
+
+  const activeGestureClass = isTalking
+    ? gestureClasses[gestureIdx]
+    : 'anim-neural-idle'
+
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
+        @keyframes anim-flicker {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.02); }
+          25% { opacity: 0.9; transform: scale(0.98); }
+          75% { opacity: 0.8; transform: scale(1.01); }
+        }
+        @keyframes anim-pulse-slow {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+
         @keyframes neural-idle {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) perspective(500px) rotateY(0deg) rotateX(0deg); }
-          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0.2deg) translateY(-2px) perspective(500px) rotateY(2deg) rotateX(1deg); }
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) perspective(500px); }
+          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0.2deg) translateY(-2px) perspective(500px) rotateY(2deg); }
         }
-        @keyframes neural-talking {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) skewX(0deg) perspective(500px) rotateY(0deg) rotateX(0deg); }
-          15% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(0.5deg) translateY(-3px) skewX(0.5deg) perspective(500px) rotateY(3deg) rotateX(1.5deg); }
-          30% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(-0.5deg) translateY(-1px) skewX(-0.5deg) perspective(500px) rotateY(-1deg) rotateX(-0.5deg); }
-          45% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.015)) rotate(1.5deg) translateY(-4px) skewX(1deg) perspective(500px) rotateY(4deg) rotateX(2deg); }
-          60% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 0.995)) rotate(-0.5deg) translateY(1px) skewX(-0.5deg) perspective(500px) rotateY(-2deg) rotateX(-1deg); }
-          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(1deg) translateY(-5px) skewX(1.5deg) perspective(500px) rotateY(5deg) rotateX(2.5deg); }
-          90% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-1deg) translateY(0px) skewX(-1deg) perspective(500px) rotateY(-1deg) rotateX(0.5deg); }
+        
+        @keyframes gesture-explain {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) perspective(500px); }
+          25% { transform: translate(-50%, -51%) scale(calc(var(--scale, 1)*1.01)) rotate(1deg) perspective(500px) rotateY(3deg); }
+          75% { transform: translate(-50%, -49%) scale(calc(var(--scale, 1)*0.99)) rotate(-1deg) perspective(500px) rotateY(-2deg); }
         }
-        .animate-neural-idle { animation: neural-idle 5s ease-in-out infinite; transform-origin: 50% 100%; }
-        .animate-neural-talking { animation: neural-talking 3s ease-in-out infinite; transform-origin: 50% 100%; }
+
+        @keyframes gesture-point {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) perspective(500px); }
+          30% { transform: translate(-49%, -49%) scale(calc(var(--scale, 1)*1.03)) rotate(-2deg) perspective(500px) rotateY(6deg) rotateX(2deg); }
+          70% { transform: translate(-49%, -50%) scale(calc(var(--scale, 1)*1.01)) rotate(-1deg) perspective(500px) rotateY(3deg) rotateX(1deg); }
+        }
+
+        @keyframes gesture-emphasize {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg); }
+          20% { transform: translate(-50%, -48%) scale(calc(var(--scale, 1)*0.98)) rotate(0deg); }
+          40%, 60% { transform: translate(-50%, -52%) scale(calc(var(--scale, 1)*1.04)) rotate(0deg); }
+        }
+
+        @keyframes gesture-ponder {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) skewX(0deg); }
+          50% { transform: translate(-51%, -50%) scale(var(--scale, 1)) rotate(-1deg) skewX(-1deg); }
+        }
+
+        @keyframes gesture-shrug {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(0); }
+          30%, 70% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1)*1.02)) translateY(-5px); }
+        }
+
+        @keyframes reaction-gasp {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 0.6)); filter: brightness(1); }
+          10%, 90% { transform: translate(-50%, -52%) scale(calc(var(--scale, 0.6)*1.05)) rotate(-2deg); filter: brightness(1.2); }
+        }
+
+        @keyframes reaction-nod {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 0.6)); }
+          25%, 75% { transform: translate(-50%, -49%) scale(var(--scale, 0.6)) rotate(1deg); }
+          50% { transform: translate(-50%, -51%) scale(var(--scale, 0.6)) rotate(-1deg); }
+        }
+
+        @keyframes reaction-fear {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 0.6)); }
+          10%, 30%, 50%, 70%, 90% { transform: translate(-51%, -50%) scale(var(--scale, 0.6)) rotate(-1deg); }
+          20%, 40%, 60%, 80% { transform: translate(-49%, -50%) scale(var(--scale, 0.6)) rotate(1deg); }
+        }
+
+        .anim-flicker { animation: anim-flicker 3s infinite; }
+        .anim-pulse-slow { animation: anim-pulse-slow 4s infinite; }
+
+        .anim-neural-idle { animation: neural-idle var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-explain { animation: gesture-explain var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-point { animation: gesture-point var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-emphasize { animation: gesture-emphasize var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-ponder { animation: gesture-ponder var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-gesture-shrug { animation: gesture-shrug var(--anim-dur) ease-in-out infinite; transform-origin: 50% 100%; }
+
+        .anim-reaction-gasp { animation: reaction-gasp 2s ease-out forwards; transform-origin: 50% 100%; }
+        .anim-reaction-nod { animation: reaction-nod 2s ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-reaction-fear { animation: reaction-fear 2s linear infinite; transform-origin: 50% 100%; }
       `}</style>
       <PlaybackController project={project} />
 
@@ -592,6 +695,19 @@ export function PreviewCanvas({
                   onClick={togglePlay}
                 />
 
+                {/* Atmosphere Overlay Layer */}
+                {atmosphere !== 'none' && (
+                  <div
+                    className={cn(
+                      'absolute inset-0 z-[25] pointer-events-none transition-all duration-1000 mix-blend-overlay',
+                      atmosphere === 'campfire' &&
+                        'bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-orange-600/40 via-orange-500/10 to-transparent anim-flicker',
+                      atmosphere === 'neon' &&
+                        'bg-gradient-to-br from-cyan-500/30 via-transparent to-fuchsia-500/30 anim-pulse-slow',
+                    )}
+                  />
+                )}
+
                 {videoError && (
                   <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-900/95 text-white p-6 text-center animate-in fade-in pointer-events-none">
                     <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
@@ -681,6 +797,48 @@ export function PreviewCanvas({
                     </div>
                   )}
 
+                {/* Listeners (Audience Reactions) rendered behind main avatar */}
+                {project.avatar?.listeners?.map((listener) => {
+                  const isReacting =
+                    currentTime >= listener.reactionTime &&
+                    currentTime <= listener.reactionTime + 2
+                  const rClass = isReacting
+                    ? `anim-reaction-${listener.reactionType}`
+                    : 'anim-neural-idle'
+
+                  return (
+                    <div
+                      key={listener.id}
+                      className={cn(
+                        'absolute z-[15] pointer-events-none transition-all',
+                        rClass,
+                      )}
+                      style={
+                        {
+                          left: `${listener.positionX}%`,
+                          top: `${listener.positionY}%`,
+                          '--scale': listener.scale,
+                          '--anim-dur': '2.5s',
+                          transform: `translate(-50%, -50%) scale(${listener.scale})`,
+                          width: '280px',
+                          height: '380px',
+                          filter:
+                            atmosphere === 'campfire'
+                              ? 'brightness(0.6) drop-shadow(0 10px 20px rgba(234, 88, 12, 0.2))'
+                              : 'brightness(0.7)',
+                        } as any
+                      }
+                    >
+                      <img
+                        src={listener.imageUrl}
+                        crossOrigin="anonymous"
+                        className="w-full h-full object-contain drop-shadow-xl opacity-90"
+                        alt="listener"
+                      />
+                    </div>
+                  )
+                })}
+
                 {/* Avatar Overlay with dynamic scaling, dragging, and neural motion */}
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
@@ -690,26 +848,23 @@ export function PreviewCanvas({
                       setIsDraggingAvatar(true)
                     }}
                     className={cn(
-                      'absolute z-20 transition-colors',
-                      isTalking
-                        ? 'animate-neural-talking'
-                        : 'animate-neural-idle',
+                      'absolute z-20 transition-all',
+                      !isDraggingAvatar && activeGestureClass,
                       isDraggingAvatar
-                        ? 'cursor-grabbing ring-2 ring-primary/50 bg-primary/10 rounded-xl'
-                        : 'cursor-grab hover:ring-2 hover:ring-white/20 hover:bg-white/5 rounded-xl',
+                        ? 'cursor-grabbing opacity-80'
+                        : 'cursor-grab',
                     )}
                     style={
                       {
                         left: `${localAvatarPos.x}%`,
                         top: `${localAvatarPos.y}%`,
                         '--scale': avatarScale,
+                        '--anim-dur': animDuration,
                         transform: `translate(-50%, -50%) scale(${avatarScale})`,
                         width: '320px',
                         height: '420px',
                         touchAction: 'none',
-                        transition: isDraggingAvatar
-                          ? 'none'
-                          : 'left 0.3s ease-out, top 0.3s ease-out',
+                        filter: getAvatarFilter(),
                       } as any
                     }
                   >
@@ -717,7 +872,7 @@ export function PreviewCanvas({
                       src={project.avatar.imageUrl}
                       alt="Avatar"
                       crossOrigin="anonymous"
-                      className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
+                      className="w-full h-full object-contain pointer-events-none"
                     />
                     {isTalking && (
                       <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[9px] px-2.5 py-1 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-xl border border-indigo-400/50 flex items-center gap-1.5 pointer-events-none transition-all">
@@ -735,7 +890,7 @@ export function PreviewCanvas({
                             style={{ height: '80%' }}
                           />
                         </div>
-                        Lip-Sync Fonético & Gestos
+                        Lip-Sync Fonético
                       </div>
                     )}
                   </div>

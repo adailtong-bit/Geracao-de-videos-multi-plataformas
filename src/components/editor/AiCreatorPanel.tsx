@@ -95,21 +95,6 @@ const extractEnglishVisualKeyword = (t: string, style: string): string => {
   return `${base} ${style}`
 }
 
-const defaultTexts: Record<Language, string> = {
-  'pt-BR':
-    'A inteligência artificial detecta os pontos altos da oratória, o tom de voz e os temas centrais abordados. Com base nisso, criamos cortes perfeitos e alinhamos imagens cinematográficas.',
-  'en-US':
-    'Artificial intelligence detects the high points of the speech, the tone of voice, and the central themes covered. Based on this, we create perfect cuts and align cinematic images.',
-  'es-ES':
-    'La inteligencia artificial detecta los puntos altos de la oratoria, el tono de voz y los temas centrales abordados. En base a esto, creamos cortes perfectos y alineamos imágenes cinematográficas.',
-  'fr-FR':
-    "L'intelligence artificielle détecte les points forts du discours, le ton de la voix et les thèmes centraux abordés. Sur cette base, nous créons des coupes parfaites et alignons des images cinématiques.",
-  'de-DE':
-    'Künstliche Intelligenz erkennt die Höhepunkte der Rede, den Tonfall und die zentralen behandelten Themen. Darauf basierend erstellen wir perfekte Schnitte und richten kinoreife Bilder aus.',
-  'it-IT':
-    "L'intelligenza artificiale rileva i punti salienti del discorso, il tono di voce e i temi centrali trattati. Sulla base di questo, creiamo tagli perfetti e allineiamo immagini cinematografiche.",
-}
-
 const defaultShortTexts: Record<Language, string> = {
   'pt-BR': 'A história começa aqui. Novas descobertas nos aguardam.',
   'en-US': 'The story begins here. New discoveries await us.',
@@ -177,7 +162,6 @@ export function AiCreatorPanel({
       reader.onloadend = () => {
         setUploadedDataUrl(reader.result as string)
       }
-      // Uses Data URL to avoid cross-session persistence issues with ephemeral blobs
       reader.readAsDataURL(e.target.files[0])
     }
   }
@@ -246,29 +230,17 @@ export function AiCreatorPanel({
     const steps =
       sourceType === 'video' || sourceType === 'upload'
         ? [
-            {
-              p: 20,
-              t: `Ingerindo mídia original (Modo Edição Pura)...`,
-            },
+            { p: 20, t: `Ingerindo mídia original (Modo Edição Pura)...` },
             { p: 40, t: `IA detectando ângulos e alternância de locutores...` },
-            {
-              p: 60,
-              t: `Extraindo cortes (Smart Highlights) focados no diálogo...`,
-            },
-            {
-              p: 80,
-              t: `Desativando mídia externa e fixando legendas minimalistas...`,
-            },
-            {
-              p: 100,
-              t: 'Limpando estado anterior e aplicando sequência limpa...',
-            },
+            { p: 60, t: `Extraindo cortes focados no diálogo...` },
+            { p: 80, t: `Sincronizando avatares e audiência reativa...` },
+            { p: 100, t: 'Limpando estado anterior e aplicando sequência...' },
           ]
         : [
             { p: 25, t: `Ajustando emoção para modo ${mood}...` },
             { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
-            { p: 75, t: `Sincronizando áudio e texto em ${sourceLanguage}...` },
-            { p: 100, t: 'Garantindo transições orgânicas...' },
+            { p: 75, t: `Sincronizando áudio e expressões faciais...` },
+            { p: 100, t: 'Garantindo transições orgânicas e cenários...' },
           ]
 
     let currentStep = 0
@@ -479,6 +451,9 @@ export function AiCreatorPanel({
           positionX: 50,
           positionY: 80,
           scale: 1,
+          tone: mood === 'dramatic' ? 'suspense' : 'neutral',
+          atmosphere: 'none',
+          listeners: [],
         },
         subtitleStyle: project.subtitleStyle || {
           color: '#ffffff',
@@ -595,7 +570,7 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Gere conteúdo a partir de texto ou importe uma URL. Para adicionar e
-          animar avatares, acesse a aba <strong>Revisar</strong> (Studio) após a
+          animar avatares, acesse a aba <strong>Studio</strong> (Revisão) após a
           geração.
         </p>
 
@@ -858,7 +833,7 @@ export function AiCreatorPanel({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="inspirational">Inspirador</SelectItem>
-                <SelectItem value="dramatic">Dramático</SelectItem>
+                <SelectItem value="dramatic">Dramático / Suspense</SelectItem>
                 <SelectItem value="calm">Calmo / Relaxante</SelectItem>
               </SelectContent>
             </Select>

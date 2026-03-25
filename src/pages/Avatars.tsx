@@ -71,7 +71,7 @@ export default function Avatars() {
         updateAvatar(avatarId, { status: 'ready' })
         toast({
           title: 'Persona Digital Pronta',
-          description: `"${name}" teve o fundo segmentado (Alpha Perfect) e o inpainting anatômico aplicado com sucesso.`,
+          description: `"${name}" teve o corpo reconstruído (Inpainting) e o fundo extraído (Alpha Perfect) com sucesso, sem formatos de retrato.`,
         })
       }, 3000)
     }, 2500)
@@ -250,10 +250,10 @@ export default function Avatars() {
             <User className="w-8 h-8 text-primary" /> Minhas Personas
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
-            Gerencie seus clones digitais de corpo inteiro ou busto. Nossa IA
-            reconstrói a anatomia (Inpainting), extrai o fundo (Alpha Perfect) e
-            aplica um motor de movimento neural para lip-sync e gesticulação
-            natural livre de bordas.
+            Gerencie seus clones digitais independentes. Nossa IA reconstrói
+            ombros e braços ausentes (Inpainting), extrai o fundo perfeitamente
+            livre de bordas, e aplica um motor de movimento de corpo inteiro
+            para gesticulação natural.
           </p>
         </div>
         <Button
@@ -287,7 +287,7 @@ export default function Avatars() {
             <DialogTitle>Visualizar Persona Digital</DialogTitle>
             <DialogDescription>
               Teste a integridade anatômica (tronco e ombros reconstruídos) e o
-              motor neural de lip-sync e gesticulação natural.
+              motor neural de lip-sync com gestos de mãos.
             </DialogDescription>
           </DialogHeader>
           {previewAvatar && (
@@ -370,9 +370,9 @@ export default function Avatars() {
           <DialogHeader>
             <DialogTitle>Nova Persona Digital</DialogTitle>
             <DialogDescription>
-              A IA reconstrói a anatomia (Inpainting) para criar apresentadores
-              de busto completo e aplica segmentação Alpha Perfect livre de
-              bordas.
+              A IA reconstrói a anatomia (Inpainting de ombros e braços ausentes
+              em fotos de busto) para garantir integridade anatômica e remover
+              qualquer formato de moldura ou retângulo.
             </DialogDescription>
           </DialogHeader>
 
@@ -432,9 +432,8 @@ export default function Avatars() {
                   </Label>
                 )}
                 <p className="text-[10px] text-muted-foreground">
-                  Dica: Se a foto estiver muito próxima do rosto, a IA fará o
-                  Inpainting anatômico dos ombros para criar um avatar
-                  independente.
+                  Dica: A IA tratará a imagem como base livre, reconstituindo
+                  membros faltantes para permitir movimentos fluidos na edição.
                 </p>
               </div>
               <Button
@@ -442,7 +441,7 @@ export default function Avatars() {
                 onClick={handleCreateUpload}
                 disabled={!newName || !newImage}
               >
-                Reconstruir e Extrair Alfa
+                Reconstruir Corpo e Extrair Alfa
               </Button>
             </TabsContent>
 
@@ -464,8 +463,8 @@ export default function Avatars() {
                   onChange={(e) => setPrompt(e.target.value)}
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  A IA gerará o corpo completo ou busto e aplicará Inpainting
-                  para garantir integridade anatômica e remover o fundo.
+                  A IA gerará a silhueta completa livre de molduras e aplicará
+                  uma camada alfa nativa.
                 </p>
               </div>
               <Button
