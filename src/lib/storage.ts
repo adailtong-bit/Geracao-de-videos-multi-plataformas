@@ -29,8 +29,16 @@ export const getProjects = (): Project[] => {
     subtitleLanguage: 'none',
     avatar: {
       enabled: false,
-      mode: 'generate',
-      position: 'bottom-right',
+      mode: 'preset',
+      position: 'custom',
+      positionX: 50,
+      positionY: 80,
+      scale: 1,
+    },
+    subtitleStyle: {
+      color: '#ffffff',
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      fontSize: 14,
     },
     aiClips: [
       {
@@ -89,6 +97,7 @@ export const getProjects = (): Project[] => {
         sourceLanguage: defaultProject.sourceLanguage,
         subtitleLanguage: defaultProject.subtitleLanguage,
         avatar: defaultProject.avatar,
+        subtitleStyle: defaultProject.subtitleStyle,
       },
     },
   ]
@@ -138,8 +147,16 @@ export const createProject = (
     drafts: [],
     avatar: {
       enabled: false,
-      mode: 'generate',
-      position: 'bottom-right',
+      mode: 'preset',
+      position: 'custom',
+      positionX: 50,
+      positionY: 80,
+      scale: 1,
+    },
+    subtitleStyle: {
+      color: '#ffffff',
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      fontSize: 14,
     },
     ...options,
   }

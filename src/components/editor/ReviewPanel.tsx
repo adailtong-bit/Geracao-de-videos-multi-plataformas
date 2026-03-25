@@ -1,8 +1,11 @@
-import { Project, ApprovalStatus, AspectRatio, Language } from '@/types'
+import { useState } from 'react'
+import { Project, ApprovalStatus, Language, AvatarSettings } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -11,14 +14,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 import {
   CheckCircle2,
   Eye,
   Type,
   Settings2,
   Palette,
-  Monitor,
+  Globe,
   Send,
+  User,
 } from 'lucide-react'
 import {
   Accordion,
@@ -26,6 +31,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+
+const PRESETS = [
+  'https://img.usecurling.com/ppl/medium?gender=female&seed=10',
+  'https://img.usecurling.com/ppl/medium?gender=male&seed=20',
+  'https://img.usecurling.com/ppl/medium?gender=female&seed=30',
+  'https://img.usecurling.com/ppl/medium?gender=male&seed=40',
+]
 
 interface Props {
   project: Project
@@ -35,6 +47,8 @@ interface Props {
 
 export function ReviewPanel({ project, update, onNext }: Props) {
   const { toast } = useToast()
+  const [isProcessingAvatar, setIsProcessingAvatar] = useState(false)
+  const [avatarPrompt, setAvatarPrompt] = useState('')
 
   const handleLanguageChange = (
     field: 'sourceLanguage' | 'subtitleLanguage',
@@ -80,6 +94,77 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     })
   }
 
+  const updateSubStyle = (key: string, value: any) => {
+    const current = project.subtitleStyle || {
+      color: '#ffffff',
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      fontSize: 14,
+    }
+    update({
+      subtitleStyle: { ...current, [key]: value },
+      approvalStatus: 'revised',
+    })
+  }
+
+  const updateAvatar = (key: keyof AvatarSettings, value: any) => {
+    const current = project.avatar || {
+      enabled: false,
+      mode: 'preset',
+      position: 'custom',
+      positionX: 50,
+      positionY: 80,
+      scale: 1,
+    }
+    update({ avatar: { ...current, [key]: value }, approvalStatus: 'revised' })
+  }
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setIsProcessingAvatar(true)
+      setTimeout(() => {
+        const url = URL.createObjectURL(e.target.files![0])
+        const current = project.avatar || {}
+        update({
+          avatar: {
+            ...current,
+            enabled: true,
+            mode: 'upload',
+            imageUrl: url,
+          } as any,
+          approvalStatus: 'revised',
+        })
+        setIsProcessingAvatar(false)
+        toast({
+          title: 'Modelo 3D Gerado',
+          description: 'O avatar foi processado com sucesso.',
+        })
+      }, 2000)
+    }
+  }
+
+  const handleAvatarGenerate = () => {
+    setIsProcessingAvatar(true)
+    setTimeout(() => {
+      const url = `https://img.usecurling.com/p/400/400?q=portrait,${encodeURIComponent(avatarPrompt.slice(0, 20))}&dpr=2&seed=${Date.now()}`
+      const current = project.avatar || {}
+      update({
+        avatar: {
+          ...current,
+          enabled: true,
+          mode: 'generate',
+          imageUrl: url,
+        } as any,
+        approvalStatus: 'revised',
+      })
+      setIsProcessingAvatar(false)
+      setAvatarPrompt('')
+      toast({
+        title: 'Modelo 3D Gerado',
+        description: 'Avatar criado a partir da descrição.',
+      })
+    }, 2000)
+  }
+
   const setApproval = (status: ApprovalStatus) => {
     update({ approvalStatus: status })
     if (status === 'approved') {
@@ -102,6 +187,9 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     saturation: 100,
     preset: 'none',
   }
+  const subColor = project.subtitleStyle?.color || '#ffffff'
+  const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
+  const subSize = project.subtitleStyle?.fontSize || 14
 
   const statusConfig = {
     review: {
@@ -133,11 +221,11 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Eye className="w-5 h-5 text-amber-500" /> Revisão Final
+          <Settings2 className="w-5 h-5 text-amber-500" /> Studio de Edição
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Verifique textos, proporções e cores. Você precisa aprovar o vídeo
-          para liberar a publicação nas redes sociais.
+          Verifique textos, adicione seu avatar animado e corrija as cores.
+          Aprove o projeto para liberar a publicação.
         </p>
 
         <div
@@ -162,9 +250,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
             <Button
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shrink-0"
-              onClick={() => {
-                setApproval('approved')
-              }}
+              onClick={() => setApproval('approved')}
             >
               <CheckCircle2 className="w-4 h-4 mr-2" /> Aprovar Vídeo
             </Button>
@@ -192,137 +278,155 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       <Accordion
         type="single"
         collapsible
-        defaultValue="aspect"
+        defaultValue="avatar"
         className="w-full space-y-3"
       >
+        {/* Idiomas */}
         <AccordionItem
-          value="aspect"
+          value="idiomas"
           className="border rounded-xl px-4 bg-card shadow-sm"
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <span className="flex items-center gap-2 font-semibold text-sm">
-              <Monitor className="w-4 h-4 text-primary" /> Formato & Idioma
+              <Globe className="w-4 h-4 text-primary" /> Idiomas
             </span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-4 space-y-4">
-            <div className="space-y-3">
-              <Label className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
-                Dimensão do Vídeo (Aspect Ratio)
-              </Label>
+            <div className="space-y-2">
+              <Label className="text-xs">Idioma Principal (Narração)</Label>
               <Select
-                value={project.aspectRatio}
+                value={project.sourceLanguage}
                 onValueChange={(v) =>
-                  update({
-                    aspectRatio: v as AspectRatio,
-                    approvalStatus: 'revised',
-                  })
+                  handleLanguageChange('sourceLanguage', v as Language)
                 }
               >
-                <SelectTrigger className="bg-background h-10">
+                <SelectTrigger className="bg-background h-9 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="9:16">
-                    Shorts / Reels / TikTok (9:16)
-                  </SelectItem>
-                  <SelectItem value="16:9">YouTube Longo (16:9)</SelectItem>
-                  <SelectItem value="1:1">
-                    Square / Instagram Feed (1:1)
-                  </SelectItem>
-                  <SelectItem value="4:5">Portrait (4:5)</SelectItem>
+                  <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                  <SelectItem value="en-US">English (US)</SelectItem>
+                  <SelectItem value="es-ES">Español</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Idioma Principal</Label>
-                <Select
-                  value={project.sourceLanguage}
-                  onValueChange={(v) =>
-                    handleLanguageChange('sourceLanguage', v as Language)
-                  }
-                >
-                  <SelectTrigger className="bg-background h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pt-BR">Português (BR)</SelectItem>
-                    <SelectItem value="en-US">English (US)</SelectItem>
-                    <SelectItem value="es-ES">Español</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Legendas (Kill Switch)</Label>
-                <Select
-                  value={project.subtitleLanguage || 'none'}
-                  onValueChange={(v) =>
-                    handleLanguageChange('subtitleLanguage', v as any)
-                  }
-                >
-                  <SelectTrigger className="bg-background h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Desativado (Nenhuma)</SelectItem>
-                    <SelectItem value="pt-BR">Português (BR)</SelectItem>
-                    <SelectItem value="en-US">English (US)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-xs">
+                Idioma da Legenda (Tradução Simultânea)
+              </Label>
+              <Select
+                value={project.subtitleLanguage || 'none'}
+                onValueChange={(v) =>
+                  handleLanguageChange('subtitleLanguage', v as any)
+                }
+              >
+                <SelectTrigger className="bg-background h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Desativado (Nenhuma)</SelectItem>
+                  <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                  <SelectItem value="en-US">English (US)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </AccordionContent>
         </AccordionItem>
 
+        {/* Legendas */}
         <AccordionItem
-          value="subtitles"
+          value="legendas"
           className="border rounded-xl px-4 bg-card shadow-sm"
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <span className="flex items-center gap-2 font-semibold text-sm">
-              <Type className="w-4 h-4 text-primary" /> Editor de Legendas
+              <Type className="w-4 h-4 text-primary" /> Legendas (Estilo e
+              Textos)
             </span>
           </AccordionTrigger>
-          <AccordionContent className="pt-2 pb-4">
-            {project.aiClips && project.aiClips.length > 0 ? (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                {project.aiClips[0].subtitles.map((sub, idx) => (
-                  <div
-                    key={sub.id}
-                    className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border/50 focus-within:border-primary/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                        Trecho {idx + 1}
-                      </span>
-                      <span className="text-[10px] font-mono text-muted-foreground bg-background px-1.5 py-0.5 rounded">
-                        {sub.start.toFixed(1)}s - {sub.end.toFixed(1)}s
-                      </span>
-                    </div>
-                    <Input
-                      value={sub.text}
-                      onChange={(e) =>
-                        handleSubtitleChange(
-                          project.aiClips![0].id,
-                          sub.id,
-                          e.target.value,
-                        )
-                      }
-                      className="h-9 text-sm bg-background font-medium"
-                    />
-                  </div>
-                ))}
+          <AccordionContent className="pt-2 pb-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs">Cor do Texto</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="color"
+                    value={subColor}
+                    onChange={(e) => updateSubStyle('color', e.target.value)}
+                    className="p-1 h-8 w-8 rounded cursor-pointer border-none"
+                  />
+                  <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                    {subColor}
+                  </span>
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma legenda disponível para edição.
-              </p>
-            )}
+              <div className="space-y-2">
+                <Label className="text-xs">Cor de Fundo</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="color"
+                    value={subBg}
+                    onChange={(e) =>
+                      updateSubStyle('backgroundColor', e.target.value)
+                    }
+                    className="p-1 h-8 w-8 rounded cursor-pointer border-none"
+                  />
+                  <span className="text-[10px] text-muted-foreground uppercase font-mono">
+                    {subBg}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3 pt-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs">Tamanho da Fonte</Label>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {subSize}px
+                </span>
+              </div>
+              <Slider
+                value={[subSize]}
+                min={10}
+                max={40}
+                step={1}
+                onValueChange={([v]) => updateSubStyle('fontSize', v)}
+              />
+            </div>
+
+            <div className="pt-4 border-t mt-4 space-y-3 max-h-[250px] overflow-y-auto pr-2">
+              {project.aiClips?.[0]?.subtitles.map((sub, idx) => (
+                <div
+                  key={sub.id}
+                  className="flex flex-col gap-1.5 p-3 rounded-lg bg-muted/30 border border-border/50 focus-within:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Trecho {idx + 1}
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-background px-1.5 py-0.5 rounded">
+                      {sub.start.toFixed(1)}s - {sub.end.toFixed(1)}s
+                    </span>
+                  </div>
+                  <Input
+                    value={sub.text}
+                    onChange={(e) =>
+                      handleSubtitleChange(
+                        project.aiClips![0].id,
+                        sub.id,
+                        e.target.value,
+                      )
+                    }
+                    className="h-9 text-sm bg-background font-medium"
+                  />
+                </div>
+              ))}
+            </div>
           </AccordionContent>
         </AccordionItem>
 
+        {/* Cores */}
         <AccordionItem
-          value="colors"
+          value="cores"
           className="border rounded-xl px-4 bg-card shadow-sm"
         >
           <AccordionTrigger className="hover:no-underline py-4">
@@ -395,6 +499,159 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                 </SelectContent>
               </Select>
             </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Avatar */}
+        <AccordionItem
+          value="avatar"
+          className="border rounded-xl px-4 bg-card shadow-sm"
+        >
+          <AccordionTrigger className="hover:no-underline py-4">
+            <span className="flex items-center gap-2 font-semibold text-sm">
+              <User className="w-4 h-4 text-primary" /> Biblioteca de Avatares
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-4 space-y-4">
+            <div className="flex items-center justify-between bg-primary/5 p-3 rounded-lg border border-primary/20">
+              <Label className="font-semibold text-sm text-primary">
+                Ativar Avatar na Cena
+              </Label>
+              <Switch
+                checked={project.avatar?.enabled}
+                onCheckedChange={(v) => updateAvatar('enabled', v)}
+              />
+            </div>
+
+            {project.avatar?.enabled && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <Tabs defaultValue="presets" className="w-full">
+                  <TabsList className="grid grid-cols-2">
+                    <TabsTrigger value="presets">AI Presets</TabsTrigger>
+                    <TabsTrigger value="custom">Meus Avatares</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent
+                    value="presets"
+                    className="grid grid-cols-4 gap-2 mt-3"
+                  >
+                    {PRESETS.map((p) => (
+                      <img
+                        key={p}
+                        src={p}
+                        onClick={() => updateAvatar('imageUrl', p)}
+                        className={cn(
+                          'rounded-md cursor-pointer border-2 transition-all hover:scale-105',
+                          project.avatar?.imageUrl === p
+                            ? 'border-primary shadow-md scale-105'
+                            : 'border-transparent opacity-70 hover:opacity-100',
+                        )}
+                        alt="Preset"
+                      />
+                    ))}
+                  </TabsContent>
+
+                  <TabsContent
+                    value="custom"
+                    className="space-y-4 mt-3 bg-muted/20 p-3 rounded-lg border border-border/50"
+                  >
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">
+                        Transformar Foto em 3D
+                      </Label>
+                      {isProcessingAvatar ? (
+                        <div className="p-3 text-center text-xs font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
+                          Mapeando estrutura facial...
+                        </div>
+                      ) : (
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="text-xs h-9 bg-background file:text-xs file:font-medium"
+                        />
+                      )}
+                    </div>
+
+                    <div className="relative flex items-center py-1">
+                      <div className="flex-grow border-t border-border"></div>
+                      <span className="flex-shrink-0 mx-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                        OU
+                      </span>
+                      <div className="flex-grow border-t border-border"></div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">
+                        Gerar com Descrição
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Ex: Homem, 30 anos, terno..."
+                          className="text-xs h-9 bg-background"
+                          value={avatarPrompt}
+                          onChange={(e) => setAvatarPrompt(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          className="h-9 shrink-0"
+                          onClick={handleAvatarGenerate}
+                          disabled={isProcessingAvatar || !avatarPrompt}
+                        >
+                          Gerar
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <div className="space-y-4 pt-5 mt-4 border-t border-border/50">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Escala do Avatar</Label>
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {project.avatar?.scale?.toFixed(1) || '1.0'}x
+                      </span>
+                    </div>
+                    <Slider
+                      value={[project.avatar?.scale || 1]}
+                      min={0.5}
+                      max={3.0}
+                      step={0.1}
+                      onValueChange={([v]) => updateAvatar('scale', v)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Posição Horizontal (X)</Label>
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {project.avatar?.positionX ?? 50}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[project.avatar?.positionX ?? 50]}
+                      min={0}
+                      max={100}
+                      onValueChange={([v]) => updateAvatar('positionX', v)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Posição Vertical (Y)</Label>
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {project.avatar?.positionY ?? 80}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[project.avatar?.positionY ?? 80]}
+                      min={0}
+                      max={100}
+                      onValueChange={([v]) => updateAvatar('positionY', v)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

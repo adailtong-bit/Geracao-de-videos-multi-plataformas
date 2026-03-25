@@ -19,7 +19,6 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -48,8 +47,6 @@ import {
   ShieldAlert,
   AlertCircle,
   Image as ImageIcon,
-  User,
-  Sparkles,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
@@ -156,19 +153,6 @@ export function AiCreatorPanel({
   const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
   const [mood, setMood] = useState<Mood>('inspirational')
 
-  // Avatar State
-  const [avatarEnabled, setAvatarEnabled] = useState(
-    project.avatar?.enabled || false,
-  )
-  const [avatarMode, setAvatarMode] = useState<'upload' | 'generate'>(
-    project.avatar?.mode || 'generate',
-  )
-  const [avatarUrl, setAvatarUrl] = useState(project.avatar?.imageUrl || '')
-  const [avatarPrompt, setAvatarPrompt] = useState(project.avatar?.prompt || '')
-  const [avatarPosition, setAvatarPosition] = useState<
-    'bottom-left' | 'bottom-right' | 'center'
-  >(project.avatar?.position || 'bottom-right')
-
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
   )
@@ -194,13 +178,6 @@ export function AiCreatorPanel({
     selectedFormatObj?.min !== undefined &&
     targetDuration < selectedFormatObj.min
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0])
-      setAvatarUrl(url)
-    }
-  }
-
   const handleGenerate = () => {
     if (sourceType === 'text' && !prompt.trim()) {
       return toast({
@@ -224,23 +201,6 @@ export function AiCreatorPanel({
         description: 'A duração desejada deve ser de pelo menos 10 segundos.',
         variant: 'destructive',
       })
-    }
-
-    if (avatarEnabled) {
-      if (avatarMode === 'upload' && !avatarUrl) {
-        return toast({
-          title: 'Avatar Inválido',
-          description: 'Faça o upload de uma imagem para usar o Avatar.',
-          variant: 'destructive',
-        })
-      }
-      if (avatarMode === 'generate' && !avatarPrompt.trim()) {
-        return toast({
-          title: 'Avatar Inválido',
-          description: 'Descreva as características físicas do avatar.',
-          variant: 'destructive',
-        })
-      }
     }
 
     let finalDuration = targetDuration
@@ -270,10 +230,7 @@ export function AiCreatorPanel({
               p: 20,
               t: `Ingerindo vídeo completo da URL (Modo Edição Pura)...`,
             },
-            {
-              p: 40,
-              t: `IA detectando ângulos e alternância de locutores...`,
-            },
+            { p: 40, t: `IA detectando ângulos e alternância de locutores...` },
             {
               p: 60,
               t: `Extraindo cortes (Smart Highlights) focados no diálogo original...`,
@@ -316,7 +273,6 @@ export function AiCreatorPanel({
 
     if (sourceType === 'video') {
       totalDuration = targetDur
-
       const numSegments = Math.max(3, Math.floor(targetDur / 10))
       const segmentDuration = targetDur / numSegments
 
@@ -345,13 +301,7 @@ export function AiCreatorPanel({
         const end = start + segmentDuration
         currentStartTime = end
 
-        let cutSourceStart = 0
-        if (i % 2 === 0) {
-          cutSourceStart = 50 + i * 20
-        } else {
-          cutSourceStart = 150 + i * 20
-        }
-
+        let cutSourceStart = i % 2 === 0 ? 50 + i * 20 : 150 + i * 20
         const cutSourceEnd = cutSourceStart + segmentDuration
 
         return {
@@ -373,7 +323,6 @@ export function AiCreatorPanel({
         sourceEnd: s.sourceEnd,
       }))
 
-      bRolls = []
       rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
       if (sourceType === 'upload') rawText = defaultTexts[sourceLanguage]
@@ -467,11 +416,6 @@ export function AiCreatorPanel({
           : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
         : null
 
-    const finalAvatarUrl =
-      avatarEnabled && avatarMode === 'generate'
-        ? `https://img.usecurling.com/p/400/400?q=portrait,${encodeURIComponent(avatarPrompt.slice(0, 20))}&dpr=2&seed=${Date.now()}`
-        : avatarUrl
-
     const newDraft: Draft = {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
@@ -506,19 +450,19 @@ export function AiCreatorPanel({
         visualStyle,
         mood,
         mediaType,
-        avatar: avatarEnabled
-          ? {
-              enabled: true,
-              mode: avatarMode,
-              imageUrl: finalAvatarUrl,
-              prompt: avatarPrompt,
-              position: avatarPosition,
-            }
-          : {
-              enabled: false,
-              mode: avatarMode,
-              position: avatarPosition,
-            },
+        avatar: project.avatar || {
+          enabled: false,
+          mode: 'preset',
+          position: 'custom',
+          positionX: 50,
+          positionY: 80,
+          scale: 1,
+        },
+        subtitleStyle: project.subtitleStyle || {
+          color: '#ffffff',
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          fontSize: 14,
+        },
       },
     }
 
@@ -541,6 +485,7 @@ export function AiCreatorPanel({
       mood: newDraft.snapshot.mood,
       mediaType: newDraft.snapshot.mediaType,
       avatar: newDraft.snapshot.avatar,
+      subtitleStyle: newDraft.snapshot.subtitleStyle,
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
     })
@@ -627,9 +572,9 @@ export function AiCreatorPanel({
           <Wand2 className="w-5 h-5 text-blue-500" /> Pipeline de Mídia
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Gere conteúdo a partir de qualquer fonte. O sistema aplicará um Hard
-          Reset isolando o projeto, garantindo uso exclusivo do material
-          original se uma URL for fornecida.
+          Gere conteúdo a partir de texto ou importe uma URL. Para adicionar e
+          animar avatares, acesse a aba <strong>Revisar</strong> (Studio) após a
+          geração.
         </p>
 
         <Tabs
@@ -722,103 +667,6 @@ export function AiCreatorPanel({
                 </Label>
               </div>
             </RadioGroup>
-          </div>
-
-          {/* Realistic Avatar Integration */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-4 bg-muted/20 p-4 rounded-xl border border-border/50 transition-all">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-sm flex items-center gap-2">
-                <User className="w-4 h-4 text-primary" /> Avatar Realista
-              </Label>
-              <Switch
-                checked={avatarEnabled}
-                onCheckedChange={setAvatarEnabled}
-              />
-            </div>
-
-            {avatarEnabled && (
-              <div className="pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2 space-y-4">
-                <Tabs
-                  value={avatarMode}
-                  onValueChange={(v) =>
-                    setAvatarMode(v as 'upload' | 'generate')
-                  }
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-2 mb-4 h-auto p-1">
-                    <TabsTrigger
-                      value="upload"
-                      className="text-xs font-semibold py-2"
-                    >
-                      <Upload className="w-4 h-4 mr-2" /> Upload Foto
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="generate"
-                      className="text-xs font-semibold py-2"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" /> Gerar com IA
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="upload" className="space-y-3 mt-0">
-                    <Label className="text-xs text-muted-foreground">
-                      Selecione uma foto (PNG, JPG) com rosto frontal.
-                    </Label>
-                    <Input
-                      type="file"
-                      accept="image/png,image/jpeg"
-                      onChange={handleAvatarUpload}
-                      className="bg-background/50 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-11 cursor-pointer"
-                    />
-                    {avatarUrl && avatarMode === 'upload' && (
-                      <div className="mt-3 w-16 h-16 rounded-full overflow-hidden border-2 border-primary/50 mx-auto shadow-md">
-                        <img
-                          src={avatarUrl}
-                          alt="Avatar Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="generate" className="space-y-3 mt-0">
-                    <Label className="text-xs text-muted-foreground">
-                      Descreva as características físicas (ex: "Homem, 30 anos,
-                      terno azul").
-                    </Label>
-                    <Textarea
-                      placeholder="Descrição do seu personagem..."
-                      className="min-h-[80px] resize-none text-sm bg-background/50"
-                      value={avatarPrompt}
-                      onChange={(e) => setAvatarPrompt(e.target.value)}
-                    />
-                  </TabsContent>
-                </Tabs>
-
-                <div className="space-y-3">
-                  <Label className="text-xs font-semibold">
-                    Posição na Tela
-                  </Label>
-                  <Select
-                    value={avatarPosition}
-                    onValueChange={(v) => setAvatarPosition(v as any)}
-                  >
-                    <SelectTrigger className="bg-background/50 h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bottom-left">
-                        Inferior Esquerda
-                      </SelectItem>
-                      <SelectItem value="bottom-right">
-                        Inferior Direita
-                      </SelectItem>
-                      <SelectItem value="center">Centralizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">

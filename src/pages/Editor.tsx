@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -38,7 +38,7 @@ import {
   Film,
   Download,
   Music,
-  Eye,
+  Settings2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
@@ -194,6 +194,18 @@ export default function Editor() {
     'idle',
   )
   const { toast } = useToast()
+
+  // Listener para eventos customizados (Ex: botão "Voltar para Correção" no PreviewCanvas)
+  useEffect(() => {
+    const handleSetTab = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail)
+      }
+    }
+    window.addEventListener('set_tab', handleSetTab)
+    return () => window.removeEventListener('set_tab', handleSetTab)
+  }, [])
 
   if (project === null) {
     return (
@@ -368,7 +380,7 @@ export default function Editor() {
                     value="review"
                     className="shrink-0 min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-10"
                   >
-                    <Eye className="w-4 h-4 mr-2" /> Revisar
+                    <Settings2 className="w-4 h-4 mr-2" /> Studio
                   </TabsTrigger>
                   <TabsTrigger
                     value="publish"
@@ -404,6 +416,7 @@ export default function Editor() {
                         <TimelinePanel
                           project={project}
                           onNext={() => setActiveTab('review')}
+                          update={update}
                         />
                       </TabsContent>
                       <TabsContent value="review" className="mt-0 outline-none">

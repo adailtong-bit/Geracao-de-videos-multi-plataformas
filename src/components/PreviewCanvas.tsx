@@ -8,6 +8,7 @@ import {
   Loader2,
   Columns,
   Eye,
+  ArrowLeft,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -56,7 +57,6 @@ export function PreviewCanvas({
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
   const isPureEdition = project.cuts?.some((c) => c.sourceStart !== undefined)
 
-  // Cinema-style subtitles: Off by default unless languages are explicitly set and different
   const shouldShowSubtitles =
     project.sourceLanguage &&
     project.subtitleLanguage &&
@@ -198,7 +198,6 @@ export function PreviewCanvas({
     }
   }, [currentTime, isPlaying, project.cuts, videoError, isVideoLoaded])
 
-  // Sync Raw Video for Side-by-Side comparison
   useEffect(() => {
     if (rawVideoRef.current && isSplitView && !videoError && isVideoLoaded) {
       const hasCuts = project.cuts && project.cuts.length > 0
@@ -289,7 +288,6 @@ export function PreviewCanvas({
 
   const prevIsPlayingRef = useRef(isPlaying)
   const prevTimeRef = useRef(currentTime)
-  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
 
   useEffect(() => {
     if (!('speechSynthesis' in window) || hasSourceAudio) return
@@ -348,7 +346,6 @@ export function PreviewCanvas({
           utterance.pitch = pitch
           utterance.volume = volume
 
-          currentUtteranceRef.current = utterance
           window.speechSynthesis.speak(utterance)
         }
       }, 50)
@@ -395,22 +392,51 @@ export function PreviewCanvas({
     return { filter: filters, transition: 'filter 0.3s ease-in-out' }
   }
 
-  // Determine if Avatar should animate lips/head based on TTS or overall playback state for mock
   const isTalking =
     (isTtsSpeaking || (hasSourceAudio && isPlaying)) && !videoError
+
+  const subColor = project.subtitleStyle?.color || '#ffffff'
+  const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
+  const subSize = project.subtitleStyle?.fontSize || 14
+
+  const avatarScale = project.avatar?.scale ?? 1
+  const avatarX = project.avatar?.positionX ?? 50
+  const avatarY = project.avatar?.positionY ?? 80
+
+  const handleReturnToCorrection = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    window.dispatchEvent(new CustomEvent('set_tab', { detail: 'ai-creator' }))
+  }
 
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
-        @keyframes talking-bob {
-          0%, 100% { transform: scale(1) translateY(0); }
-          50% { transform: scale(1.03) translateY(-3px); }
+        @keyframes avatar-talking {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg); }
+          25% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(-1deg); }
+          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.04)) rotate(1deg); }
+          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(-0.5deg); }
         }
-        .animate-talking-bob {
-          animation: talking-bob 1.5s ease-in-out infinite;
+        .animate-avatar-talking {
+          animation: avatar-talking 2s ease-in-out infinite;
         }
       `}</style>
       <PlaybackController project={project} />
+
+      {/* Voltar para Correção Button (Correction Workflow) */}
+      {!isPlaying && !isGenerating && (
+        <div className="absolute top-4 left-4 z-50 animate-in fade-in slide-in-from-left-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleReturnToCorrection}
+            className="bg-black/60 hover:bg-black/80 text-white border-white/20 backdrop-blur-md font-semibold shadow-lg transition-transform hover:scale-105"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Correção
+          </Button>
+        </div>
+      )}
 
       {/* Toggle Split View */}
       {hasContent && (
@@ -594,24 +620,38 @@ export function PreviewCanvas({
                     </div>
                   )}
 
-                {/* Avatar Overlay */}
+                {/* Avatar Overlay with dynamic scaling, positioning and lip-sync */}
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
                     className={cn(
-                      'absolute z-20 pointer-events-none rounded-full overflow-hidden border-[3px] border-white/20 shadow-2xl bg-black/50 backdrop-blur-md transition-transform duration-300',
-                      project.avatar.position === 'bottom-left'
-                        ? 'bottom-6 left-6 w-24 h-24 sm:w-32 sm:h-32'
-                        : project.avatar.position === 'bottom-right'
-                          ? 'bottom-6 right-6 w-24 h-24 sm:w-32 sm:h-32'
-                          : 'bottom-16 left-1/2 -translate-x-1/2 w-32 h-32 sm:w-40 sm:h-40',
-                      isTalking ? 'animate-talking-bob' : '',
+                      'absolute z-20 pointer-events-none rounded-full overflow-hidden border-[3px] border-white/20 shadow-2xl bg-black/50 backdrop-blur-md',
+                      isTalking ? 'animate-avatar-talking' : '',
                     )}
+                    style={
+                      {
+                        left: `${avatarX}%`,
+                        top: `${avatarY}%`,
+                        '--scale': avatarScale,
+                        transform: !isTalking
+                          ? `translate(-50%, -50%) scale(${avatarScale})`
+                          : undefined,
+                        width: '120px',
+                        height: '120px',
+                        transition:
+                          'left 0.3s ease-out, top 0.3s ease-out, transform 0.3s ease-out',
+                      } as any
+                    }
                   >
                     <img
                       src={project.avatar.imageUrl}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />
+                    {isTalking && (
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50">
+                        Lip-Sync Ativo
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -624,17 +664,16 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className={cn(
-                          'absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150',
-                          project.avatar?.enabled &&
-                            project.avatar.position === 'center'
-                            ? 'bottom-4'
-                            : 'bottom-6',
-                        )}
+                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6"
                       >
                         <div
-                          className="bg-black/75 backdrop-blur-sm text-white px-3 py-1.5 rounded-sm text-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10"
-                          style={{ textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}
+                          className="px-3 py-1.5 rounded-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10 transition-colors"
+                          style={{
+                            color: subColor,
+                            backgroundColor: subBg,
+                            fontSize: `${subSize}px`,
+                            textShadow: '0px 1px 2px rgba(0,0,0,0.8)',
+                          }}
                         >
                           {activeSub.text}
                         </div>

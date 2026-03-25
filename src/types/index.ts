@@ -82,10 +82,19 @@ export interface ScheduledPost {
 
 export interface AvatarSettings {
   enabled: boolean
-  mode: 'upload' | 'generate'
+  mode: 'upload' | 'generate' | 'preset'
   imageUrl?: string
   prompt?: string
-  position: 'bottom-left' | 'bottom-right' | 'center'
+  position: 'bottom-left' | 'bottom-right' | 'center' | 'custom'
+  positionX?: number
+  positionY?: number
+  scale?: number
+}
+
+export interface SubtitleStyle {
+  color: string
+  backgroundColor: string
+  fontSize: number
 }
 
 export interface Draft {
@@ -143,6 +152,7 @@ export interface Project {
   targetFormat?: string
   mediaType?: MediaType
   avatar?: AvatarSettings
+  subtitleStyle?: SubtitleStyle
   colorSettings?: ColorSettings
   approvalStatus?: ApprovalStatus
 }
