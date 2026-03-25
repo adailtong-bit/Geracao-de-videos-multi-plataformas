@@ -379,8 +379,21 @@ export function PreviewCanvas({
     }
   }
 
+  // Determine if Avatar should animate lips/head based on TTS or overall playback state for mock
+  const isTalking =
+    (isTtsSpeaking || (hasSourceAudio && isPlaying)) && !videoError
+
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
+      <style>{`
+        @keyframes talking-bob {
+          0%, 100% { transform: scale(1) translateY(0); }
+          50% { transform: scale(1.03) translateY(-3px); }
+        }
+        .animate-talking-bob {
+          animation: talking-bob 1.5s ease-in-out infinite;
+        }
+      `}</style>
       <PlaybackController project={project} />
 
       {/* Toggle Split View */}
@@ -561,6 +574,27 @@ export function PreviewCanvas({
                     </div>
                   )}
 
+                {/* Avatar Overlay */}
+                {project.avatar?.enabled && project.avatar.imageUrl && (
+                  <div
+                    className={cn(
+                      'absolute z-20 pointer-events-none rounded-full overflow-hidden border-[3px] border-white/20 shadow-2xl bg-black/50 backdrop-blur-md transition-transform duration-300',
+                      project.avatar.position === 'bottom-left'
+                        ? 'bottom-6 left-6 w-24 h-24 sm:w-32 sm:h-32'
+                        : project.avatar.position === 'bottom-right'
+                          ? 'bottom-6 right-6 w-24 h-24 sm:w-32 sm:h-32'
+                          : 'bottom-16 left-1/2 -translate-x-1/2 w-32 h-32 sm:w-40 sm:h-40',
+                      isTalking ? 'animate-talking-bob' : '',
+                    )}
+                  >
+                    <img
+                      src={project.avatar.imageUrl}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 {shouldShowSubtitles &&
                   project.aiClips?.map((clip) => {
                     const activeSub = clip.subtitles.find(
@@ -570,7 +604,13 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute bottom-4 left-0 right-0 z-20 flex justify-center pointer-events-none animate-in fade-in duration-150"
+                        className={cn(
+                          'absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150',
+                          project.avatar?.enabled &&
+                            project.avatar.position === 'center'
+                            ? 'bottom-4'
+                            : 'bottom-6',
+                        )}
                       >
                         <div
                           className="bg-black/75 backdrop-blur-sm text-white px-3 py-1.5 rounded-sm text-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10"

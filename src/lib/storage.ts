@@ -27,6 +27,11 @@ export const getProjects = (): Project[] => {
     elements: [],
     sourceLanguage: 'pt-BR',
     subtitleLanguage: 'none',
+    avatar: {
+      enabled: false,
+      mode: 'generate',
+      position: 'bottom-right',
+    },
     aiClips: [
       {
         id: crypto.randomUUID(),
@@ -83,6 +88,7 @@ export const getProjects = (): Project[] => {
         captions: defaultProject.captions,
         sourceLanguage: defaultProject.sourceLanguage,
         subtitleLanguage: defaultProject.subtitleLanguage,
+        avatar: defaultProject.avatar,
       },
     },
   ]
@@ -130,6 +136,11 @@ export const createProject = (
     sourceLanguage: 'pt-BR',
     subtitleLanguage: 'none',
     drafts: [],
+    avatar: {
+      enabled: false,
+      mode: 'generate',
+      position: 'bottom-right',
+    },
     ...options,
   }
   projects.push(newProject)

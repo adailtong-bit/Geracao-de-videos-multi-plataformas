@@ -80,6 +80,14 @@ export interface ScheduledPost {
   status: 'scheduled' | 'published'
 }
 
+export interface AvatarSettings {
+  enabled: boolean
+  mode: 'upload' | 'generate'
+  imageUrl?: string
+  prompt?: string
+  position: 'bottom-left' | 'bottom-right' | 'center'
+}
+
 export interface Draft {
   id: string
   name: string
@@ -125,6 +133,7 @@ export interface Project {
   teamMembers?: TeamMember[]
   targetFormat?: string
   mediaType?: MediaType
+  avatar?: AvatarSettings
 }
 
 export interface User {
