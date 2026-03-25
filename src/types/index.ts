@@ -1,4 +1,9 @@
-export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube'
+export type Platform =
+  | 'tiktok'
+  | 'instagram'
+  | 'facebook'
+  | 'youtube'
+  | 'linkedin'
 export type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5'
 
 export type Language = 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT'
@@ -88,6 +93,7 @@ export interface AudioTrack {
   name: string
   mood: string
   url?: string
+  adaptiveLeveling?: boolean
 }
 
 export interface SFXTrack {
@@ -154,7 +160,14 @@ export interface ColorSettings {
   brightness: number
   contrast: number
   saturation: number
-  preset: 'none' | 'grayscale' | 'sepia' | 'vintage'
+  preset:
+    | 'none'
+    | 'grayscale'
+    | 'sepia'
+    | 'vintage'
+    | 'film-grain'
+    | 'candle-light'
+    | 'noir'
 }
 
 export type ApprovalStatus = 'review' | 'revised' | 'approved'
@@ -202,6 +215,7 @@ export interface Project {
   colorSettings?: ColorSettings
   approvalStatus?: ApprovalStatus
   glossary?: GlossaryTerm[]
+  collaborationMode?: boolean
 }
 
 export interface User {
@@ -214,6 +228,7 @@ export interface User {
     tiktok?: string
     facebook?: string
     youtube?: string
+    linkedin?: string
   }
 }
 

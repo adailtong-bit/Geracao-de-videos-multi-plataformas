@@ -360,9 +360,98 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       <Accordion
         type="single"
         collapsible
-        defaultValue="avatar"
+        defaultValue="cores"
         className="w-full space-y-3"
       >
+        {/* Cores e Efeitos */}
+        <AccordionItem
+          value="cores"
+          className="border rounded-xl px-4 bg-card shadow-sm"
+        >
+          <AccordionTrigger className="hover:no-underline py-4">
+            <span className="flex items-center gap-2 font-semibold text-sm">
+              <Palette className="w-4 h-4 text-primary" /> Visual Effects &
+              Filtros
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-2 pb-4 space-y-6">
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs font-semibold">
+                Galeria de Filtros
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'none', label: 'Nenhum' },
+                  { id: 'grayscale', label: 'P&B Clássico' },
+                  { id: 'sepia', label: 'Sépia Quente' },
+                  { id: 'vintage', label: 'Vintage' },
+                  { id: 'film-grain', label: 'Film Grain' },
+                  { id: 'candle-light', label: 'Candle Light' },
+                  { id: 'noir', label: 'Noir' },
+                ].map((f) => (
+                  <Button
+                    key={f.id}
+                    variant={colors.preset === f.id ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-9 justify-center text-xs w-full"
+                    onClick={() => handleColorChange('preset', f.id)}
+                  >
+                    {f.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Brilho</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {colors.brightness}%
+                  </span>
+                </div>
+                <Slider
+                  value={[colors.brightness]}
+                  min={50}
+                  max={150}
+                  step={1}
+                  onValueChange={([v]) => handleColorChange('brightness', v)}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Contraste</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {colors.contrast}%
+                  </span>
+                </div>
+                <Slider
+                  value={[colors.contrast]}
+                  min={50}
+                  max={150}
+                  step={1}
+                  onValueChange={([v]) => handleColorChange('contrast', v)}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Saturação</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {colors.saturation}%
+                  </span>
+                </div>
+                <Slider
+                  value={[colors.saturation]}
+                  min={0}
+                  max={200}
+                  step={1}
+                  onValueChange={([v]) => handleColorChange('saturation', v)}
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Idiomas */}
         <AccordionItem
           value="idiomas"
@@ -502,84 +591,6 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   />
                 </div>
               ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Cores */}
-        <AccordionItem
-          value="cores"
-          className="border rounded-xl px-4 bg-card shadow-sm"
-        >
-          <AccordionTrigger className="hover:no-underline py-4">
-            <span className="flex items-center gap-2 font-semibold text-sm">
-              <Palette className="w-4 h-4 text-primary" /> Correção de Cor
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pt-2 pb-4 space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold">Brilho</Label>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {colors.brightness}%
-                </span>
-              </div>
-              <Slider
-                value={[colors.brightness]}
-                min={50}
-                max={150}
-                step={1}
-                onValueChange={([v]) => handleColorChange('brightness', v)}
-              />
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold">Contraste</Label>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {colors.contrast}%
-                </span>
-              </div>
-              <Slider
-                value={[colors.contrast]}
-                min={50}
-                max={150}
-                step={1}
-                onValueChange={([v]) => handleColorChange('contrast', v)}
-              />
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold">Saturação</Label>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {colors.saturation}%
-                </span>
-              </div>
-              <Slider
-                value={[colors.saturation]}
-                min={0}
-                max={200}
-                step={1}
-                onValueChange={([v]) => handleColorChange('saturation', v)}
-              />
-            </div>
-            <div className="space-y-2 pt-4 border-t">
-              <Label className="text-xs font-semibold">Filtro / Preset</Label>
-              <Select
-                value={colors.preset}
-                onValueChange={(v) => handleColorChange('preset', v)}
-              >
-                <SelectTrigger className="bg-background h-9 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum (Original)</SelectItem>
-                  <SelectItem value="grayscale">Preto e Branco</SelectItem>
-                  <SelectItem value="sepia">Sépia (Quente)</SelectItem>
-                  <SelectItem value="vintage">
-                    Vintage (Contraste + Sépia)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </AccordionContent>
         </AccordionItem>

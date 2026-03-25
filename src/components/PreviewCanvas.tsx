@@ -291,9 +291,13 @@ export function PreviewCanvas({
           : project.mood === 'dramatic'
             ? 0.35
             : 0.25
-      const targetVolume = speaking
-        ? volume * (baseVolume * 0.2)
-        : volume * baseVolume
+
+      const isAdaptive = project.audioTrack?.adaptiveLeveling !== false
+      const targetVolume =
+        speaking && isAdaptive
+          ? volume * (baseVolume * 0.2)
+          : volume * baseVolume
+
       const currentVol = audioRef.current.volume
 
       if (Math.abs(currentVol - targetVolume) > 0.01) {
@@ -302,7 +306,12 @@ export function PreviewCanvas({
     }, 100)
 
     return () => clearInterval(duckingInterval)
-  }, [volume, project.mood, hasSourceAudio])
+  }, [
+    volume,
+    project.mood,
+    hasSourceAudio,
+    project.audioTrack?.adaptiveLeveling,
+  ])
 
   const prevIsPlayingRef = useRef(isPlaying)
   const prevTimeRef = useRef(currentTime)
@@ -436,6 +445,11 @@ export function PreviewCanvas({
     if (s.preset === 'sepia') filters += ' sepia(100%)'
     if (s.preset === 'vintage')
       filters += ' sepia(50%) contrast(120%) saturate(80%)'
+    if (s.preset === 'noir')
+      filters += ' grayscale(100%) contrast(150%) brightness(80%)'
+    if (s.preset === 'candle-light')
+      filters += ' sepia(40%) contrast(120%) brightness(90%) hue-rotate(-15deg)'
+
     return { filter: filters, transition: 'filter 0.3s ease-in-out' }
   }
 
@@ -720,6 +734,15 @@ export function PreviewCanvas({
                       atmosphere === 'neon' &&
                         'bg-gradient-to-br from-cyan-500/30 via-transparent to-fuchsia-500/30 anim-pulse-slow',
                     )}
+                  />
+                )}
+
+                {project.colorSettings?.preset === 'film-grain' && (
+                  <div
+                    className="absolute inset-0 pointer-events-none mix-blend-overlay opacity-30 z-30"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                    }}
                   />
                 )}
 

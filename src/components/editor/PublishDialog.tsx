@@ -21,8 +21,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Youtube, Instagram, Upload, Send, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 export function PublishDialog({ project }: { project: Project }) {
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success'>('idle')
@@ -56,13 +62,42 @@ export function PublishDialog({ project }: { project: Project }) {
     }
   }
 
+  const isApproved = project.approvalStatus === 'approved'
+
+  const triggerButton = (
+    <Button
+      className={cn(
+        'hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5',
+        !isApproved && 'opacity-50 pointer-events-none hover:translate-y-0',
+      )}
+      disabled={!isApproved}
+    >
+      <Send className="w-4 h-4 mr-2" /> Publicar Direto
+    </Button>
+  )
+
   return (
     <Dialog open={open} onOpenChange={reset}>
-      <DialogTrigger asChild>
-        <Button className="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5">
-          <Send className="w-4 h-4 mr-2" /> Publicar Direto
-        </Button>
-      </DialogTrigger>
+      {!isApproved ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="hidden md:flex cursor-not-allowed">
+              {triggerButton}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            className="max-w-[220px] text-center p-3 text-sm"
+          >
+            <p>
+              O vídeo precisa ser marcado como "Aprovado" na aba de Revisão
+              antes de ser publicado.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
         <div className="p-6 bg-card border-b">
           <DialogHeader>

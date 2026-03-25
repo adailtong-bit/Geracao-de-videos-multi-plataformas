@@ -4,9 +4,15 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 import {
@@ -22,6 +28,8 @@ import {
   Sparkles,
   Link as LinkIcon,
   AlertTriangle,
+  Linkedin,
+  Youtube,
 } from 'lucide-react'
 
 interface Props {
@@ -40,6 +48,7 @@ export function PublishPanel({ project, update }: Props) {
     instagram: 'ready',
     facebook: 'ready',
     youtube: 'ready',
+    linkedin: 'ready',
   })
 
   const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now')
@@ -81,6 +90,8 @@ export function PublishPanel({ project, update }: Props) {
           tiktok: text,
           instagram: text,
           facebook: text,
+          youtube: text,
+          linkedin: text,
         },
       })
       setIsGeneratingAi(false)
@@ -153,7 +164,7 @@ export function PublishPanel({ project, update }: Props) {
       setStatuses(finalStatuses)
       toast({
         title: 'Sucesso! 🚀',
-        description: 'Vídeo exportado e publicado diretamente nas suas redes.',
+        description: `Vídeo renderizado no frame atual e enviado com sucesso para: ${project.targetPlatforms.join(', ')}.`,
       })
     }, 3000)
   }
@@ -179,6 +190,21 @@ export function PublishPanel({ project, update }: Props) {
     [project.scheduledPosts, viewDate],
   )
 
+  const PublishBtn = (
+    <Button
+      className="w-full h-12 text-base font-bold shadow-md transition-all"
+      onClick={handleAction}
+      disabled={!project.videoUrl || isPublishing || !isApproved}
+    >
+      {isPublishing ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+      {publishMode === 'now'
+        ? isPublishing
+          ? 'Publicando...'
+          : 'Publicar nas Redes'
+        : 'Agendar Posts'}
+    </Button>
+  )
+
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
       {!isApproved && (
@@ -200,7 +226,15 @@ export function PublishPanel({ project, update }: Props) {
           Conecte suas contas para publicar ou agendar diretamente.
         </p>
         <div className="grid grid-cols-1 gap-3">
-          {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => {
+          {(
+            [
+              'youtube',
+              'instagram',
+              'tiktok',
+              'linkedin',
+              'facebook',
+            ] as Platform[]
+          ).map((p) => {
             const isConnected = user?.linkedAccounts?.[p]
             return (
               <div
@@ -218,6 +252,12 @@ export function PublishPanel({ project, update }: Props) {
                   )}
                   {p === 'facebook' && (
                     <Facebook className="w-5 h-5 text-blue-600" />
+                  )}
+                  {p === 'youtube' && (
+                    <Youtube className="w-5 h-5 text-red-600" />
+                  )}
+                  {p === 'linkedin' && (
+                    <Linkedin className="w-5 h-5 text-blue-700" />
                   )}
                   {p}
                 </span>
@@ -246,14 +286,22 @@ export function PublishPanel({ project, update }: Props) {
           <Share2 className="w-5 h-5 text-primary" /> Plataformas de Destino
         </h3>
         <div className="space-y-3 bg-background p-2 rounded-xl border shadow-sm">
-          {(['tiktok', 'instagram', 'facebook'] as Platform[]).map((p) => (
+          {(
+            [
+              'youtube',
+              'instagram',
+              'tiktok',
+              'linkedin',
+              'facebook',
+            ] as Platform[]
+          ).map((p) => (
             <div
               key={p}
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
             >
               <Label
                 className="capitalize cursor-pointer flex items-center gap-3 text-base"
-                htmlFor={`switch-${p}`}
+                htmlFor={`check-${p}`}
               >
                 {p === 'instagram' && (
                   <Instagram className="w-5 h-5 text-pink-600" />
@@ -266,10 +314,16 @@ export function PublishPanel({ project, update }: Props) {
                     t
                   </div>
                 )}
+                {p === 'youtube' && (
+                  <Youtube className="w-5 h-5 text-red-600" />
+                )}
+                {p === 'linkedin' && (
+                  <Linkedin className="w-5 h-5 text-blue-700" />
+                )}
                 {p}
               </Label>
-              <Switch
-                id={`switch-${p}`}
+              <Checkbox
+                id={`check-${p}`}
                 checked={project.targetPlatforms.includes(p)}
                 onCheckedChange={() => togglePlatform(p)}
                 disabled={
@@ -277,6 +331,7 @@ export function PublishPanel({ project, update }: Props) {
                   statuses[p] === 'published' ||
                   !isApproved
                 }
+                className="w-5 h-5 rounded-md"
               />
             </div>
           ))}
@@ -372,20 +427,25 @@ export function PublishPanel({ project, update }: Props) {
           </div>
         )}
 
-        <Button
-          className="w-full h-12 text-base font-bold shadow-md mt-4 transition-all hover:-translate-y-0.5"
-          onClick={handleAction}
-          disabled={!project.videoUrl || isPublishing || !isApproved}
-        >
-          {isPublishing ? (
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-          ) : null}
-          {publishMode === 'now'
-            ? isPublishing
-              ? 'Publicando...'
-              : 'Publicar nas Redes'
-            : 'Agendar Posts'}
-        </Button>
+        <div className="mt-4">
+          {!isApproved ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block w-full cursor-not-allowed">
+                  {PublishBtn}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>
+                  O vídeo precisa ser marcado como "Aprovado" na aba de Revisão
+                  antes de ser publicado.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            PublishBtn
+          )}
+        </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t">
