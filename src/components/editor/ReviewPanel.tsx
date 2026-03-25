@@ -127,6 +127,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       positionX: 50,
       positionY: 80,
       scale: 1,
+      zIndex: 20,
     }
     update({ avatar: { ...current, [key]: value }, approvalStatus: 'revised' })
   }
@@ -756,6 +757,12 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           <p className="text-[10px] text-muted-foreground">
                             Extração Alpha Perfect livre de frames.
                           </p>
+                          <div className="flex items-center gap-2 pb-1">
+                            <Switch id="recon-rev" defaultChecked />
+                            <Label htmlFor="recon-rev" className="text-[10px]">
+                              Ativar Inpainting de Corpo
+                            </Label>
+                          </div>
                           {isProcessingAvatar ? (
                             <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
                               Segmentação Alpha e Inpainting Anatômico...
@@ -817,6 +824,36 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           Dica: Você pode reposicionar o avatar arrastando-o
                           diretamente no canvas ao lado.
                         </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold">
+                          Ordem da Camada (Z-Index)
+                        </Label>
+                        <Select
+                          value={project.avatar?.zIndex?.toString() || '20'}
+                          onValueChange={(v) =>
+                            updateAvatarSettings('zIndex', parseInt(v))
+                          }
+                        >
+                          <SelectTrigger className="bg-background h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">
+                              Atrás do B-Roll (Fundo)
+                            </SelectItem>
+                            <SelectItem value="15">
+                              Atrás dos Ouvintes
+                            </SelectItem>
+                            <SelectItem value="20">
+                              Padrão (Frente dos Ouvintes)
+                            </SelectItem>
+                            <SelectItem value="50">
+                              Acima de Tudo (Sobre Legendas)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </TabsContent>

@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -46,6 +47,7 @@ export default function Avatars() {
   const [newName, setNewName] = useState('')
   const [newImage, setNewImage] = useState('')
   const [prompt, setPrompt] = useState('')
+  const [reconstruct, setReconstruct] = useState(true)
 
   const [previewAvatar, setPreviewAvatar] = useState<AvatarModel | null>(null)
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
@@ -431,13 +433,27 @@ export default function Avatars() {
                     />
                   </Label>
                 )}
+              </div>
+
+              <div className="space-y-2 mt-4 bg-primary/5 p-3 rounded-xl border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-sm text-primary">
+                    Inpainting Anatômico
+                  </Label>
+                  <Switch
+                    checked={reconstruct}
+                    onCheckedChange={setReconstruct}
+                  />
+                </div>
                 <p className="text-[10px] text-muted-foreground">
-                  Dica: A IA tratará a imagem como base livre, reconstituindo
-                  membros faltantes para permitir movimentos fluidos na edição.
+                  Gera automaticamente ombros, braços e torso ausentes para
+                  garantir um corpo completo e gesticulação natural, removendo
+                  formatos de retrato.
                 </p>
               </div>
+
               <Button
-                className="w-full"
+                className="w-full mt-2"
                 onClick={handleCreateUpload}
                 disabled={!newName || !newImage}
               >

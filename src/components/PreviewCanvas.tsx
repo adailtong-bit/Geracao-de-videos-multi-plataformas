@@ -451,13 +451,14 @@ export function PreviewCanvas({
 
   // --- NEW AVATAR & LISTENER LOGIC ---
   const avatarScale = project.avatar?.scale ?? 1
+  const avatarZIndex = project.avatar?.zIndex ?? 20
   const tone = project.avatar?.tone || 'neutral'
   const atmosphere = project.avatar?.atmosphere || 'none'
 
   let animDuration = '3s'
   let toneFilter = ''
   if (tone === 'suspense') {
-    animDuration = '5s'
+    animDuration = '6s'
     toneFilter =
       'drop-shadow(0 20px 30px rgba(0,0,0,0.8)) contrast(1.1) brightness(0.85)'
   } else if (tone === 'joy') {
@@ -519,8 +520,8 @@ export function PreviewCanvas({
         
         @keyframes gesture-explain {
           0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) perspective(500px); }
-          25% { transform: translate(-50%, -51%) scale(calc(var(--scale, 1)*1.01)) rotate(1deg) perspective(500px) rotateY(3deg); }
-          75% { transform: translate(-50%, -49%) scale(calc(var(--scale, 1)*0.99)) rotate(-1deg) perspective(500px) rotateY(-2deg); }
+          25% { transform: translate(-50%, -51%) scale(calc(var(--scale, 1)*1.01)) rotate(1deg) perspective(500px) rotateY(3deg) skewX(-1deg); }
+          75% { transform: translate(-50%, -49%) scale(calc(var(--scale, 1)*0.99)) rotate(-1deg) perspective(500px) rotateY(-2deg) skewX(1deg); }
         }
 
         @keyframes gesture-point {
@@ -810,11 +811,12 @@ export function PreviewCanvas({
                     <div
                       key={listener.id}
                       className={cn(
-                        'absolute z-[15] pointer-events-none transition-all',
+                        'absolute pointer-events-none transition-all',
                         rClass,
                       )}
                       style={
                         {
+                          zIndex: 15, // Default listener zIndex
                           left: `${listener.positionX}%`,
                           top: `${listener.positionY}%`,
                           '--scale': listener.scale,
@@ -839,7 +841,7 @@ export function PreviewCanvas({
                   )
                 })}
 
-                {/* Avatar Overlay with dynamic scaling, dragging, and neural motion */}
+                {/* Avatar Overlay with dynamic scaling, z-index, dragging, and neural motion */}
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
                     onPointerDown={(e) => {
@@ -848,7 +850,7 @@ export function PreviewCanvas({
                       setIsDraggingAvatar(true)
                     }}
                     className={cn(
-                      'absolute z-20 transition-all',
+                      'absolute transition-all',
                       !isDraggingAvatar && activeGestureClass,
                       isDraggingAvatar
                         ? 'cursor-grabbing opacity-80'
@@ -856,6 +858,7 @@ export function PreviewCanvas({
                     )}
                     style={
                       {
+                        zIndex: avatarZIndex,
                         left: `${localAvatarPos.x}%`,
                         top: `${localAvatarPos.y}%`,
                         '--scale': avatarScale,

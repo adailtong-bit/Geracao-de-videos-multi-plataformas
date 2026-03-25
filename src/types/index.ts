@@ -127,6 +127,7 @@ export interface AvatarSettings {
   tone?: NarrativeTone
   atmosphere?: AtmosphereEnv
   listeners?: ListenerPersona[]
+  zIndex?: number
 }
 
 export interface SubtitleStyle {
