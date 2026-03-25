@@ -17,6 +17,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
+import { cn } from '@/lib/utils'
 
 export function InteractiveTimeline({
   project,
