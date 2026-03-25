@@ -9,7 +9,6 @@ import {
   Columns,
   Eye,
   ArrowLeft,
-  Activity,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -39,19 +38,27 @@ function PlaybackController({ project }: { project: Project }) {
 export function PreviewCanvas({
   project,
   isGenerating = false,
+  update,
 }: {
   project: Project
   isGenerating?: boolean
+  update?: (updates: Partial<Project>) => void
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
   const { isPlaying, currentTime, volume } = usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const rawVideoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
+
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false)
   const [videoError, setVideoError] = useState(false)
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const [isSplitView, setIsSplitView] = useState(false)
+
+  // Avatar drag state
+  const [isDraggingAvatar, setIsDraggingAvatar] = useState(false)
+  const [localAvatarPos, setLocalAvatarPos] = useState({ x: 50, y: 80 })
 
   const hasContent =
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
@@ -62,6 +69,16 @@ export function PreviewCanvas({
     project.sourceLanguage &&
     project.subtitleLanguage &&
     project.subtitleLanguage !== 'none'
+
+  // Sync avatar pos when not dragging
+  useEffect(() => {
+    if (!isDraggingAvatar) {
+      setLocalAvatarPos({
+        x: project.avatar?.positionX ?? 50,
+        y: project.avatar?.positionY ?? 80,
+      })
+    }
+  }, [project.avatar?.positionX, project.avatar?.positionY, isDraggingAvatar])
 
   useEffect(() => {
     setVideoError(false)
@@ -97,7 +114,7 @@ export function PreviewCanvas({
   }
 
   const togglePlay = () => {
-    if (!hasContent || videoError || !isVideoLoaded) return
+    if (!hasContent || videoError || !isVideoLoaded || isDraggingAvatar) return
     if (isPlaying) pause()
     else play()
   }
@@ -363,6 +380,36 @@ export function PreviewCanvas({
     }
   }, [])
 
+  // Dragging event handlers for canvas wrapper
+  const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingAvatar || !canvasRef.current) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    const x = Math.max(
+      0,
+      Math.min(100, ((e.clientX - rect.left) / rect.width) * 100),
+    )
+    const y = Math.max(
+      0,
+      Math.min(100, ((e.clientY - rect.top) / rect.height) * 100),
+    )
+    setLocalAvatarPos({ x, y })
+  }
+
+  const handleCanvasPointerUp = () => {
+    if (isDraggingAvatar) {
+      setIsDraggingAvatar(false)
+      if (update && project.avatar) {
+        update({
+          avatar: {
+            ...project.avatar,
+            positionX: localAvatarPos.x,
+            positionY: localAvatarPos.y,
+          },
+        })
+      }
+    }
+  }
+
   const getRatioStyle = () => {
     switch (project.aspectRatio) {
       case '9:16':
@@ -401,8 +448,6 @@ export function PreviewCanvas({
   const subSize = project.subtitleStyle?.fontSize || 14
 
   const avatarScale = project.avatar?.scale ?? 1
-  const avatarX = project.avatar?.positionX ?? 50
-  const avatarY = project.avatar?.positionY ?? 80
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -412,12 +457,15 @@ export function PreviewCanvas({
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
-        @keyframes organic-breathing {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) translateY(0px); }
-          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) translateY(-2px); }
+        @keyframes anatomical-motion {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) skewX(0deg); }
+          25% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(0.5deg) skewX(0.5deg) translateY(-1px); }
+          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(0deg) skewX(0deg) translateY(-2px); }
+          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-0.5deg) skewX(-0.5deg) translateY(-1px); }
         }
-        .animate-organic-breathing {
-          animation: organic-breathing 4s ease-in-out infinite;
+        .animate-anatomical-motion {
+          animation: anatomical-motion 4s ease-in-out infinite;
+          transform-origin: 50% 80%;
         }
       `}</style>
       <PlaybackController project={project} />
@@ -500,11 +548,14 @@ export function PreviewCanvas({
             </span>
           )}
           <div
+            ref={canvasRef}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerUp={handleCanvasPointerUp}
+            onPointerLeave={handleCanvasPointerUp}
             className={cn(
-              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 group cursor-pointer w-full',
+              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 w-full select-none',
             )}
             style={getRatioStyle()}
-            onClick={togglePlay}
           >
             {isGenerating && (
               <div className="absolute inset-0 z-50 flex flex-col p-4 sm:p-6 bg-zinc-950/90 backdrop-blur-md text-white animate-in fade-in duration-300">
@@ -531,8 +582,13 @@ export function PreviewCanvas({
 
             {hasContent ? (
               <>
+                <div
+                  className="absolute inset-0 cursor-pointer z-0"
+                  onClick={togglePlay}
+                />
+
                 {videoError && (
-                  <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-900/95 text-white p-6 text-center animate-in fade-in">
+                  <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-900/95 text-white p-6 text-center animate-in fade-in pointer-events-none">
                     <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
                     <h3 className="font-bold text-xl mb-2">
                       Erro de Reprodução
@@ -548,7 +604,7 @@ export function PreviewCanvas({
                   !isVideoLoaded &&
                   !videoError &&
                   !isGenerating && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/90 text-white p-6 text-center">
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/90 text-white p-6 text-center pointer-events-none">
                       <Loader2 className="w-10 h-10 text-blue-500 mb-4 animate-spin" />
                       <h3 className="font-bold text-lg mb-1">
                         Carregando Mídia RAW
@@ -574,7 +630,7 @@ export function PreviewCanvas({
                     ref={videoRef}
                     src={project.videoUrl}
                     className={cn(
-                      'w-full h-full object-cover opacity-90 relative z-0 transition-opacity duration-300',
+                      'w-full h-full object-cover opacity-90 relative z-0 transition-opacity duration-300 pointer-events-none',
                       !isVideoLoaded && 'opacity-0',
                     )}
                     style={getFilterStyle()}
@@ -620,21 +676,32 @@ export function PreviewCanvas({
                     </div>
                   )}
 
-                {/* Avatar Overlay with dynamic scaling, positioning and lip-sync */}
+                {/* Avatar Overlay with dynamic scaling, dragging, and neural motion */}
                 {project.avatar?.enabled && project.avatar.imageUrl && (
                   <div
+                    onPointerDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setIsDraggingAvatar(true)
+                    }}
                     className={cn(
-                      'absolute z-20 pointer-events-none drop-shadow-2xl animate-organic-breathing',
+                      'absolute z-20 drop-shadow-2xl animate-anatomical-motion transition-colors',
+                      isDraggingAvatar
+                        ? 'cursor-grabbing ring-2 ring-primary/50 bg-primary/10 rounded-full'
+                        : 'cursor-grab hover:ring-2 hover:ring-white/20 hover:bg-white/5 rounded-full',
                     )}
                     style={
                       {
-                        left: `${avatarX}%`,
-                        top: `${avatarY}%`,
+                        left: `${localAvatarPos.x}%`,
+                        top: `${localAvatarPos.y}%`,
                         '--scale': avatarScale,
                         transform: `translate(-50%, -50%) scale(${avatarScale})`,
                         width: '240px',
                         height: '240px',
-                        transition: 'left 0.3s ease-out, top 0.3s ease-out',
+                        touchAction: 'none',
+                        transition: isDraggingAvatar
+                          ? 'none'
+                          : 'left 0.3s ease-out, top 0.3s ease-out',
                       } as any
                     }
                   >
@@ -642,7 +709,7 @@ export function PreviewCanvas({
                       src={project.avatar.imageUrl}
                       alt="Avatar"
                       crossOrigin="anonymous"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                       style={{
                         WebkitMaskImage: AVATAR_MASK,
                         WebkitMaskSize: 'contain',
@@ -655,9 +722,22 @@ export function PreviewCanvas({
                       }}
                     />
                     {isTalking && (
-                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500/90 text-white text-[9px] px-2 py-0.5 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-sm border border-blue-400/50 flex items-center gap-1">
-                        <Activity className="w-3 h-3 animate-pulse" />
-                        Neural Lip-Sync Ativo
+                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[9px] px-2.5 py-1 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-xl border border-indigo-400/50 flex items-center gap-1.5 pointer-events-none transition-all">
+                        <div className="flex items-end gap-0.5 h-2">
+                          <div
+                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate]"
+                            style={{ height: '100%' }}
+                          />
+                          <div
+                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate_0.2s]"
+                            style={{ height: '60%' }}
+                          />
+                          <div
+                            className="w-0.5 bg-white animate-[bounce_0.5s_infinite_alternate_0.4s]"
+                            style={{ height: '80%' }}
+                          />
+                        </div>
+                        Lip-Sync Fonético
                       </div>
                     )}
                   </div>
@@ -699,7 +779,7 @@ export function PreviewCanvas({
               </>
             ) : (
               !isGenerating && (
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-900/50 space-y-4">
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-900/50 space-y-4 pointer-events-none">
                   <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
                     <Wand2 className="w-8 h-8 text-zinc-400" />
                   </div>

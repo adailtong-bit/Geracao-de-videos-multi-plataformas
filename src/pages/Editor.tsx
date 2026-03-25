@@ -201,7 +201,7 @@ export default function Editor() {
   )
   const { toast } = useToast()
 
-  // Listener para eventos customizados (Ex: botão "Voltar para Correção" no PreviewCanvas)
+  // Listener para eventos customizados
   useEffect(() => {
     const handleSetTab = (e: Event) => {
       const customEvent = e as CustomEvent<string>
@@ -449,6 +449,7 @@ export default function Editor() {
                 <PreviewCanvas
                   project={project}
                   isGenerating={aiStatus === 'generating'}
+                  update={update}
                 />
               </div>
 

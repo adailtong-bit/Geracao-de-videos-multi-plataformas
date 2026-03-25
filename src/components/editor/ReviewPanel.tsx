@@ -112,7 +112,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     })
   }
 
-  const updateAvatar = (key: keyof AvatarSettings, value: any) => {
+  const updateAvatarSettings = (key: keyof AvatarSettings, value: any) => {
     const current = project.avatar || {
       enabled: false,
       mode: 'preset',
@@ -124,9 +124,45 @@ export function ReviewPanel({ project, update, onNext }: Props) {
     update({ avatar: { ...current, [key]: value }, approvalStatus: 'revised' })
   }
 
+  const simulateProcessing = (
+    avatarId: string,
+    url: string,
+    isGen: boolean,
+  ) => {
+    setIsProcessingAvatar(true)
+    setTimeout(() => {
+      updateStoreAvatar(avatarId, { status: 'training_motion' })
+      setTimeout(() => {
+        updateStoreAvatar(avatarId, { status: 'ready' })
+        const current = project.avatar || {
+          enabled: false,
+          mode: 'preset',
+          position: 'custom',
+          positionX: 50,
+          positionY: 80,
+          scale: 1,
+        }
+        update({
+          avatar: {
+            ...current,
+            enabled: true,
+            mode: isGen ? 'generate' : 'upload',
+            imageUrl: url,
+          } as any,
+          approvalStatus: 'revised',
+        })
+        setIsProcessingAvatar(false)
+        setAvatarPrompt('')
+        toast({
+          title: 'Persona Aplicada',
+          description: 'Fundo removido e motor neural conectado com sucesso.',
+        })
+      }, 2000)
+    }, 1500)
+  }
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setIsProcessingAvatar(true)
       const file = e.target.files[0]
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -134,65 +170,22 @@ export function ReviewPanel({ project, update, onNext }: Props) {
         const newAv = addAvatar({
           name: 'Clone Rápido (Editor)',
           imageUrl: url,
-          status: 'processing',
+          status: 'processing_bg',
         })
-        setTimeout(() => {
-          updateStoreAvatar(newAv.id, { status: 'ready' })
-          const current = project.avatar || {
-            enabled: false,
-            mode: 'preset',
-            position: 'custom',
-            positionX: 50,
-            positionY: 80,
-            scale: 1,
-          }
-          update({
-            avatar: {
-              ...current,
-              enabled: true,
-              mode: 'upload',
-              imageUrl: url,
-            } as any,
-            approvalStatus: 'revised',
-          })
-          setIsProcessingAvatar(false)
-          toast({
-            title: 'Fundo Falso Aplicado',
-            description: 'O avatar foi processado e salvo na sua biblioteca.',
-          })
-        }, 1500)
+        simulateProcessing(newAv.id, url, false)
       }
       reader.readAsDataURL(file)
     }
   }
 
   const handleAvatarGenerate = () => {
-    setIsProcessingAvatar(true)
-    setTimeout(() => {
-      const url = `https://img.usecurling.com/p/400/400?q=portrait,${encodeURIComponent(avatarPrompt.slice(0, 20))}&dpr=2&seed=${Date.now()}`
-      addAvatar({
-        name: `Gerado: ${avatarPrompt.slice(0, 10)}`,
-        imageUrl: url,
-        status: 'ready',
-      })
-      const current = project.avatar || {}
-      update({
-        avatar: {
-          ...current,
-          enabled: true,
-          mode: 'generate',
-          imageUrl: url,
-        } as any,
-        approvalStatus: 'revised',
-      })
-      setIsProcessingAvatar(false)
-      setAvatarPrompt('')
-      toast({
-        title: 'Modelo 3D Gerado',
-        description:
-          'Avatar criado a partir da descrição e salvo na biblioteca.',
-      })
-    }, 2000)
+    const url = `https://img.usecurling.com/p/400/400?q=portrait,${encodeURIComponent(avatarPrompt.slice(0, 20))}&dpr=2&seed=${Date.now()}`
+    const newAv = addAvatar({
+      name: `Gerado: ${avatarPrompt.slice(0, 10)}`,
+      imageUrl: url,
+      status: 'processing_bg',
+    })
+    simulateProcessing(newAv.id, url, true)
   }
 
   const setApproval = (status: ApprovalStatus) => {
@@ -539,7 +532,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
         >
           <AccordionTrigger className="hover:no-underline py-4">
             <span className="flex items-center gap-2 font-semibold text-sm">
-              <User className="w-4 h-4 text-primary" /> Biblioteca de Avatares
+              <User className="w-4 h-4 text-primary" /> Persona e Camada
             </span>
           </AccordionTrigger>
           <AccordionContent className="pt-2 pb-4 space-y-4">
@@ -549,12 +542,12 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   Ativar Persona em Cena
                 </Label>
                 <span className="text-[10px] text-muted-foreground mt-0.5">
-                  Top layer com canal alfa e lip-sync automático
+                  Top layer com canal alfa, arraste-o no canvas
                 </span>
               </div>
               <Switch
                 checked={project.avatar?.enabled}
-                onCheckedChange={(v) => updateAvatar('enabled', v)}
+                onCheckedChange={(v) => updateAvatarSettings('enabled', v)}
               />
             </div>
 
@@ -583,7 +576,9 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           src={p.imageUrl}
                           crossOrigin="anonymous"
                           title={p.name}
-                          onClick={() => updateAvatar('imageUrl', p.imageUrl)}
+                          onClick={() =>
+                            updateAvatarSettings('imageUrl', p.imageUrl)
+                          }
                           className={cn(
                             'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
                             project.avatar?.imageUrl === p.imageUrl
@@ -611,55 +606,60 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   >
                     <div className="grid grid-cols-4 gap-2">
                       {customs.length > 0 ? (
-                        customs.map((p) => (
-                          <div
-                            key={p.id}
-                            className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
-                            style={{
-                              backgroundImage: CHECKERBOARD_BG,
-                              backgroundSize: '10px 10px',
-                            }}
-                          >
-                            <img
-                              src={p.imageUrl}
-                              crossOrigin="anonymous"
-                              title={p.name}
-                              onClick={() =>
-                                p.status === 'ready' &&
-                                updateAvatar('imageUrl', p.imageUrl)
-                              }
-                              className={cn(
-                                'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
-                                project.avatar?.imageUrl === p.imageUrl
-                                  ? 'opacity-100 scale-105'
-                                  : 'opacity-80 hover:opacity-100',
-                                p.status !== 'ready' &&
-                                  'opacity-50 grayscale cursor-not-allowed',
-                              )}
+                        customs.map((p) => {
+                          const isProcessing =
+                            p.status === 'processing_bg' ||
+                            p.status === 'training_motion'
+                          return (
+                            <div
+                              key={p.id}
+                              className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
                               style={{
-                                WebkitMaskImage: AVATAR_MASK,
-                                WebkitMaskSize: 'contain',
-                                WebkitMaskPosition: 'bottom',
-                                WebkitMaskRepeat: 'no-repeat',
+                                backgroundImage: CHECKERBOARD_BG,
+                                backgroundSize: '10px 10px',
                               }}
-                              alt={p.name}
-                            />
-                            {p.status === 'processing' && (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10">
-                                <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
-                                <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
-                                  Extraindo
-                                  <br />
-                                  Alfa
-                                </span>
-                              </div>
-                            )}
-                            {project.avatar?.imageUrl === p.imageUrl &&
-                              p.status === 'ready' && (
-                                <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
+                            >
+                              <img
+                                src={p.imageUrl}
+                                crossOrigin="anonymous"
+                                title={p.name}
+                                onClick={() =>
+                                  p.status === 'ready' &&
+                                  updateAvatarSettings('imageUrl', p.imageUrl)
+                                }
+                                className={cn(
+                                  'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
+                                  project.avatar?.imageUrl === p.imageUrl
+                                    ? 'opacity-100 scale-105'
+                                    : 'opacity-80 hover:opacity-100',
+                                  p.status !== 'ready' &&
+                                    'opacity-50 grayscale cursor-not-allowed',
+                                )}
+                                style={{
+                                  WebkitMaskImage: AVATAR_MASK,
+                                  WebkitMaskSize: 'contain',
+                                  WebkitMaskPosition: 'bottom',
+                                  WebkitMaskRepeat: 'no-repeat',
+                                }}
+                                alt={p.name}
+                              />
+                              {isProcessing && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                                  <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
+                                  <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
+                                    {p.status === 'processing_bg'
+                                      ? 'Extraindo Alfa'
+                                      : 'Rigging'}
+                                  </span>
+                                </div>
                               )}
-                          </div>
-                        ))
+                              {project.avatar?.imageUrl === p.imageUrl &&
+                                p.status === 'ready' && (
+                                  <div className="absolute inset-0 border-2 border-primary rounded-md pointer-events-none" />
+                                )}
+                            </div>
+                          )
+                        })
                       ) : (
                         <div className="col-span-4 text-center p-4 text-sm text-muted-foreground">
                           Nenhum clone encontrado.
@@ -692,7 +692,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                       </Label>
                       {isProcessingAvatar ? (
                         <div className="p-3 text-center text-xs font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                          Segmentando corpo e mapeando gestos neurais...
+                          Segmentando corpo e treinando motor neural...
                         </div>
                       ) : (
                         <Input
@@ -706,7 +706,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
 
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold">
-                        Gerar com Descrição
+                        Gerar com Descrição (Prompt)
                       </Label>
                       <div className="flex gap-2">
                         <Input
@@ -731,7 +731,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                 <div className="space-y-4 pt-5 mt-4 border-t border-border/50">
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label className="text-xs">Escala do Avatar</Label>
+                      <Label className="text-xs">Redimensionar Camada</Label>
                       <span className="text-[10px] font-mono text-muted-foreground">
                         {project.avatar?.scale?.toFixed(1) || '1.0'}x
                       </span>
@@ -741,36 +741,12 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                       min={0.5}
                       max={3.0}
                       step={0.1}
-                      onValueChange={([v]) => updateAvatar('scale', v)}
+                      onValueChange={([v]) => updateAvatarSettings('scale', v)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs">Posição Horizontal (X)</Label>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {project.avatar?.positionX ?? 50}%
-                      </span>
-                    </div>
-                    <Slider
-                      value={[project.avatar?.positionX ?? 50]}
-                      min={0}
-                      max={100}
-                      onValueChange={([v]) => updateAvatar('positionX', v)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs">Posição Vertical (Y)</Label>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {project.avatar?.positionY ?? 80}%
-                      </span>
-                    </div>
-                    <Slider
-                      value={[project.avatar?.positionY ?? 80]}
-                      min={0}
-                      max={100}
-                      onValueChange={([v]) => updateAvatar('positionY', v)}
-                    />
+                    <p className="text-[10px] text-muted-foreground pt-1">
+                      Dica: Você pode reposicionar o avatar arrastando-o
+                      diretamente no canvas ao lado.
+                    </p>
                   </div>
                 </div>
               </div>

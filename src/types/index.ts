@@ -9,7 +9,11 @@ export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
 export type MediaType = 'image-sequence' | 'context-video'
 
 export type AvatarType = 'preset' | 'custom'
-export type AvatarStatus = 'processing' | 'ready' | 'failed'
+export type AvatarStatus =
+  | 'processing_bg'
+  | 'training_motion'
+  | 'ready'
+  | 'failed'
 
 export interface AvatarModel {
   id: string
