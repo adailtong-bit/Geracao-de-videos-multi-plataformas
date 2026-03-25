@@ -386,7 +386,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   { id: 'sepia', label: 'Sépia Quente' },
                   { id: 'vintage', label: 'Vintage' },
                   { id: 'film-grain', label: 'Film Grain' },
-                  { id: 'candle-light', label: 'Candle Light' },
+                  { id: 'candle-light', label: 'Candlelight' },
                   { id: 'noir', label: 'Noir' },
                 ].map((f) => (
                   <Button

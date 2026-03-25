@@ -4,13 +4,6 @@ import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@/components/ui/tooltip'
 import {
   SidebarProvider,
   Sidebar,
@@ -378,52 +371,21 @@ export default function Editor() {
                 </ToggleGroup>
               </div>
 
-              <div className="hidden lg:flex items-center border-r pr-4 mr-4 gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
-                      <Label
-                        className="text-xs font-semibold cursor-pointer text-muted-foreground"
-                        htmlFor="collab-mode"
-                      >
-                        Colaboração
-                      </Label>
-                      <Switch
-                        id="collab-mode"
-                        checked={project.collaborationMode || false}
-                        onCheckedChange={(v) =>
-                          update({ collaborationMode: v })
-                        }
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Ativar modo colaborativo em tempo real
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              {project.collaborationMode && (
-                <div className="hidden lg:flex items-center -space-x-2 mr-2 animate-in fade-in slide-in-from-right-4">
-                  {teamMembers.slice(0, 3).map((m) => (
-                    <Avatar
-                      key={m.id}
-                      className="w-8 h-8 border-2 border-card shadow-sm ring-2 ring-emerald-500 ring-offset-1"
-                      title={`${m.email} (Online)`}
-                    >
-                      <AvatarImage src={m.avatar} crossOrigin="anonymous" />
-                    </Avatar>
-                  ))}
-                  <div className="pl-4">
-                    <TeamDialog project={project} update={update} />
-                  </div>
-                </div>
-              )}
-              {!project.collaborationMode && (
-                <div className="hidden lg:flex mr-2">
+              {/* Presence Indicators (Real-time Collaboration) */}
+              <div className="hidden lg:flex items-center -space-x-2 mr-4 animate-in fade-in slide-in-from-right-4">
+                {teamMembers.slice(0, 3).map((m) => (
+                  <Avatar
+                    key={m.id}
+                    className="w-8 h-8 border-2 border-card shadow-sm ring-2 ring-emerald-500 ring-offset-1"
+                    title={`${m.email} (Online)`}
+                  >
+                    <AvatarImage src={m.avatar} crossOrigin="anonymous" />
+                  </Avatar>
+                ))}
+                <div className="pl-4">
                   <TeamDialog project={project} update={update} />
                 </div>
-              )}
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -461,7 +423,7 @@ export default function Editor() {
               >
                 <Save className="w-4 h-4 mr-2" /> Salvar
               </Button>
-              <PublishDialog project={project} />
+              <PublishDialog project={project} update={update} />
             </div>
           </header>
 

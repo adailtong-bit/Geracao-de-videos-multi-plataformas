@@ -73,7 +73,7 @@ export function AudioPanel({
                     className="text-sm font-semibold cursor-pointer"
                     htmlFor="adaptive-audio"
                   >
-                    Nível Adaptativo (Ducking)
+                    Adaptive Leveling
                   </Label>
                   <p className="text-[10px] text-muted-foreground leading-tight">
                     Abaixa automaticamente o volume da música de fundo durante a
