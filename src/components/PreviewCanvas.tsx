@@ -19,6 +19,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 
+function formatTime(time: number) {
+  if (isNaN(time)) return '0:00'
+  const m = Math.floor(time / 60)
+  const s = Math.floor(time % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 function PlaybackController({ project }: { project: Project }) {
   const { currentTime, activeClipId, isPlaying } = usePlayerState()
   const { pause, seek } = usePlayerControls()
@@ -46,7 +53,7 @@ export function PreviewCanvas({
   update?: (updates: Partial<Project>) => void
   onReturnToCorrection?: () => void
 }) {
-  const { setVideoElement, play, pause } = usePlayerControls()
+  const { setVideoElement, play, pause, seek } = usePlayerControls()
   const { isPlaying, currentTime, volume, videoError, isVideoLoaded } =
     usePlayerState()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -64,8 +71,9 @@ export function PreviewCanvas({
     !!project.videoUrl || (project.bRolls && project.bRolls.length > 0)
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
   const isPureEdition = project.cuts?.some((c) => c.sourceStart !== undefined)
+  const hasSourceVideo = !!project.videoUrl
+  const canPlay = hasSourceVideo ? !videoError && isVideoLoaded : true
 
-  // Always show subtitles so dynamic narration preview works real-time as per requirements
   const shouldShowSubtitles = true
 
   useEffect(() => {
@@ -114,7 +122,8 @@ export function PreviewCanvas({
   }
 
   const togglePlay = () => {
-    if (!hasContent || videoError || !isVideoLoaded || isDraggingAvatar) return
+    if (!hasContent || videoError || isDraggingAvatar) return
+    if (!canPlay) return
     if (isPlaying) pause()
     else play()
   }
@@ -132,20 +141,20 @@ export function PreviewCanvas({
       const delta = (time - lastTime) / 1000
       lastTime = time
 
-      if (isPlaying && !videoError && isVideoLoaded) {
+      if (isPlaying && canPlay) {
         const nextTime = currentTimeRef.current + delta
         if (nextTime >= (project.videoDuration || 0)) {
           setPlayerState({
             currentTime: project.videoDuration || 0,
             isPlaying: false,
           })
-          if (videoRef.current && !videoRef.current.paused) {
+          if (hasSourceVideo && videoRef.current && !videoRef.current.paused) {
             videoRef.current.pause()
           }
         } else {
           setPlayerState({ currentTime: nextTime })
 
-          if (videoRef.current) {
+          if (hasSourceVideo && videoRef.current) {
             const hasCuts = project.cuts && project.cuts.length > 0
             if (hasCuts) {
               const activeCut = project.cuts!.find(
@@ -179,14 +188,14 @@ export function PreviewCanvas({
       }
     }
 
-    if (isPlaying && !videoError && isVideoLoaded) {
+    if (isPlaying && canPlay) {
       lastTime = performance.now()
       frameId = requestAnimationFrame(tick)
-      if (videoRef.current && videoRef.current.paused) {
+      if (hasSourceVideo && videoRef.current && videoRef.current.paused) {
         videoRef.current.play().catch(() => {})
       }
     } else {
-      if (videoRef.current && !videoRef.current.paused) {
+      if (hasSourceVideo && videoRef.current && !videoRef.current.paused) {
         videoRef.current.pause()
       }
     }
@@ -197,10 +206,18 @@ export function PreviewCanvas({
     project.cuts,
     videoError,
     isVideoLoaded,
+    hasSourceVideo,
+    canPlay,
   ])
 
   useEffect(() => {
-    if (!isPlaying && videoRef.current && !videoError && isVideoLoaded) {
+    if (
+      !isPlaying &&
+      hasSourceVideo &&
+      videoRef.current &&
+      !videoError &&
+      isVideoLoaded
+    ) {
       const hasCuts = project.cuts && project.cuts.length > 0
       if (hasCuts) {
         const activeCut = project.cuts!.find(
@@ -214,10 +231,23 @@ export function PreviewCanvas({
         videoRef.current.currentTime = currentTime
       }
     }
-  }, [currentTime, isPlaying, project.cuts, videoError, isVideoLoaded])
+  }, [
+    currentTime,
+    isPlaying,
+    project.cuts,
+    videoError,
+    isVideoLoaded,
+    hasSourceVideo,
+  ])
 
   useEffect(() => {
-    if (rawVideoRef.current && isSplitView && !videoError && isVideoLoaded) {
+    if (
+      rawVideoRef.current &&
+      isSplitView &&
+      !videoError &&
+      isVideoLoaded &&
+      hasSourceVideo
+    ) {
       const hasCuts = project.cuts && project.cuts.length > 0
       if (hasCuts) {
         const activeCut = project.cuts!.find(
@@ -235,7 +265,14 @@ export function PreviewCanvas({
         }
       }
     }
-  }, [currentTime, project.cuts, videoError, isVideoLoaded, isSplitView])
+  }, [
+    currentTime,
+    project.cuts,
+    videoError,
+    isVideoLoaded,
+    isSplitView,
+    hasSourceVideo,
+  ])
 
   useEffect(() => {
     if (rawVideoRef.current) {
@@ -691,7 +728,7 @@ export function PreviewCanvas({
             onPointerUp={handleCanvasPointerUp}
             onPointerLeave={handleCanvasPointerUp}
             className={cn(
-              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 w-full select-none',
+              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 w-full select-none group',
             )}
             style={getRatioStyle()}
           >
@@ -746,7 +783,7 @@ export function PreviewCanvas({
                   />
                 )}
 
-                {videoError && (
+                {hasSourceVideo && videoError && (
                   <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-900/95 text-white p-6 text-center animate-in fade-in pointer-events-none">
                     <ShieldAlert className="w-12 h-12 text-red-500 mb-4" />
                     <h3 className="font-bold text-xl mb-2">
@@ -759,7 +796,7 @@ export function PreviewCanvas({
                   </div>
                 )}
 
-                {project.videoUrl &&
+                {hasSourceVideo &&
                   !isVideoLoaded &&
                   !videoError &&
                   !isGenerating && (
@@ -784,10 +821,10 @@ export function PreviewCanvas({
                   />
                 )}
 
-                {project.videoUrl && !videoError && (
+                {hasSourceVideo && !videoError && (
                   <video
                     ref={videoRef}
-                    src={project.videoUrl}
+                    src={project.videoUrl!}
                     className={cn(
                       'w-full h-full object-cover opacity-90 relative z-0 transition-opacity duration-300 pointer-events-none',
                       !isVideoLoaded && 'opacity-0',
@@ -943,15 +980,16 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6 px-4"
+                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-[15%] px-4 sm:px-8"
                       >
                         <div
-                          className="px-3 py-1.5 rounded-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10 transition-colors whitespace-pre-wrap"
+                          className="px-5 py-2.5 rounded-lg font-bold shadow-2xl text-center max-w-[90%] leading-relaxed tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
                           style={{
                             color: subColor,
                             backgroundColor: subBg,
                             fontSize: `${subSize}px`,
-                            textShadow: '0px 1px 2px rgba(0,0,0,0.8)',
+                            textShadow: '0px 2px 4px rgba(0,0,0,0.9)',
+                            border: '1px solid rgba(255,255,255,0.1)',
                           }}
                         >
                           {activeSub.text}
@@ -960,10 +998,57 @@ export function PreviewCanvas({
                     )
                   })}
 
-                {!isPlaying && !videoError && isVideoLoaded && (
-                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 transition-all pointer-events-none">
-                    <div className="w-20 h-20 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
+                {!isPlaying && canPlay && !isGenerating && (
+                  <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 transition-all pointer-events-none group-hover:bg-black/40">
+                    <div className="w-20 h-20 bg-primary/90 text-primary-foreground rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md transition-transform scale-100 group-hover:scale-110">
                       <Play className="w-10 h-10 ml-2 fill-current" />
+                    </div>
+                  </div>
+                )}
+
+                {hasContent && (
+                  <div className="absolute bottom-0 left-0 right-0 p-4 pt-16 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 flex flex-col justify-end pointer-events-none">
+                    <div className="pointer-events-auto flex items-center gap-4 px-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          togglePlay()
+                        }}
+                        className="text-white hover:bg-white/20 h-10 w-10 rounded-full shrink-0 transition-transform active:scale-95"
+                        disabled={!canPlay}
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-5 h-5 fill-current" />
+                        ) : (
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        )}
+                      </Button>
+                      <div
+                        className="flex-1 relative h-2.5 bg-white/20 rounded-full cursor-pointer overflow-hidden backdrop-blur-sm transition-all hover:h-3.5 group/slider"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const x = e.clientX - rect.left
+                          const targetTime =
+                            (x / rect.width) * (project.videoDuration || 0)
+                          seek(targetTime)
+                        }}
+                      >
+                        <div
+                          className="absolute top-0 left-0 bottom-0 bg-primary pointer-events-none transition-all duration-75 relative"
+                          style={{
+                            width: `${(currentTime / (project.videoDuration || 1)) * 100}%`,
+                          }}
+                        >
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-sm opacity-0 group-hover/slider:opacity-100 transition-opacity translate-x-1.5" />
+                        </div>
+                      </div>
+                      <span className="text-xs text-white font-mono font-medium shadow-sm shrink-0 bg-black/40 px-2 py-1 rounded backdrop-blur-md">
+                        {formatTime(currentTime)} /{' '}
+                        {formatTime(project.videoDuration || 0)}
+                      </span>
                     </div>
                   </div>
                 )}

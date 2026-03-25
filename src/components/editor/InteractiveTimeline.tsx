@@ -100,8 +100,12 @@ export function InteractiveTimeline({
     0
   const isExceedingMax = format?.max !== undefined && totalDuration > format.max
   const isBelowMin = format?.min !== undefined && totalDuration < format.min
+
+  const hasSourceVideo = !!project.videoUrl
   const isCompliant =
-    !isExceedingMax && !isBelowMin && !videoError && isVideoLoaded
+    !isExceedingMax &&
+    !isBelowMin &&
+    (!hasSourceVideo || (!videoError && isVideoLoaded))
 
   const handleSplit = () => {
     const cutIndex = project.cuts?.findIndex(
@@ -200,7 +204,9 @@ export function InteractiveTimeline({
           size="icon"
           className="w-8 h-8 rounded-full shadow-sm transition-transform active:scale-95 shrink-0"
           onClick={isPlaying ? pause : play}
-          disabled={isGenerating || !isVideoLoaded || videoError}
+          disabled={
+            isGenerating || (hasSourceVideo && (!isVideoLoaded || videoError))
+          }
         >
           {isPlaying ? (
             <Pause className="w-4 h-4 fill-current" />
@@ -216,7 +222,7 @@ export function InteractiveTimeline({
           <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
             Status:
           </span>
-          {videoError ? (
+          {videoError && hasSourceVideo ? (
             <Badge
               variant="outline"
               className="bg-red-500/10 text-red-600 border-red-500/20 shadow-none gap-1"
@@ -224,7 +230,7 @@ export function InteractiveTimeline({
               <AlertTriangle className="w-3 h-3" />{' '}
               <span className="hidden sm:inline">Erro de Mídia</span>
             </Badge>
-          ) : !isVideoLoaded || isGenerating ? (
+          ) : (hasSourceVideo && !isVideoLoaded) || isGenerating ? (
             <Badge
               variant="outline"
               className="bg-blue-500/10 text-blue-600 border-blue-500/20 shadow-none gap-1 animate-pulse"
