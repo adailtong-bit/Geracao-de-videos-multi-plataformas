@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { cn, AVATAR_MASK, CHECKERBOARD_BG } from '@/lib/utils'
+import { cn, CHECKERBOARD_BG } from '@/lib/utils'
 import {
   CheckCircle2,
   Eye,
@@ -542,7 +542,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   Ativar Persona em Cena
                 </Label>
                 <span className="text-[10px] text-muted-foreground mt-0.5">
-                  Top layer com canal alfa, arraste-o no canvas
+                  Top layer com canal alfa livre de frames
                 </span>
               </div>
               <Switch
@@ -566,7 +566,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     {presets.map((p) => (
                       <div
                         key={p.id}
-                        className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden"
+                        className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
                         style={{
                           backgroundImage: CHECKERBOARD_BG,
                           backgroundSize: '10px 10px',
@@ -580,17 +580,11 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                             updateAvatarSettings('imageUrl', p.imageUrl)
                           }
                           className={cn(
-                            'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
+                            'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
                             project.avatar?.imageUrl === p.imageUrl
                               ? 'opacity-100 scale-105'
                               : 'opacity-80 hover:opacity-100',
                           )}
-                          style={{
-                            WebkitMaskImage: AVATAR_MASK,
-                            WebkitMaskSize: 'contain',
-                            WebkitMaskPosition: 'bottom',
-                            WebkitMaskRepeat: 'no-repeat',
-                          }}
                           alt={p.name}
                         />
                         {project.avatar?.imageUrl === p.imageUrl && (
@@ -613,7 +607,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           return (
                             <div
                               key={p.id}
-                              className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden"
+                              className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden p-2"
                               style={{
                                 backgroundImage: CHECKERBOARD_BG,
                                 backgroundSize: '10px 10px',
@@ -628,19 +622,13 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                                   updateAvatarSettings('imageUrl', p.imageUrl)
                                 }
                                 className={cn(
-                                  'w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform',
+                                  'w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform drop-shadow-md',
                                   project.avatar?.imageUrl === p.imageUrl
                                     ? 'opacity-100 scale-105'
                                     : 'opacity-80 hover:opacity-100',
                                   p.status !== 'ready' &&
                                     'opacity-50 grayscale cursor-not-allowed',
                                 )}
-                                style={{
-                                  WebkitMaskImage: AVATAR_MASK,
-                                  WebkitMaskSize: 'contain',
-                                  WebkitMaskPosition: 'bottom',
-                                  WebkitMaskRepeat: 'no-repeat',
-                                }}
                                 alt={p.name}
                               />
                               {isProcessing && (
@@ -648,7 +636,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                                   <Loader2 className="w-4 h-4 animate-spin text-primary mb-1" />
                                   <span className="text-[8px] font-bold text-white uppercase text-center leading-tight">
                                     {p.status === 'processing_bg'
-                                      ? 'Extraindo Alfa'
+                                      ? 'Alpha'
                                       : 'Rigging'}
                                   </span>
                                 </div>
@@ -688,11 +676,14 @@ export function ReviewPanel({ project, update, onNext }: Props) {
 
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold">
-                        Transformar Foto em Fundo Falso
+                        Fazer Upload de Foto
                       </Label>
+                      <p className="text-[10px] text-muted-foreground">
+                        Extração Alpha Perfect e Inpainting anatômico.
+                      </p>
                       {isProcessingAvatar ? (
-                        <div className="p-3 text-center text-xs font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
-                          Segmentando corpo e treinando motor neural...
+                        <div className="p-3 text-center text-[10px] font-medium border rounded-md border-dashed border-primary bg-primary/5 text-primary animate-pulse">
+                          Segmentação Alpha e Inpainting Anatômico...
                         </div>
                       ) : (
                         <Input
@@ -710,7 +701,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                       </Label>
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Ex: Homem, 30 anos, terno..."
+                          placeholder="Ex: Personagem 3D cartoon..."
                           className="text-xs h-9 bg-background"
                           value={avatarPrompt}
                           onChange={(e) => setAvatarPrompt(e.target.value)}

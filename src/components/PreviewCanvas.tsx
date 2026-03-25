@@ -1,5 +1,5 @@
 import { Project } from '@/types'
-import { cn, AVATAR_MASK } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import {
   Wand2,
   Play,
@@ -458,15 +458,17 @@ export function PreviewCanvas({
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
         @keyframes neural-idle {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0); }
-          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0.5deg) translateY(-2px); }
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) perspective(500px) rotateY(0deg) rotateX(0deg); }
+          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0.2deg) translateY(-2px) perspective(500px) rotateY(2deg) rotateX(1deg); }
         }
         @keyframes neural-talking {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) skewX(0deg); }
-          20% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(1deg) translateY(-3px) skewX(1deg); }
-          40% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-0.5deg) translateY(-1px) skewX(-0.5deg); }
-          60% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.015)) rotate(1.5deg) translateY(-4px) skewX(1.5deg); }
-          80% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 0.995)) rotate(-1deg) translateY(0px) skewX(-1deg); }
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) skewX(0deg) perspective(500px) rotateY(0deg) rotateX(0deg); }
+          15% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(0.5deg) translateY(-3px) skewX(0.5deg) perspective(500px) rotateY(3deg) rotateX(1.5deg); }
+          30% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(-0.5deg) translateY(-1px) skewX(-0.5deg) perspective(500px) rotateY(-1deg) rotateX(-0.5deg); }
+          45% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.015)) rotate(1.5deg) translateY(-4px) skewX(1deg) perspective(500px) rotateY(4deg) rotateX(2deg); }
+          60% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 0.995)) rotate(-0.5deg) translateY(1px) skewX(-0.5deg) perspective(500px) rotateY(-2deg) rotateX(-1deg); }
+          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.02)) rotate(1deg) translateY(-5px) skewX(1.5deg) perspective(500px) rotateY(5deg) rotateX(2.5deg); }
+          90% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-1deg) translateY(0px) skewX(-1deg) perspective(500px) rotateY(-1deg) rotateX(0.5deg); }
         }
         .animate-neural-idle { animation: neural-idle 5s ease-in-out infinite; transform-origin: 50% 100%; }
         .animate-neural-talking { animation: neural-talking 3s ease-in-out infinite; transform-origin: 50% 100%; }
@@ -688,7 +690,7 @@ export function PreviewCanvas({
                       setIsDraggingAvatar(true)
                     }}
                     className={cn(
-                      'absolute z-20 drop-shadow-2xl transition-colors',
+                      'absolute z-20 transition-colors',
                       isTalking
                         ? 'animate-neural-talking'
                         : 'animate-neural-idle',
@@ -702,8 +704,8 @@ export function PreviewCanvas({
                         top: `${localAvatarPos.y}%`,
                         '--scale': avatarScale,
                         transform: `translate(-50%, -50%) scale(${avatarScale})`,
-                        width: '280px',
-                        height: '380px',
+                        width: '320px',
+                        height: '420px',
                         touchAction: 'none',
                         transition: isDraggingAvatar
                           ? 'none'
@@ -715,17 +717,7 @@ export function PreviewCanvas({
                       src={project.avatar.imageUrl}
                       alt="Avatar"
                       crossOrigin="anonymous"
-                      className="w-full h-full object-cover pointer-events-none"
-                      style={{
-                        WebkitMaskImage: AVATAR_MASK,
-                        WebkitMaskSize: 'contain',
-                        WebkitMaskPosition: 'bottom',
-                        WebkitMaskRepeat: 'no-repeat',
-                        maskImage: AVATAR_MASK,
-                        maskSize: 'contain',
-                        maskPosition: 'bottom',
-                        maskRepeat: 'no-repeat',
-                      }}
+                      className="w-full h-full object-contain pointer-events-none drop-shadow-2xl"
                     />
                     {isTalking && (
                       <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 text-white text-[9px] px-2.5 py-1 rounded-full backdrop-blur-md font-bold uppercase whitespace-nowrap shadow-xl border border-indigo-400/50 flex items-center gap-1.5 pointer-events-none transition-all">
@@ -743,7 +735,7 @@ export function PreviewCanvas({
                             style={{ height: '80%' }}
                           />
                         </div>
-                        Lip-Sync & Gestos
+                        Lip-Sync Fonético & Gestos
                       </div>
                     )}
                   </div>
@@ -758,7 +750,7 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6"
+                        className="absolute left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6"
                       >
                         <div
                           className="px-3 py-1.5 rounded-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10 transition-colors"
@@ -776,7 +768,7 @@ export function PreviewCanvas({
                   })}
 
                 {!isPlaying && !videoError && isVideoLoaded && (
-                  <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 transition-all pointer-events-none">
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 transition-all pointer-events-none">
                     <div className="w-20 h-20 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
                       <Play className="w-10 h-10 ml-2 fill-current" />
                     </div>
