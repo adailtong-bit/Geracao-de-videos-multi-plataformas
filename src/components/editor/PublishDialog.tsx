@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Project, Platform } from '@/types'
+import { Project, Platform, ScheduledPost } from '@/types'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +26,7 @@ import {
   Send,
   CheckCircle2,
   Linkedin,
+  CalendarClock,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -37,6 +41,11 @@ export function PublishDialog({
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success'>('idle')
   const [progress, setProgress] = useState(0)
   const [open, setOpen] = useState(false)
+
+  const [isScheduling, setIsScheduling] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
+
   const { toast } = useToast()
 
   const handlePlatformToggle = (p: Platform) => {
@@ -49,9 +58,52 @@ export function PublishDialog({
 
   const handlePublish = () => {
     if (!project.targetPlatforms || project.targetPlatforms.length === 0) {
-      toast({ title: 'Select at least one platform', variant: 'destructive' })
+      toast({
+        title: 'Selecione pelo menos uma plataforma',
+        variant: 'destructive',
+      })
       return
     }
+
+    if (isScheduling) {
+      if (!scheduleDate || !scheduleTime) {
+        toast({ title: 'Preencha a data e horário', variant: 'destructive' })
+        return
+      }
+
+      setStatus('uploading')
+      setProgress(0)
+
+      let p = 0
+      const int = setInterval(() => {
+        p += 20
+        setProgress(p)
+        if (p >= 100) {
+          clearInterval(int)
+          setStatus('success')
+
+          const dt = new Date(`${scheduleDate}T${scheduleTime}`)
+          const newPosts: ScheduledPost[] = project.targetPlatforms.map(
+            (plat) => ({
+              id: crypto.randomUUID(),
+              platform: plat,
+              date: dt.toISOString(),
+              status: 'scheduled',
+            }),
+          )
+          update({
+            scheduledPosts: [...(project.scheduledPosts || []), ...newPosts],
+          })
+
+          toast({
+            title: 'Agendamento Confirmado',
+            description: `Seu vídeo foi agendado para ${scheduleDate} às ${scheduleTime}.`,
+          })
+        }
+      }, 500)
+      return
+    }
+
     setStatus('uploading')
     setProgress(0)
     let p = 0
@@ -62,9 +114,9 @@ export function PublishDialog({
         clearInterval(int)
         setStatus('success')
         toast({
-          title: 'Publication Successful',
+          title: 'Publicação Concluída',
           description:
-            'Video distributed to selected platforms simultaneously.',
+            'Vídeo distribuído para as redes selecionadas com sucesso.',
         })
       }
     }, 500)
@@ -73,7 +125,12 @@ export function PublishDialog({
   const reset = (isOpen: boolean) => {
     setOpen(isOpen)
     if (!isOpen) {
-      setTimeout(() => setStatus('idle'), 300)
+      setTimeout(() => {
+        setStatus('idle')
+        setIsScheduling(false)
+        setScheduleDate('')
+        setScheduleTime('')
+      }, 300)
     }
   }
 
@@ -87,7 +144,7 @@ export function PublishDialog({
       )}
       disabled={!isApproved}
     >
-      <Send className="w-4 h-4 mr-2" /> Publish
+      <Send className="w-4 h-4 mr-2" /> Publicar
     </Button>
   )
 
@@ -132,8 +189,8 @@ export function PublishDialog({
             className="max-w-[220px] text-center p-3 text-sm"
           >
             <p>
-              Approval is required. The video must be marked as "Approved" in
-              the Review tab before publishing.
+              Aprovação Necessária. O projeto deve estar com o status "Aprovado"
+              na aba de Revisão antes de poder publicar ou agendar.
             </p>
           </TooltipContent>
         </Tooltip>
@@ -144,11 +201,11 @@ export function PublishDialog({
         <div className="p-6 bg-card border-b">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <Upload className="w-5 h-5 text-indigo-600" /> Multi-Platform
-              Publishing
+              <Upload className="w-5 h-5 text-indigo-600" /> Publicação
+              Multiplataforma
             </DialogTitle>
             <DialogDescription>
-              Select the platforms to distribute your content simultaneously.
+              Selecione as redes sociais para enviar ou agendar o seu conteúdo.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -160,16 +217,15 @@ export function PublishDialog({
                 <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h3 className="font-bold text-2xl text-foreground">
-                  Upload Complete!
-                </h3>
+                <h3 className="font-bold text-2xl text-foreground">Sucesso!</h3>
                 <p className="text-muted-foreground text-sm mt-2 max-w-[280px]">
-                  Your video has been sent to all selected platforms and will be
-                  available shortly.
+                  {isScheduling
+                    ? `Seu conteúdo foi agendado para as plataformas selecionadas.`
+                    : `Seu vídeo foi processado e já está disponível nas redes.`}
                 </p>
               </div>
               <Button onClick={() => reset(false)} className="mt-4 w-32">
-                Close
+                Fechar
               </Button>
             </div>
           ) : status === 'uploading' ? (
@@ -181,11 +237,13 @@ export function PublishDialog({
               </div>
               <div className="w-full max-w-xs space-y-3">
                 <h3 className="font-bold text-lg text-foreground">
-                  Distributing to Networks...
+                  {isScheduling
+                    ? 'Processando Agendamento...'
+                    : 'Distribuindo Redes...'}
                 </h3>
                 <Progress value={progress} className="h-2 w-full" />
                 <p className="text-sm font-medium text-muted-foreground">
-                  {progress}% completed
+                  {progress}% completo
                 </p>
               </div>
             </div>
@@ -219,12 +277,56 @@ export function PublishDialog({
                 })}
               </div>
 
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label
+                    className="text-sm font-semibold flex items-center gap-2 cursor-pointer"
+                    htmlFor="toggle-schedule"
+                  >
+                    <CalendarClock className="w-4 h-4 text-primary" /> Agendar
+                    Publicação
+                  </Label>
+                  <Switch
+                    id="toggle-schedule"
+                    checked={isScheduling}
+                    onCheckedChange={setIsScheduling}
+                  />
+                </div>
+
+                {isScheduling && (
+                  <div className="flex gap-4 animate-in fade-in slide-in-from-top-2 bg-background p-3 rounded-lg border">
+                    <div className="flex-1 space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        Data
+                      </Label>
+                      <Input
+                        type="date"
+                        value={scheduleDate}
+                        onChange={(e) => setScheduleDate(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">
+                        Hora
+                      </Label>
+                      <Input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-2">
                 <Button
                   className="w-full h-12 text-base font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-transform hover:-translate-y-0.5"
                   onClick={handlePublish}
                 >
-                  Confirm Publication
+                  {isScheduling ? 'Confirmar Agendamento' : 'Publicar Agora'}
                 </Button>
               </div>
             </div>

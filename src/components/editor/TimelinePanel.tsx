@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
   Clock,
   Film,
   Eye,
@@ -113,8 +120,42 @@ function ManualTrimEditor({
   )
 }
 
+const ASSET_CATEGORIES: Record<string, string[]> = {
+  Sombrio: [
+    'dark,spooky,night',
+    'creepy,forest',
+    'abandoned,house',
+    'fog,dark',
+    'cemetery,night',
+    'shadow,street',
+  ],
+  Floresta: [
+    'forest,nature,trees',
+    'jungle,green',
+    'woods,sunlight',
+    'pine,forest',
+    'autumn,woods',
+    'river,forest',
+  ],
+  Urbano: [
+    'city,street,neon',
+    'cyberpunk,city',
+    'urban,alley',
+    'skyscraper,night',
+    'traffic,city',
+    'subway,station',
+  ],
+}
+
 export function TimelinePanel({ project, onNext, update }: Props) {
   const [editingCutId, setEditingCutId] = useState<string | null>(null)
+
+  // Asset Library State
+  const [assetLibOpenFor, setAssetLibOpenFor] = useState<{
+    start: number
+    end: number
+  } | null>(null)
+  const [assetCategory, setAssetCategory] = useState('Sombrio')
 
   const bRolls = project.bRolls || []
   const subtitles = project.aiClips?.[0]?.subtitles || []
@@ -131,7 +172,6 @@ export function TimelinePanel({ project, onNext, update }: Props) {
   const isExceedingMax = format?.max !== undefined && totalDuration > format.max
   const isBelowMin = format?.min !== undefined && totalDuration < format.min
 
-  // Pure Editing Mode: Map cuts directly to UI if source is video, ignoring B-rolls
   const segments = isVideoSource
     ? project.cuts!.map((c) => {
         const sub =
@@ -161,19 +201,29 @@ export function TimelinePanel({ project, onNext, update }: Props) {
         }
       })
 
-  if (segments.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-48 text-muted-foreground p-4 text-center">
-        <ImageIcon className="w-10 h-10 mb-3 opacity-20" />
-        <p className="text-sm font-semibold text-foreground">
-          Nenhuma sequência visual gerada
-        </p>
-        <p className="text-xs mt-1 max-w-[200px] leading-relaxed">
-          Crie ou importe sua história na aba anterior para ver a correlação
-          visual limpa.
-        </p>
-      </div>
+  const handleImageSelect = (url: string) => {
+    if (!assetLibOpenFor || !update || !project.bRolls) return
+    const newBRolls = [...project.bRolls]
+    const existingIndex = newBRolls.findIndex(
+      (br) =>
+        br.start <= assetLibOpenFor.start + 0.1 &&
+        br.end >= assetLibOpenFor.end - 0.1,
     )
+
+    if (existingIndex >= 0) {
+      newBRolls[existingIndex] = { ...newBRolls[existingIndex], url }
+    } else {
+      newBRolls.push({
+        id: crypto.randomUUID(),
+        start: assetLibOpenFor.start,
+        end: assetLibOpenFor.end,
+        url,
+        transitionStyle: 'fade',
+      })
+    }
+
+    update({ bRolls: newBRolls })
+    setAssetLibOpenFor(null)
   }
 
   const formatTime = (time: number) => {
@@ -195,6 +245,21 @@ export function TimelinePanel({ project, onNext, update }: Props) {
     })
   }
 
+  if (segments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-48 text-muted-foreground p-4 text-center">
+        <ImageIcon className="w-10 h-10 mb-3 opacity-20" />
+        <p className="text-sm font-semibold text-foreground">
+          Nenhuma sequência visual gerada
+        </p>
+        <p className="text-xs mt-1 max-w-[200px] leading-relaxed">
+          Crie ou importe sua história na aba anterior para ver a correlação
+          visual limpa.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-3">
@@ -207,7 +272,6 @@ export function TimelinePanel({ project, onNext, update }: Props) {
           {isVideoSource ? 'Cortes Multicâmera' : 'Sequência Visual'}
         </h3>
 
-        {/* Compliance Notifications */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-green-600 bg-green-500/10 p-2 rounded-md border border-green-500/20">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -268,46 +332,61 @@ export function TimelinePanel({ project, onNext, update }: Props) {
                   {formatTime(seg.start)}
                 </div>
               </div>
-              <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                    {seg.isCut ? (
-                      <Scissors className="w-3 h-3" />
-                    ) : (
-                      <Film className="w-3 h-3" />
-                    )}
-                    {seg.isCut
-                      ? `Corte Inteligente ${idx + 1}`
-                      : `Cena Visual ${idx + 1}`}
-                  </p>
+              <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      {seg.isCut ? (
+                        <Scissors className="w-3 h-3" />
+                      ) : (
+                        <Film className="w-3 h-3" />
+                      )}
+                      {seg.isCut
+                        ? `Corte Inteligente ${idx + 1}`
+                        : `Cena Visual ${idx + 1}`}
+                    </p>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
-                      {(seg.end - seg.start).toFixed(2)}s
-                    </span>
-                    {seg.isCut && update && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-6 w-6 rounded-md ${editingCutId === seg.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() =>
-                          setEditingCutId(
-                            editingCutId === seg.id ? null : seg.id,
-                          )
-                        }
-                      >
-                        <Settings2 className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
+                        {(seg.end - seg.start).toFixed(2)}s
+                      </span>
+                      {seg.isCut && update && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-6 w-6 rounded-md ${editingCutId === seg.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-muted-foreground hover:text-foreground'}`}
+                          onClick={() =>
+                            setEditingCutId(
+                              editingCutId === seg.id ? null : seg.id,
+                            )
+                          }
+                        >
+                          <Settings2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2 line-clamp-2">
+                    "{seg.text}"
+                  </p>
                 </div>
-                <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2 line-clamp-3">
-                  Áudio capturado: "{seg.text}"
-                </p>
+
+                {!seg.isCut && update && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs w-max mt-2 text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      setAssetLibOpenFor({ start: seg.start, end: seg.end })
+                    }
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Biblioteca de
+                    Assets
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Manual Duration Override Panel */}
             {editingCutId === seg.id && seg.isCut && seg.originalCut && (
               <div className="px-3 pb-3 pt-1 bg-muted/10">
                 <ManualTrimEditor
@@ -319,6 +398,65 @@ export function TimelinePanel({ project, onNext, update }: Props) {
           </div>
         ))}
       </div>
+
+      <Dialog
+        open={!!assetLibOpenFor}
+        onOpenChange={(o) => !o && setAssetLibOpenFor(null)}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-indigo-500" />
+              Biblioteca de Assets de Imagem
+            </DialogTitle>
+          </DialogHeader>
+          <div className="pt-4">
+            <Tabs value={assetCategory} onValueChange={setAssetCategory}>
+              <TabsList className="grid w-full grid-cols-3">
+                {Object.keys(ASSET_CATEGORIES).map((cat) => (
+                  <TabsTrigger value={cat} key={cat} className="font-semibold">
+                    {cat}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2">
+                {ASSET_CATEGORIES[assetCategory].map((query, index) => (
+                  <div
+                    key={index}
+                    className="relative aspect-[9/16] group rounded-xl overflow-hidden shadow-sm border"
+                  >
+                    <img
+                      src={`https://img.usecurling.com/p/400/600?q=${query}&seed=${query.length + index}`}
+                      onClick={() =>
+                        handleImageSelect(
+                          `https://img.usecurling.com/p/800/1200?q=${query}&seed=${query.length + index}`,
+                        )
+                      }
+                      className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
+                      alt={query}
+                      crossOrigin="anonymous"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="pointer-events-auto h-8 text-xs font-bold"
+                        onClick={() =>
+                          handleImageSelect(
+                            `https://img.usecurling.com/p/800/1200?q=${query}&seed=${query.length + index}`,
+                          )
+                        }
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="pt-4 border-t">
         <Button

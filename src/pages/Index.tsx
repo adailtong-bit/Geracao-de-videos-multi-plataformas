@@ -35,6 +35,27 @@ import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 import { isValidVideoUrl } from '@/lib/utils'
 
+const SCRIPT_TEMPLATES = [
+  {
+    id: 'suspense',
+    name: 'História de Suspense',
+    prompt:
+      '[Introdução]\nA noite estava escura e a tempestade lá fora abafava qualquer som...\n\n[Gancho]\nAté que um estrondo no andar de baixo quebrou o silêncio.\n\n[Clímax]\nQuando desci as escadas, a porta da rua estava escancarada, mas não havia ninguém lá fora.\n\n[Conclusão]\nNunca mais dormi naquela casa novamente.',
+  },
+  {
+    id: 'misterio',
+    name: 'Relato de Mistério',
+    prompt:
+      '[Introdução]\nEncontrei um diário antigo escondido no fundo do porão da minha avó...\n\n[Gancho]\nCuriosamente, todas as páginas referentes ao ano de 1999 haviam sido arrancadas.\n\n[Clímax]\nNo final do caderno, um mapa desenhado à mão apontava exatamente para o meu quarto atual.\n\n[Conclusão]\nO verdadeiro segredo da nossa família sempre esteve debaixo da minha cama.',
+  },
+  {
+    id: 'terror',
+    name: 'Conto de Terror',
+    prompt:
+      '[Introdução]\nA velha casa abandonada no fim da rua sempre foi o pesadelo das crianças do bairro...\n\n[Gancho]\nNuma aposta boba, decidimos entrar. Assim que cruzamos o batente, a porta se fechou violentamente.\n\n[Clímax]\nAs luzes começaram a piscar e, no reflexo do espelho quebrado, vimos a figura de uma mulher sem rosto nos observando.\n\n[Conclusão]\nNós achávamos que estávamos sozinhos. Nós nunca estivemos.',
+  },
+]
+
 export default function Index() {
   const { projects, addProject, removeProject } = useProjects()
   const { user } = useAuthStore()
@@ -42,6 +63,7 @@ export default function Index() {
   const [heroUrl, setHeroUrl] = useState('')
   const [isHeroLoading, setIsHeroLoading] = useState(false)
   const [isTextModalOpen, setIsTextModalOpen] = useState(false)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [textContent, setTextContent] = useState('')
   const [isTextGenerating, setIsTextGenerating] = useState(false)
   const { toast } = useToast()
@@ -128,19 +150,19 @@ export default function Index() {
     toast({ title: 'Projeto criado com sucesso!' })
   }
 
-  const handleExampleProject = () => {
+  const handleTemplateProject = (template: (typeof SCRIPT_TEMPLATES)[0]) => {
     if (projects.length >= maxProjects) {
       return toast({ title: 'Upgrade Necessário', variant: 'destructive' })
     }
-    const p = addProject('Demo: FB Repurpose', {
-      videoUrl: 'https://img.usecurling.com/p/800/1200?q=parkour&color=orange',
+    const p = addProject(`Novo: ${template.name}`, {
+      draftPrompt: template.prompt,
+      videoUrl: '',
       videoDuration: 60,
-      trimStart: 10,
-      trimEnd: 45,
       aspectRatio: '9:16',
     })
-    toast({ title: 'Exemplo carregado!' })
-    navigate(`/editor/${p.id}`)
+    setIsTemplateModalOpen(false)
+    toast({ title: 'Modelo carregado com sucesso!' })
+    navigate(`/editor/${p.id}?tab=ai-creator`)
   }
 
   return (
@@ -334,26 +356,57 @@ export default function Index() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 flex flex-col justify-between p-6 text-center bg-card hover:shadow-md transition-all shadow-subtle border-primary/10">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-lg flex items-center justify-center gap-2">
-                  <LayoutTemplate className="w-5 h-5 text-primary" /> Template
-                  Rápido
-                </CardTitle>
-                <CardDescription>
-                  Carregue um projeto predefinido.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="w-full p-0">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 shadow-sm"
-                  onClick={handleExampleProject}
-                >
-                  <PlaySquare className="w-4 h-4 mr-2" /> Iniciar Demo
-                </Button>
-              </CardContent>
-            </Card>
+            <Dialog
+              open={isTemplateModalOpen}
+              onOpenChange={setIsTemplateModalOpen}
+            >
+              <DialogTrigger asChild>
+                <Card className="border-2 flex flex-col justify-between p-6 text-center bg-card hover:shadow-md transition-all shadow-subtle border-primary/10 cursor-pointer group">
+                  <CardHeader className="p-0 mb-4">
+                    <CardTitle className="text-lg flex items-center justify-center gap-2">
+                      <LayoutTemplate className="w-5 h-5 text-primary" />{' '}
+                      Modelos de Roteiro
+                    </CardTitle>
+                    <CardDescription>
+                      Inicie um projeto com uma narrativa predefinida.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="w-full p-0 pt-4 border-t">
+                    <span className="text-sm text-primary font-semibold group-hover:underline">
+                      Escolher Modelo &rarr;
+                    </span>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <LayoutTemplate className="w-5 h-5 text-primary" />
+                    Biblioteca de Modelos de Roteiro
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {SCRIPT_TEMPLATES.map((template) => (
+                    <Button
+                      key={template.id}
+                      variant="outline"
+                      className="h-auto p-4 flex flex-col items-start text-left gap-2 hover:border-primary/50 transition-colors"
+                      onClick={() => handleTemplateProject(template)}
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-bold text-base text-foreground">
+                          {template.name}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                        {template.prompt}
+                      </p>
+                    </Button>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>
