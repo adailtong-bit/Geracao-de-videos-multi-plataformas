@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 import {
@@ -20,6 +21,7 @@ import {
   Trash2,
   Sparkles,
   Link as LinkIcon,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface Props {
@@ -37,6 +39,7 @@ export function PublishPanel({ project, update }: Props) {
     tiktok: 'ready',
     instagram: 'ready',
     facebook: 'ready',
+    youtube: 'ready',
   })
 
   const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now')
@@ -47,6 +50,7 @@ export function PublishPanel({ project, update }: Props) {
 
   const isPro = user?.plan === 'pro'
   const isPublishing = Object.values(statuses).includes('uploading')
+  const isApproved = project.approvalStatus === 'approved'
 
   const togglePlatform = (p: Platform) => {
     const platforms = project.targetPlatforms.includes(p)
@@ -85,6 +89,8 @@ export function PublishPanel({ project, update }: Props) {
   }
 
   const handleAction = () => {
+    if (!isApproved) return
+
     if (project.targetPlatforms.length === 0)
       return toast({
         title: 'Selecione uma plataforma',
@@ -175,6 +181,17 @@ export function PublishPanel({ project, update }: Props) {
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-8">
+      {!isApproved && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Aprovação Pendente</AlertTitle>
+          <AlertDescription>
+            O vídeo precisa ser aprovado na aba de <strong>Revisão</strong>{' '}
+            antes de ser publicado ou agendado.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-4 bg-background p-5 rounded-xl border shadow-sm">
         <h3 className="font-semibold text-base flex items-center gap-2">
           <LinkIcon className="w-5 h-5 text-blue-500" /> Contas Sociais
@@ -256,7 +273,9 @@ export function PublishPanel({ project, update }: Props) {
                 checked={project.targetPlatforms.includes(p)}
                 onCheckedChange={() => togglePlatform(p)}
                 disabled={
-                  statuses[p] === 'uploading' || statuses[p] === 'published'
+                  statuses[p] === 'uploading' ||
+                  statuses[p] === 'published' ||
+                  !isApproved
                 }
               />
             </div>
@@ -272,7 +291,7 @@ export function PublishPanel({ project, update }: Props) {
               variant="secondary"
               size="sm"
               onClick={handleGenerateAICaptions}
-              disabled={isGeneratingAi || !project.videoUrl}
+              disabled={isGeneratingAi || !project.videoUrl || !isApproved}
               className="font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300"
             >
               {isGeneratingAi ? (
@@ -300,6 +319,7 @@ export function PublishPanel({ project, update }: Props) {
                     captions: { ...project.captions, [p]: e.target.value },
                   })
                 }
+                disabled={!isApproved}
                 className="resize-none h-24 mt-2 border-muted text-sm"
               />
             </div>
@@ -313,6 +333,7 @@ export function PublishPanel({ project, update }: Props) {
             variant={publishMode === 'now' ? 'default' : 'ghost'}
             className="flex-1 text-sm font-semibold"
             onClick={() => setPublishMode('now')}
+            disabled={!isApproved}
           >
             <Send className="w-4 h-4 mr-2" /> Publicar Agora
           </Button>
@@ -320,6 +341,7 @@ export function PublishPanel({ project, update }: Props) {
             variant={publishMode === 'schedule' ? 'default' : 'ghost'}
             className="flex-1 text-sm font-semibold"
             onClick={() => setPublishMode('schedule')}
+            disabled={!isApproved}
           >
             <CalendarIcon className="w-4 h-4 mr-2" /> Agendar
           </Button>
@@ -334,6 +356,7 @@ export function PublishPanel({ project, update }: Props) {
                 value={scheduleDate}
                 onChange={(e) => setScheduleDate(e.target.value)}
                 className="h-10"
+                disabled={!isApproved}
               />
             </div>
             <div className="flex-1 space-y-1">
@@ -343,6 +366,7 @@ export function PublishPanel({ project, update }: Props) {
                 value={scheduleTime}
                 onChange={(e) => setScheduleTime(e.target.value)}
                 className="h-10"
+                disabled={!isApproved}
               />
             </div>
           </div>
@@ -351,7 +375,7 @@ export function PublishPanel({ project, update }: Props) {
         <Button
           className="w-full h-12 text-base font-bold shadow-md mt-4 transition-all hover:-translate-y-0.5"
           onClick={handleAction}
-          disabled={!project.videoUrl || isPublishing}
+          disabled={!project.videoUrl || isPublishing || !isApproved}
         >
           {isPublishing ? (
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />

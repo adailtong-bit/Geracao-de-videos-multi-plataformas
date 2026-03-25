@@ -18,6 +18,7 @@ import { AiCreatorPanel } from '@/components/editor/AiCreatorPanel'
 import { TimelinePanel } from '@/components/editor/TimelinePanel'
 import { PublishPanel } from '@/components/editor/PublishPanel'
 import { AudioPanel } from '@/components/editor/AudioPanel'
+import { ReviewPanel } from '@/components/editor/ReviewPanel'
 import { InteractiveTimeline } from '@/components/editor/InteractiveTimeline'
 import { PublishDialog } from '@/components/editor/PublishDialog'
 import { TeamDialog } from '@/components/editor/TeamDialog'
@@ -37,6 +38,7 @@ import {
   Film,
   Download,
   Music,
+  Eye,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Project, Draft } from '@/types'
@@ -363,6 +365,12 @@ export default function Editor() {
                     <Film className="w-4 h-4 mr-2" /> Sequência
                   </TabsTrigger>
                   <TabsTrigger
+                    value="review"
+                    className="shrink-0 min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-10"
+                  >
+                    <Eye className="w-4 h-4 mr-2" /> Revisar
+                  </TabsTrigger>
+                  <TabsTrigger
                     value="publish"
                     className="shrink-0 min-w-[90px] text-sm h-10 font-medium"
                   >
@@ -395,6 +403,13 @@ export default function Editor() {
                       >
                         <TimelinePanel
                           project={project}
+                          onNext={() => setActiveTab('review')}
+                        />
+                      </TabsContent>
+                      <TabsContent value="review" className="mt-0 outline-none">
+                        <ReviewPanel
+                          project={project}
+                          update={update}
                           onNext={() => setActiveTab('publish')}
                         />
                       </TabsContent>

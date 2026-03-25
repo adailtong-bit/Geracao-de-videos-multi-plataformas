@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import {
   Clock,
   Film,
-  Send,
+  Eye,
   Image as ImageIcon,
   CheckCircle2,
   Scissors,
@@ -333,7 +333,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
             </span>
           ) : (
             <>
-              <Send className="w-4 h-4 mr-2" /> Finalizar e Publicar
+              <Eye className="w-4 h-4 mr-2" /> Avançar para Revisão
             </>
           )}
         </Button>

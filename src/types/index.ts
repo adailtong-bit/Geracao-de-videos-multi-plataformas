@@ -1,5 +1,5 @@
 export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube'
-export type AspectRatio = '9:16' | '1:1' | '4:5'
+export type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5'
 
 export type Language = 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT'
 export type VoiceProfile = 'deep' | 'soft' | 'announcer'
@@ -102,6 +102,15 @@ export interface TeamMember {
   avatar?: string
 }
 
+export interface ColorSettings {
+  brightness: number
+  contrast: number
+  saturation: number
+  preset: 'none' | 'grayscale' | 'sepia' | 'vintage'
+}
+
+export type ApprovalStatus = 'review' | 'revised' | 'approved'
+
 export interface Project {
   id: string
   name: string
@@ -134,6 +143,8 @@ export interface Project {
   targetFormat?: string
   mediaType?: MediaType
   avatar?: AvatarSettings
+  colorSettings?: ColorSettings
+  approvalStatus?: ApprovalStatus
 }
 
 export interface User {

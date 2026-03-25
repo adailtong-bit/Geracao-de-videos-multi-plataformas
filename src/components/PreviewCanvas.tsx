@@ -60,8 +60,7 @@ export function PreviewCanvas({
   const shouldShowSubtitles =
     project.sourceLanguage &&
     project.subtitleLanguage &&
-    project.subtitleLanguage !== 'none' &&
-    project.sourceLanguage !== project.subtitleLanguage
+    project.subtitleLanguage !== 'none'
 
   useEffect(() => {
     setVideoError(false)
@@ -370,6 +369,8 @@ export function PreviewCanvas({
     switch (project.aspectRatio) {
       case '9:16':
         return { aspectRatio: '9/16', height: '100%', maxWidth: '100%' }
+      case '16:9':
+        return { aspectRatio: '16/9', width: '100%', maxHeight: '100%' }
       case '1:1':
         return { aspectRatio: '1/1', width: '100%', maxHeight: '100%' }
       case '4:5':
@@ -377,6 +378,21 @@ export function PreviewCanvas({
       default:
         return { aspectRatio: '9/16', height: '100%', maxWidth: '100%' }
     }
+  }
+
+  const getFilterStyle = () => {
+    const s = project.colorSettings || {
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      preset: 'none',
+    }
+    let filters = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`
+    if (s.preset === 'grayscale') filters += ' grayscale(100%)'
+    if (s.preset === 'sepia') filters += ' sepia(100%)'
+    if (s.preset === 'vintage')
+      filters += ' sepia(50%) contrast(120%) saturate(80%)'
+    return { filter: filters, transition: 'filter 0.3s ease-in-out' }
   }
 
   // Determine if Avatar should animate lips/head based on TTS or overall playback state for mock
@@ -536,6 +552,7 @@ export function PreviewCanvas({
                       'w-full h-full object-cover opacity-90 relative z-0 transition-opacity duration-300',
                       !isVideoLoaded && 'opacity-0',
                     )}
+                    style={getFilterStyle()}
                     onLoadedMetadata={handleLoadedMetadata}
                     onCanPlay={handleCanPlay}
                     onEnded={handleEnded}
@@ -567,7 +584,10 @@ export function PreviewCanvas({
                               'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
                               isActive ? 'opacity-100' : 'opacity-0',
                             )}
-                            style={{ transitionDuration: '2000ms' }}
+                            style={{
+                              transitionDuration: '2000ms',
+                              ...getFilterStyle(),
+                            }}
                           />
                         )
                       })}
