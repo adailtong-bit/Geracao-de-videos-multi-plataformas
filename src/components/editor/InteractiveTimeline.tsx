@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Project, TransitionStyle, BRoll } from '@/types'
 import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -10,6 +10,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -48,6 +51,26 @@ export function InteractiveTimeline({
     format?.min || 0,
   )
   const minWidth = Math.max(800, maxFormatTime * PIXELS_PER_SEC + 150)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        seek(Math.max(0, currentTime - 0.1))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        seek(Math.min(duration || 0, currentTime + 0.1))
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentTime, duration, seek])
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isGenerating) return
@@ -232,6 +255,25 @@ export function InteractiveTimeline({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => seek(Math.max(0, currentTime - 0.1))}
+            title="Voltar 1 Frame"
+            className="hidden sm:flex"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => seek(Math.min(duration || 0, currentTime + 0.1))}
+            title="Avançar 1 Frame"
+            className="hidden sm:flex"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleSplit}
             disabled={isGenerating || !project.cuts?.length}
             title="Dividir Corte no Playhead"
@@ -245,21 +287,21 @@ export function InteractiveTimeline({
             size="sm"
             onClick={handleAddBRoll}
             disabled={isGenerating}
-            title="Incluir Segmento Visual"
-            className="hidden sm:flex"
+            title="Inserir Frame"
+            className="hidden sm:flex text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/30"
           >
-            <ImageIcon className="w-4 h-4 mr-1" />
-            Incluir Frame
+            <Plus className="w-4 h-4 mr-1" />
+            Inserir
           </Button>
           <Button
             variant="destructive"
             size="sm"
             onClick={handleDeleteItem}
             disabled={isGenerating || !selectedItem}
-            title="Deletar Selecionado"
+            title="Cortar Selecionado"
           >
             <Trash2 className="w-4 h-4 sm:mr-1" />
-            <span className="hidden sm:inline">Remover Segmento</span>
+            <span className="hidden sm:inline">Cortar</span>
           </Button>
         </div>
       </div>

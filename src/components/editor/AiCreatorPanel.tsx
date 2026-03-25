@@ -175,10 +175,16 @@ export function AiCreatorPanel({
 
   const handleFormatChange = (v: string) => {
     setTargetFormat(v)
+    update({ targetFormat: v })
     const f = VIDEO_FORMATS.find((x) => x.id === v)
     if (f) {
-      if (f.max) setTargetDuration(Math.min(f.max - 2, 60))
-      else if (f.min) setTargetDuration(f.min + 60)
+      if (f.max) {
+        setTargetDuration(Math.min(f.max - 2, 60))
+        update({ videoDuration: Math.min(f.max - 2, 60) })
+      } else if (f.min) {
+        setTargetDuration(f.min + 60)
+        update({ videoDuration: f.min + 60 })
+      }
     }
   }
 
@@ -242,6 +248,7 @@ export function AiCreatorPanel({
     if (isExceedingMax && selectedFormatObj?.max) {
       finalDuration = selectedFormatObj.max
       setTargetDuration(finalDuration)
+      update({ videoDuration: finalDuration })
       toast({
         title: 'Duração Ajustada',
         description: `Duração reduzida para o máximo permitido pelo ${selectedFormatObj.label} (${finalDuration}s).`,
@@ -697,7 +704,10 @@ export function AiCreatorPanel({
             </Label>
             <RadioGroup
               value={mediaType}
-              onValueChange={(v) => setMediaType(v as MediaType)}
+              onValueChange={(v) => {
+                setMediaType(v as MediaType)
+                update({ mediaType: v as MediaType })
+              }}
               className="flex flex-col space-y-2 mt-2 ml-1"
             >
               <div className="flex items-center space-x-3">
@@ -759,7 +769,10 @@ export function AiCreatorPanel({
                   min={10}
                   max={3600}
                   value={targetDuration}
-                  onChange={(e) => setTargetDuration(Number(e.target.value))}
+                  onChange={(e) => {
+                    setTargetDuration(Number(e.target.value))
+                    update({ videoDuration: Number(e.target.value) })
+                  }}
                   className="bg-background/50 h-10"
                 />
               </div>
@@ -796,7 +809,10 @@ export function AiCreatorPanel({
             <div className="flex gap-2">
               <Select
                 value={voiceProfile}
-                onValueChange={(v) => setVoiceProfile(v)}
+                onValueChange={(v) => {
+                  setVoiceProfile(v)
+                  update({ voiceProfile: v })
+                }}
                 disabled={sourceType === 'video' || sourceType === 'upload'}
               >
                 <SelectTrigger className="bg-background/50 h-10 flex-1">
@@ -846,7 +862,10 @@ export function AiCreatorPanel({
             </Label>
             <Select
               value={sourceLanguage}
-              onValueChange={(v) => setSourceLanguage(v as Language)}
+              onValueChange={(v) => {
+                setSourceLanguage(v as Language)
+                update({ sourceLanguage: v as Language })
+              }}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -868,7 +887,10 @@ export function AiCreatorPanel({
             </Label>
             <Select
               value={subtitleLanguage}
-              onValueChange={(v) => setSubtitleLanguage(v as Language | 'none')}
+              onValueChange={(v) => {
+                setSubtitleLanguage(v as Language | 'none')
+                update({ subtitleLanguage: v as Language | 'none' })
+              }}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -891,7 +913,10 @@ export function AiCreatorPanel({
             </Label>
             <Select
               value={visualStyle}
-              onValueChange={(v) => setVisualStyle(v as VisualStyle)}
+              onValueChange={(v) => {
+                setVisualStyle(v as VisualStyle)
+                update({ visualStyle: v as VisualStyle })
+              }}
               disabled={sourceType === 'video' || sourceType === 'upload'}
             >
               <SelectTrigger className="bg-background/50 h-10">
@@ -909,7 +934,13 @@ export function AiCreatorPanel({
             <Label className="font-semibold text-sm flex items-center gap-2">
               <Activity className="w-4 h-4 text-primary" /> Clima Emocional
             </Label>
-            <Select value={mood} onValueChange={(v) => setMood(v as Mood)}>
+            <Select
+              value={mood}
+              onValueChange={(v) => {
+                setMood(v as Mood)
+                update({ mood: v as Mood })
+              }}
+            >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
               </SelectTrigger>

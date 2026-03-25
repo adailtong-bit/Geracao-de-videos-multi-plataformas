@@ -65,10 +65,8 @@ export function PreviewCanvas({
   const hasSourceAudio = project.cuts?.some((c) => c.sourceStart !== undefined)
   const isPureEdition = project.cuts?.some((c) => c.sourceStart !== undefined)
 
-  const shouldShowSubtitles =
-    project.sourceLanguage &&
-    project.subtitleLanguage &&
-    project.subtitleLanguage !== 'none'
+  // Always show subtitles so dynamic narration preview works real-time as per requirements
+  const shouldShowSubtitles = true
 
   useEffect(() => {
     if (!isDraggingAvatar) {
@@ -922,10 +920,10 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6"
+                        className="absolute left-0 right-0 z-40 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-6 px-4"
                       >
                         <div
-                          className="px-3 py-1.5 rounded-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10 transition-colors"
+                          className="px-3 py-1.5 rounded-sm font-medium shadow-sm text-center max-w-[80%] leading-snug tracking-wide border border-white/10 transition-colors whitespace-pre-wrap"
                           style={{
                             color: subColor,
                             backgroundColor: subBg,

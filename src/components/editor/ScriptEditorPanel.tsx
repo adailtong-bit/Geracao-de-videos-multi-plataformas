@@ -1,8 +1,82 @@
-import { Project } from '@/types'
+import { Project, GlossaryTerm } from '@/types'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { FileText } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+
+function HighlightedTextarea({
+  value,
+  onChange,
+  glossary,
+  placeholder,
+  className,
+}: {
+  value: string
+  onChange: (val: string) => void
+  glossary: GlossaryTerm[]
+  placeholder?: string
+  className?: string
+}) {
+  const [scrollTop, setScrollTop] = useState(0)
+
+  const getHighlightedText = () => {
+    let text = value || ''
+    text = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+
+    if (glossary && glossary.length > 0) {
+      glossary.forEach((term) => {
+        if (!term.source) return
+        const regex = new RegExp(`\\b(${term.source})\\b`, 'gi')
+        text = text.replace(
+          regex,
+          '<mark class="bg-fuchsia-500/40 text-transparent rounded px-0.5">$1</mark>',
+        )
+      })
+    }
+
+    text = text.replace(/\n/g, '<br/>')
+    if (value.endsWith('\n')) text += '<br/>'
+    return text
+  }
+
+  return (
+    <div className="relative w-full rounded-md overflow-hidden bg-background border border-input focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+      <div
+        className={cn(
+          'absolute inset-0 pointer-events-none p-2 text-sm whitespace-pre-wrap break-words z-0 text-transparent',
+          className?.replace(/min-h-\[[^\]]+\]/, ''),
+        )}
+        style={{
+          top: -scrollTop,
+          padding: '0.5rem 0.75rem',
+          fontFamily: 'inherit',
+          lineHeight: '1.25rem',
+        }}
+        dangerouslySetInnerHTML={{ __html: getHighlightedText() }}
+        aria-hidden="true"
+      />
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        placeholder={placeholder}
+        className={cn(
+          'block w-full resize-y bg-transparent p-2 px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground relative z-10',
+          className,
+        )}
+        style={{
+          lineHeight: '1.25rem',
+          minHeight: '80px',
+        }}
+        spellCheck={false}
+      />
+    </div>
+  )
+}
 
 export function ScriptEditorPanel({
   project,
@@ -40,15 +114,16 @@ export function ScriptEditorPanel({
           <div className="space-y-3">
             <Label className="text-base font-bold">Roteiro Principal</Label>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Edite a base da sua história. Alterações feitas no roteiro
-              principal exigirão uma nova geração na aba "Criar" para recalcular
-              tempos.
+              Edite a base da sua história. Palavras do Glossário são
+              destacadas. Alterações feitas no roteiro principal exigirão uma
+              nova geração na aba "Criar".
             </p>
-            <Textarea
-              className="min-h-[150px] resize-y text-sm bg-muted/30 focus:bg-background"
+            <HighlightedTextarea
+              className="min-h-[150px]"
               value={project.draftPrompt || ''}
-              onChange={(e) => update({ draftPrompt: e.target.value })}
+              onChange={(val) => update({ draftPrompt: val })}
               placeholder="Escreva a base da sua história aqui..."
+              glossary={project.glossary || []}
             />
           </div>
 
@@ -58,9 +133,8 @@ export function ScriptEditorPanel({
                 Ajuste Fino de Legendas
               </Label>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                As alterações feitas nos trechos de legenda refletem
-                imediatamente no visualizador ao lado. Use para corrigir erros
-                ou melhorar a quebra.
+                As alterações feitas nos trechos refletem imediatamente no
+                visualizador.
               </p>
             </div>
 
@@ -71,15 +145,16 @@ export function ScriptEditorPanel({
                     key={sub.id}
                     className="flex gap-3 items-start p-3 bg-card rounded-lg border focus-within:border-primary/50 focus-within:ring-1 ring-primary/20 transition-all shadow-sm"
                   >
-                    <div className="w-14 shrink-0 mt-2 text-[10px] font-mono font-bold text-muted-foreground text-right bg-muted px-1.5 py-0.5 rounded">
+                    <div className="w-14 shrink-0 mt-2 text-[10px] font-mono font-bold text-muted-foreground text-center bg-muted px-1.5 py-0.5 rounded">
                       {sub.start.toFixed(1)}s
                     </div>
-                    <Textarea
-                      className="min-h-[50px] resize-y text-sm font-medium border-none shadow-none focus-visible:ring-0 p-1"
+                    <HighlightedTextarea
+                      className="min-h-[50px] border-none shadow-none focus-within:ring-0 focus-within:ring-offset-0 px-1 py-1"
                       value={sub.text}
-                      onChange={(e) =>
-                        handleSubtitleChange(clip.id, sub.id, e.target.value)
+                      onChange={(val) =>
+                        handleSubtitleChange(clip.id, sub.id, val)
                       }
+                      glossary={project.glossary || []}
                     />
                   </div>
                 )),
