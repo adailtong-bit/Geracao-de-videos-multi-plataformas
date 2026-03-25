@@ -22,6 +22,24 @@ interface Props {
   update?: (updates: Partial<Project>) => void
 }
 
+function formatTimecode(seconds: number) {
+  if (isNaN(seconds)) return '00:00:00.000'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`
+}
+
+function parseTimecode(str: string) {
+  const parts = str.split(':')
+  if (parts.length === 3) {
+    return (
+      parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2])
+    )
+  }
+  return parseFloat(str)
+}
+
 function ManualTrimEditor({
   cut,
   updateCut,
@@ -29,77 +47,66 @@ function ManualTrimEditor({
   cut: CutSegment
   updateCut: (id: string, start: number, end: number) => void
 }) {
-  const [localStart, setLocalStart] = useState(cut.start.toFixed(3))
-  const [localEnd, setLocalEnd] = useState(cut.end.toFixed(3))
-  const [localDuration, setLocalDuration] = useState(
-    (cut.end - cut.start).toFixed(3),
-  )
+  const [localStartStr, setLocalStartStr] = useState(formatTimecode(cut.start))
+  const [localEndStr, setLocalEndStr] = useState(formatTimecode(cut.end))
 
   useEffect(() => {
-    setLocalStart(cut.start.toFixed(3))
-    setLocalEnd(cut.end.toFixed(3))
-    setLocalDuration((cut.end - cut.start).toFixed(3))
-  }, [cut])
+    setLocalStartStr(formatTimecode(cut.start))
+    setLocalEndStr(formatTimecode(cut.end))
+  }, [cut.start, cut.end])
 
   const handleStartChange = (val: string) => {
-    setLocalStart(val)
-    const s = parseFloat(val)
-    const d = parseFloat(localDuration)
-    if (!isNaN(s) && !isNaN(d)) {
-      const e = s + d
-      setLocalEnd(e.toFixed(3))
+    setLocalStartStr(val)
+  }
+
+  const handleStartBlur = () => {
+    const s = parseTimecode(localStartStr)
+    const e = parseTimecode(localEndStr)
+    if (!isNaN(s) && !isNaN(e) && e > s) {
       updateCut(cut.id, s, e)
+    } else {
+      setLocalStartStr(formatTimecode(cut.start))
     }
   }
 
-  const handleDurationChange = (val: string) => {
-    setLocalDuration(val)
-    const d = parseFloat(val)
-    const s = parseFloat(localStart)
-    if (!isNaN(s) && !isNaN(d) && d > 0) {
-      const e = s + d
-      setLocalEnd(e.toFixed(3))
+  const handleEndChange = (val: string) => {
+    setLocalEndStr(val)
+  }
+
+  const handleEndBlur = () => {
+    const s = parseTimecode(localStartStr)
+    const e = parseTimecode(localEndStr)
+    if (!isNaN(e) && !isNaN(s) && e > s) {
       updateCut(cut.id, s, e)
+    } else {
+      setLocalEndStr(formatTimecode(cut.end))
     }
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
       <div className="space-y-1.5">
         <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Início (s)
+          Início (HH:MM:SS.mmm)
         </Label>
         <Input
-          type="number"
-          step="0.100"
-          min="0"
-          className="h-8 text-xs bg-muted/50 font-mono"
-          value={localStart}
+          className="h-8 text-xs bg-muted/50 font-mono focus-visible:ring-indigo-500"
+          value={localStartStr}
           onChange={(e) => handleStartChange(e.target.value)}
+          onBlur={handleStartBlur}
+          placeholder="00:00:00.000"
         />
       </div>
       <div className="space-y-1.5">
         <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Fim (s)
+          Fim (HH:MM:SS.mmm)
         </Label>
         <Input
-          type="number"
-          readOnly
-          className="h-8 text-xs bg-muted/20 font-mono text-muted-foreground border-dashed"
-          value={localEnd}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">
-          Alvo (s)
-        </Label>
-        <Input
-          type="number"
-          step="0.100"
-          min="0.5"
-          className="h-8 text-xs font-bold font-mono border-indigo-200 focus-visible:ring-indigo-500"
-          value={localDuration}
-          onChange={(e) => handleDurationChange(e.target.value)}
+          className="h-8 text-xs bg-muted/50 font-mono focus-visible:ring-indigo-500"
+          value={localEndStr}
+          onChange={(e) => handleEndChange(e.target.value)}
+          onBlur={handleEndBlur}
+          placeholder="00:00:00.000"
         />
       </div>
     </div>

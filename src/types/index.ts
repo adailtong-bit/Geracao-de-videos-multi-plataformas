@@ -6,6 +6,7 @@ export type VoiceProfile = 'deep' | 'soft' | 'announcer'
 export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
 export type Mood = 'inspirational' | 'dramatic' | 'calm'
 export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
+export type MediaType = 'image-sequence' | 'context-video'
 
 export interface ProjectElement {
   id: string
@@ -123,6 +124,7 @@ export interface Project {
   mood?: Mood
   teamMembers?: TeamMember[]
   targetFormat?: string
+  mediaType?: MediaType
 }
 
 export interface User {

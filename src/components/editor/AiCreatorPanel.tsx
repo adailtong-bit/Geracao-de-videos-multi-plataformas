@@ -9,6 +9,7 @@ import {
   VisualStyle,
   Mood,
   CutSegment,
+  MediaType,
 } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +18,7 @@ import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -44,6 +46,7 @@ import {
   MonitorPlay,
   ShieldAlert,
   AlertCircle,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
@@ -135,6 +138,10 @@ export function AiCreatorPanel({
     project.videoDuration || 55,
   )
 
+  const [mediaType, setMediaType] = useState<MediaType>(
+    project.mediaType || 'context-video',
+  )
+
   const [sourceLanguage, setSourceLanguage] = useState<Language>(
     project.sourceLanguage || project.language || 'pt-BR',
   )
@@ -196,7 +203,6 @@ export function AiCreatorPanel({
       })
     }
 
-    // Force limit constraint on generation
     let finalDuration = targetDuration
     if (isExceedingMax && selectedFormatObj?.max) {
       finalDuration = selectedFormatObj.max
@@ -453,6 +459,7 @@ export function AiCreatorPanel({
         voiceProfile,
         visualStyle,
         mood,
+        mediaType,
       },
     }
 
@@ -473,7 +480,7 @@ export function AiCreatorPanel({
       voiceProfile: newDraft.snapshot.voiceProfile,
       visualStyle: newDraft.snapshot.visualStyle,
       mood: newDraft.snapshot.mood,
-
+      mediaType: newDraft.snapshot.mediaType,
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
     })
@@ -627,6 +634,37 @@ export function AiCreatorPanel({
         </Tabs>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-primary" /> Estilo de Mídia
+              Visual
+            </Label>
+            <RadioGroup
+              value={mediaType}
+              onValueChange={(v) => setMediaType(v as MediaType)}
+              className="flex flex-col space-y-2 mt-2 ml-1"
+            >
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="image-sequence" id="media-image" />
+                <Label
+                  htmlFor="media-image"
+                  className="cursor-pointer font-medium text-sm text-foreground"
+                >
+                  Sequência de Imagens
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="context-video" id="media-video" />
+                <Label
+                  htmlFor="media-video"
+                  className="cursor-pointer font-medium text-sm text-foreground"
+                >
+                  Vídeo com Imagens Relacionadas
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 space-y-3">
