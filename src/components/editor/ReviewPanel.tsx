@@ -566,7 +566,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                     {presets.map((p) => (
                       <div
                         key={p.id}
-                        className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
+                        className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden"
                         style={{
                           backgroundImage: CHECKERBOARD_BG,
                           backgroundSize: '10px 10px',
@@ -613,7 +613,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                           return (
                             <div
                               key={p.id}
-                              className="relative group aspect-square rounded-md border-2 transition-all overflow-hidden"
+                              className="relative group aspect-[4/5] rounded-md border-2 transition-all overflow-hidden"
                               style={{
                                 backgroundImage: CHECKERBOARD_BG,
                                 backgroundSize: '10px 10px',

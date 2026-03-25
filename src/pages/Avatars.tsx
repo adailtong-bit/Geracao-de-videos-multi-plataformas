@@ -8,7 +8,6 @@ import {
   Trash2,
   Loader2,
   Info,
-  Activity,
   Wand2,
   Upload,
 } from 'lucide-react'
@@ -137,7 +136,7 @@ export default function Avatars() {
           <p>{emptyMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {items.map((avatar) => {
             const isProcessing =
               avatar.status === 'processing_bg' ||
@@ -148,7 +147,7 @@ export default function Avatars() {
                 className="overflow-hidden shadow-subtle hover:shadow-elevation transition-all group flex flex-col"
               >
                 <div
-                  className="aspect-square bg-muted relative border-b overflow-hidden flex items-center justify-center"
+                  className="aspect-[4/5] bg-muted relative border-b overflow-hidden flex items-center justify-center"
                   style={{ backgroundImage: CHECKERBOARD_BG }}
                 >
                   <img
@@ -170,7 +169,7 @@ export default function Avatars() {
                       <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" />
                       <span className="text-[10px] font-bold uppercase tracking-wider animate-pulse leading-relaxed">
                         {avatar.status === 'processing_bg'
-                          ? 'Extraindo Fundo\n(Canal Alfa)...'
+                          ? 'Reconstruindo Anatomia\n(Outpainting)...'
                           : 'Treinando Motor Neural\n(Articulações)...'}
                       </span>
                     </div>
@@ -256,8 +255,9 @@ export default function Avatars() {
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <User className="w-8 h-8 text-primary" /> Minhas Personas
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie seus clones digitais. Nossa IA extrai o fundo e aplica um
+          <p className="text-muted-foreground mt-1 max-w-2xl">
+            Gerencie seus clones digitais de corpo inteiro ou busto. Nossa IA
+            reconstrói a anatomia (Outpainting), extrai o fundo e aplica um
             motor de movimento neural para lip-sync e gesticulação natural.
           </p>
         </div>
@@ -291,28 +291,33 @@ export default function Avatars() {
           <DialogHeader>
             <DialogTitle>Visualizar Persona Digital</DialogTitle>
             <DialogDescription>
-              Teste a integridade anatômica (ombros fixos) e o motor neural de
-              lip-sync fonético.
+              Teste a integridade anatômica (tronco e ombros reconstruídos) e o
+              motor neural de lip-sync e gesticulação.
             </DialogDescription>
           </DialogHeader>
           {previewAvatar && (
             <div className="flex flex-col items-center justify-center p-6 space-y-6">
               <style>{`
-                @keyframes anatomical-motion {
-                  0%, 100% { transform: scale(1) rotate(0deg) skewX(0deg); }
-                  25% { transform: scale(1.01) rotate(0.5deg) skewX(0.5deg) translateY(-2px); }
-                  50% { transform: scale(1.015) rotate(0deg) skewX(0deg) translateY(-3px); }
-                  75% { transform: scale(1.01) rotate(-0.5deg) skewX(-0.5deg) translateY(-2px); }
+                @keyframes neural-idle {
+                  0%, 100% { transform: scale(1) rotate(0deg) translateY(0); }
+                  50% { transform: scale(1) rotate(0.5deg) translateY(-2px); }
                 }
-                .animate-anatomical-motion {
-                  animation: anatomical-motion 4s ease-in-out infinite;
-                  transform-origin: 50% 90%;
+                @keyframes neural-talking {
+                  0%, 100% { transform: scale(1) rotate(0deg) translateY(0) skewX(0deg); }
+                  20% { transform: scale(1.01) rotate(1deg) translateY(-3px) skewX(1deg); }
+                  40% { transform: scale(1.005) rotate(-0.5deg) translateY(-1px) skewX(-0.5deg); }
+                  60% { transform: scale(1.015) rotate(1.5deg) translateY(-4px) skewX(1.5deg); }
+                  80% { transform: scale(0.995) rotate(-1deg) translateY(0px) skewX(-1deg); }
                 }
+                .animate-neural-idle { animation: neural-idle 5s ease-in-out infinite; transform-origin: 50% 100%; }
+                .animate-neural-talking { animation: neural-talking 3s ease-in-out infinite; transform-origin: 50% 100%; }
               `}</style>
               <div
                 className={cn(
-                  'w-48 h-48 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 relative border border-border animate-anatomical-motion',
-                  isPreviewPlaying && 'ring-4 ring-primary/30',
+                  'w-48 h-64 rounded-xl overflow-hidden shadow-2xl transition-all relative border border-border',
+                  isPreviewPlaying
+                    ? 'animate-neural-talking ring-4 ring-primary/30'
+                    : 'animate-neural-idle',
                 )}
                 style={{
                   backgroundImage: CHECKERBOARD_BG,
@@ -345,7 +350,7 @@ export default function Avatars() {
                         style={{ height: '80%' }}
                       />
                     </div>
-                    Lip-Sync Fonético
+                    Lip-Sync & Gestos
                   </div>
                 )}
               </div>
@@ -374,8 +379,8 @@ export default function Avatars() {
           <DialogHeader>
             <DialogTitle>Nova Persona Digital</DialogTitle>
             <DialogDescription>
-              Faça upload ou gere uma imagem (realista ou ilustrada). O sistema
-              criará o rigging e o canal alfa.
+              A IA reconstrói a anatomia (Outpainting) para criar apresentadores
+              de busto completo em vez de recortes circulares.
             </DialogDescription>
           </DialogHeader>
 
@@ -386,10 +391,10 @@ export default function Avatars() {
           >
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="upload" className="font-semibold text-xs">
-                <Upload className="w-4 h-4 mr-2" /> Upload
+                <Upload className="w-4 h-4 mr-2" /> Fazer Upload
               </TabsTrigger>
               <TabsTrigger value="generate" className="font-semibold text-xs">
-                <Wand2 className="w-4 h-4 mr-2" /> Gerar IA
+                <Wand2 className="w-4 h-4 mr-2" /> Gerar por Descrição
               </TabsTrigger>
             </TabsList>
 
@@ -405,7 +410,7 @@ export default function Avatars() {
               <div className="space-y-2">
                 <Label>Foto Frontal (JPG/PNG)</Label>
                 {newImage ? (
-                  <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden border-4 border-muted">
+                  <div className="relative w-32 h-40 mx-auto rounded-xl overflow-hidden border-4 border-muted">
                     <img
                       src={newImage}
                       className="w-full h-full object-cover"
@@ -434,13 +439,17 @@ export default function Avatars() {
                     />
                   </Label>
                 )}
+                <p className="text-[10px] text-muted-foreground">
+                  Dica: Se a foto estiver muito próxima do rosto, a IA fará o
+                  Outpainting inteligente dos ombros para o recorte.
+                </p>
               </div>
               <Button
                 className="w-full"
                 onClick={handleCreateUpload}
                 disabled={!newName || !newImage}
               >
-                Processar e Extrair Alfa
+                Reconstruir e Extrair Alfa
               </Button>
             </TabsContent>
 
@@ -456,11 +465,15 @@ export default function Avatars() {
               <div className="space-y-2">
                 <Label>Descrição da Persona (Prompt)</Label>
                 <Textarea
-                  placeholder="Descreva características físicas, estilo (ex: cartoon, realista, 3D render) e roupas..."
+                  placeholder="Descreva características físicas, estilo (ex: cartoon, realista, 3D render, terno executivo)..."
                   className="resize-none h-24"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
+                <p className="text-[10px] text-muted-foreground">
+                  A IA gerará o corpo completo ou busto adequado para inserção
+                  como camada no editor.
+                </p>
               </div>
               <Button
                 className="w-full"

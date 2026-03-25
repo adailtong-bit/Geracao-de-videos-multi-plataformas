@@ -457,16 +457,19 @@ export function PreviewCanvas({
   return (
     <div className="relative w-full h-full flex items-center justify-center p-2 min-h-0 min-w-0">
       <style>{`
-        @keyframes anatomical-motion {
-          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) skewX(0deg); }
-          25% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(0.5deg) skewX(0.5deg) translateY(-1px); }
-          50% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(0deg) skewX(0deg) translateY(-2px); }
-          75% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-0.5deg) skewX(-0.5deg) translateY(-1px); }
+        @keyframes neural-idle {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0); }
+          50% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0.5deg) translateY(-2px); }
         }
-        .animate-anatomical-motion {
-          animation: anatomical-motion 4s ease-in-out infinite;
-          transform-origin: 50% 80%;
+        @keyframes neural-talking {
+          0%, 100% { transform: translate(-50%, -50%) scale(var(--scale, 1)) rotate(0deg) translateY(0) skewX(0deg); }
+          20% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.01)) rotate(1deg) translateY(-3px) skewX(1deg); }
+          40% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.005)) rotate(-0.5deg) translateY(-1px) skewX(-0.5deg); }
+          60% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 1.015)) rotate(1.5deg) translateY(-4px) skewX(1.5deg); }
+          80% { transform: translate(-50%, -50%) scale(calc(var(--scale, 1) * 0.995)) rotate(-1deg) translateY(0px) skewX(-1deg); }
         }
+        .animate-neural-idle { animation: neural-idle 5s ease-in-out infinite; transform-origin: 50% 100%; }
+        .animate-neural-talking { animation: neural-talking 3s ease-in-out infinite; transform-origin: 50% 100%; }
       `}</style>
       <PlaybackController project={project} />
 
@@ -685,10 +688,13 @@ export function PreviewCanvas({
                       setIsDraggingAvatar(true)
                     }}
                     className={cn(
-                      'absolute z-20 drop-shadow-2xl animate-anatomical-motion transition-colors',
+                      'absolute z-20 drop-shadow-2xl transition-colors',
+                      isTalking
+                        ? 'animate-neural-talking'
+                        : 'animate-neural-idle',
                       isDraggingAvatar
-                        ? 'cursor-grabbing ring-2 ring-primary/50 bg-primary/10 rounded-full'
-                        : 'cursor-grab hover:ring-2 hover:ring-white/20 hover:bg-white/5 rounded-full',
+                        ? 'cursor-grabbing ring-2 ring-primary/50 bg-primary/10 rounded-xl'
+                        : 'cursor-grab hover:ring-2 hover:ring-white/20 hover:bg-white/5 rounded-xl',
                     )}
                     style={
                       {
@@ -696,8 +702,8 @@ export function PreviewCanvas({
                         top: `${localAvatarPos.y}%`,
                         '--scale': avatarScale,
                         transform: `translate(-50%, -50%) scale(${avatarScale})`,
-                        width: '240px',
-                        height: '240px',
+                        width: '280px',
+                        height: '380px',
                         touchAction: 'none',
                         transition: isDraggingAvatar
                           ? 'none'
@@ -737,7 +743,7 @@ export function PreviewCanvas({
                             style={{ height: '80%' }}
                           />
                         </div>
-                        Lip-Sync Fonético
+                        Lip-Sync & Gestos
                       </div>
                     )}
                   </div>
