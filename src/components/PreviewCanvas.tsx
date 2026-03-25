@@ -600,12 +600,13 @@ export function PreviewCanvas({
                         const isRendered =
                           currentTime >= br.start - 0.5 &&
                           currentTime <= br.end + 1.5
-                        if (!isRendered) return null
+                        if (!isRendered || !br.url) return null
                         return (
                           <img
                             key={br.id}
                             src={br.url}
                             alt="Semantic"
+                            crossOrigin="anonymous"
                             className={cn(
                               'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
                               isActive ? 'opacity-100' : 'opacity-0',
@@ -645,6 +646,7 @@ export function PreviewCanvas({
                     <img
                       src={project.avatar.imageUrl}
                       alt="Avatar"
+                      crossOrigin="anonymous"
                       className="w-full h-full object-cover"
                     />
                     {isTalking && (

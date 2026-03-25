@@ -121,24 +121,37 @@ export function ReviewPanel({ project, update, onNext }: Props) {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setIsProcessingAvatar(true)
-      setTimeout(() => {
-        const url = URL.createObjectURL(e.target.files![0])
-        const current = project.avatar || {}
-        update({
-          avatar: {
-            ...current,
-            enabled: true,
-            mode: 'upload',
-            imageUrl: url,
-          } as any,
-          approvalStatus: 'revised',
-        })
-        setIsProcessingAvatar(false)
-        toast({
-          title: 'Modelo 3D Gerado',
-          description: 'O avatar foi processado com sucesso.',
-        })
-      }, 2000)
+      const file = e.target.files[0]
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setTimeout(() => {
+          const url = reader.result as string
+          const current = project.avatar || {
+            enabled: false,
+            mode: 'preset',
+            position: 'custom',
+            positionX: 50,
+            positionY: 80,
+            scale: 1,
+          }
+          update({
+            avatar: {
+              ...current,
+              enabled: true,
+              mode: 'upload',
+              imageUrl: url,
+            } as any,
+            approvalStatus: 'revised',
+          })
+          setIsProcessingAvatar(false)
+          toast({
+            title: 'Modelo 3D Gerado',
+            description: 'O avatar foi processado com sucesso.',
+          })
+        }, 1500)
+      }
+      // Read as Data URL to ensure cross-session persistence and avoid blob fetch errors
+      reader.readAsDataURL(file)
     }
   }
 
@@ -539,6 +552,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                       <img
                         key={p}
                         src={p}
+                        crossOrigin="anonymous"
                         onClick={() => updateAvatar('imageUrl', p)}
                         className={cn(
                           'rounded-md cursor-pointer border-2 transition-all hover:scale-105',

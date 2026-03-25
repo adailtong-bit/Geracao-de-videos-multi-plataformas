@@ -178,15 +178,18 @@ export function PublishDialog({ project }: { project: Project }) {
                           className="relative shrink-0 cursor-pointer group"
                           onClick={() => setSelectedCover(br.id)}
                         >
-                          <img
-                            src={br.url}
-                            className={`w-20 h-32 object-cover rounded-md border-2 transition-all duration-300 ${
-                              isSelected
-                                ? 'border-pink-500 scale-105 shadow-md'
-                                : 'border-transparent opacity-70 hover:opacity-100'
-                            }`}
-                            alt="cover option"
-                          />
+                          {br.url && (
+                            <img
+                              src={br.url}
+                              crossOrigin="anonymous"
+                              className={`w-20 h-32 object-cover rounded-md border-2 transition-all duration-300 ${
+                                isSelected
+                                  ? 'border-pink-500 scale-105 shadow-md'
+                                  : 'border-transparent opacity-70 hover:opacity-100'
+                              }`}
+                              alt="cover option"
+                            />
+                          )}
                           {isSelected && (
                             <div className="absolute top-1 right-1 bg-pink-500 text-white rounded-full p-0.5">
                               <CheckCircle2 className="w-3 h-3" />

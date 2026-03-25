@@ -248,6 +248,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
                   <img
                     src={seg.imageUrl}
                     alt={`Cena ${idx}`}
+                    crossOrigin="anonymous"
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
                 ) : (

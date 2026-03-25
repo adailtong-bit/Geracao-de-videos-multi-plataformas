@@ -125,8 +125,14 @@ function VersionsSidebar({
                         {hasMedia && thumbnail ? (
                           <img
                             src={thumbnail}
+                            crossOrigin="anonymous"
                             className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
                             alt="Thumbnail"
+                            onError={(e) => {
+                              // Fallback to transparent pixel to prevent external library crashes on dead blobs
+                              e.currentTarget.src =
+                                'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
+                            }}
                           />
                         ) : (
                           <Video className="w-6 h-6 text-muted-foreground" />
@@ -325,7 +331,7 @@ export default function Editor() {
                     className="w-8 h-8 border-2 border-card shadow-sm"
                     title={m.email}
                   >
-                    <AvatarImage src={m.avatar} />
+                    <AvatarImage src={m.avatar} crossOrigin="anonymous" />
                   </Avatar>
                 ))}
               </div>

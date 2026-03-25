@@ -183,11 +183,14 @@ export function InteractiveTimeline({
                           width: (br.end - br.start) * PIXELS_PER_SEC,
                         }}
                       >
-                        <img
-                          src={br.url}
-                          alt=""
-                          className="w-full h-full object-cover opacity-60 pointer-events-none"
-                        />
+                        {br.url && (
+                          <img
+                            src={br.url}
+                            alt=""
+                            crossOrigin="anonymous"
+                            className="w-full h-full object-cover opacity-60 pointer-events-none"
+                          />
+                        )}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
                           <ImageIcon className="w-5 h-5 text-white" />
                         </div>

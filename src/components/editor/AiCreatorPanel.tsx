@@ -130,6 +130,7 @@ export function AiCreatorPanel({
   )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [uploadedDataUrl, setUploadedDataUrl] = useState('')
 
   const [targetFormat, setTargetFormat] = useState<string>(
     project.targetFormat || 'yt_shorts',
@@ -170,6 +171,17 @@ export function AiCreatorPanel({
     }
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setUploadedDataUrl(reader.result as string)
+      }
+      // Uses Data URL to avoid cross-session persistence issues with ephemeral blobs
+      reader.readAsDataURL(e.target.files[0])
+    }
+  }
+
   const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
   const isExceedingMax =
     selectedFormatObj?.max !== undefined &&
@@ -191,6 +203,14 @@ export function AiCreatorPanel({
       return toast({
         title: 'Faltando informações',
         description: 'Cole a URL do vídeo completo primeiro.',
+        variant: 'destructive',
+      })
+    }
+
+    if (sourceType === 'upload' && !uploadedDataUrl) {
+      return toast({
+        title: 'Faltando informações',
+        description: 'Faça upload do seu arquivo primeiro.',
         variant: 'destructive',
       })
     }
@@ -218,22 +238,22 @@ export function AiCreatorPanel({
     setProgress(0)
 
     const initialText =
-      sourceType === 'video'
-        ? 'Acessando link e aplicando Hard Reset no editor...'
+      sourceType === 'video' || sourceType === 'upload'
+        ? 'Acessando arquivo e aplicando Hard Reset no editor...'
         : 'Extraindo contexto semântico...'
     setStatusText(initialText)
 
     const steps =
-      sourceType === 'video'
+      sourceType === 'video' || sourceType === 'upload'
         ? [
             {
               p: 20,
-              t: `Ingerindo vídeo completo da URL (Modo Edição Pura)...`,
+              t: `Ingerindo mídia original (Modo Edição Pura)...`,
             },
             { p: 40, t: `IA detectando ângulos e alternância de locutores...` },
             {
               p: 60,
-              t: `Extraindo cortes (Smart Highlights) focados no diálogo original...`,
+              t: `Extraindo cortes (Smart Highlights) focados no diálogo...`,
             },
             {
               p: 80,
@@ -271,7 +291,7 @@ export function AiCreatorPanel({
     let scenes: any[] = []
     let rawText = prompt.trim()
 
-    if (sourceType === 'video') {
+    if (sourceType === 'video' || sourceType === 'upload') {
       totalDuration = targetDur
       const numSegments = Math.max(3, Math.floor(targetDur / 10))
       const segmentDuration = targetDur / numSegments
@@ -325,8 +345,7 @@ export function AiCreatorPanel({
 
       rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
-      if (sourceType === 'upload') rawText = defaultTexts[sourceLanguage]
-      else if (!rawText) rawText = defaultShortTexts[sourceLanguage]
+      if (!rawText) rawText = defaultShortTexts[sourceLanguage]
 
       const clauses = rawText
         .replace(/[\n\r]+/g, ' ')
@@ -385,7 +404,7 @@ export function AiCreatorPanel({
     const generatedResult: GeneratedResult = {
       title: `${titleWords}...`,
       description:
-        sourceType === 'video'
+        sourceType === 'video' || sourceType === 'upload'
           ? `Cortes extraídos e formatados da fonte original em ${sourceLanguage}.`
           : `Vídeo dinâmico processado com IA em ${sourceLanguage}.`,
       hashtags: `#historia #ia #cinematic`,
@@ -409,12 +428,15 @@ export function AiCreatorPanel({
     ]
 
     const captionText = `${generatedResult.title}\n\n${generatedResult.description}\n\n${generatedResult.hashtags}`
-    const underlyingVideo =
-      sourceType === 'video'
-        ? videoUrl.endsWith('.mp4')
-          ? videoUrl
-          : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
-        : null
+
+    let underlyingVideo = null
+    if (sourceType === 'video') {
+      underlyingVideo = videoUrl.endsWith('.mp4')
+        ? videoUrl
+        : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+    } else if (sourceType === 'upload') {
+      underlyingVideo = uploadedDataUrl
+    }
 
     const newDraft: Draft = {
       id: crypto.randomUUID(),
@@ -436,7 +458,7 @@ export function AiCreatorPanel({
         },
         sfx: [],
         audioTrack:
-          sourceType === 'video'
+          sourceType === 'video' || sourceType === 'upload'
             ? null
             : {
                 id: crypto.randomUUID(),
@@ -500,7 +522,7 @@ export function AiCreatorPanel({
     return (
       <div className="flex flex-col items-center justify-center space-y-6 py-12 animate-fade-in text-center px-4">
         <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center animate-pulse">
-          {sourceType === 'video' ? (
+          {sourceType === 'video' || sourceType === 'upload' ? (
             <Scissors className="w-8 h-8 text-blue-500" />
           ) : (
             <Wand2 className="w-8 h-8 text-blue-500" />
@@ -508,7 +530,7 @@ export function AiCreatorPanel({
         </div>
         <div className="space-y-2 w-full max-w-xs">
           <h3 className="font-bold text-lg">
-            {sourceType === 'video'
+            {sourceType === 'video' || sourceType === 'upload'
               ? 'Cortes Inteligentes'
               : 'Processamento Inteligente'}
           </h3>
@@ -524,7 +546,7 @@ export function AiCreatorPanel({
       <div className="space-y-6 animate-fade-in-up pb-8">
         <div className="flex items-center justify-between bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-500/20">
           <div className="flex items-center gap-2">
-            {sourceType === 'video' ? (
+            {sourceType === 'video' || sourceType === 'upload' ? (
               <Scissors className="w-5 h-5" />
             ) : (
               <Wand2 className="w-5 h-5" />
@@ -627,11 +649,12 @@ export function AiCreatorPanel({
 
           <TabsContent value="upload" className="space-y-3 mt-0">
             <Label className="font-semibold text-sm">
-              Arquivo Local (Áudio/Vídeo)
+              Arquivo Local (Vídeo)
             </Label>
             <Input
               type="file"
-              accept="video/*,audio/*"
+              accept="video/*"
+              onChange={handleFileUpload}
               className="bg-background/50 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 h-11 cursor-pointer"
             />
           </TabsContent>
@@ -792,7 +815,7 @@ export function AiCreatorPanel({
             <Select
               value={voiceProfile}
               onValueChange={(v) => setVoiceProfile(v as VoiceProfile)}
-              disabled={sourceType === 'video'}
+              disabled={sourceType === 'video' || sourceType === 'upload'}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -812,7 +835,7 @@ export function AiCreatorPanel({
             <Select
               value={visualStyle}
               onValueChange={(v) => setVisualStyle(v as VisualStyle)}
-              disabled={sourceType === 'video'}
+              disabled={sourceType === 'video' || sourceType === 'upload'}
             >
               <SelectTrigger className="bg-background/50 h-10">
                 <SelectValue />
@@ -846,12 +869,12 @@ export function AiCreatorPanel({
           onClick={handleGenerate}
           className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-md transition-all hover:-translate-y-0.5 mt-6"
         >
-          {sourceType === 'video' ? (
+          {sourceType === 'video' || sourceType === 'upload' ? (
             <Scissors className="w-5 h-5 mr-2" />
           ) : (
             <Wand2 className="w-5 h-5 mr-2" />
           )}
-          {sourceType === 'video'
+          {sourceType === 'video' || sourceType === 'upload'
             ? 'Processar Cortes Originais'
             : 'Gerar Sequência HD'}
         </Button>
