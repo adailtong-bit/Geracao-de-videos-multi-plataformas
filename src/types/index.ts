@@ -115,13 +115,14 @@ export interface Project {
   scheduledPosts?: ScheduledPost[]
   drafts?: Draft[]
   activeDraftId?: string | null
-  language?: Language // kept for backward compatibility
+  language?: Language
   sourceLanguage?: Language
   subtitleLanguage?: Language | 'none'
   voiceProfile?: VoiceProfile
   visualStyle?: VisualStyle
   mood?: Mood
   teamMembers?: TeamMember[]
+  targetFormat?: string
 }
 
 export interface User {

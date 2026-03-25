@@ -16,12 +16,15 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select'
 import {
   Wand2,
@@ -38,8 +41,12 @@ import {
   Globe,
   Clock,
   Scissors,
+  MonitorPlay,
+  ShieldAlert,
+  AlertCircle,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { VIDEO_FORMATS } from '@/lib/video-formats'
 
 interface Props {
   project: Project
@@ -120,7 +127,13 @@ export function AiCreatorPanel({
   )
   const [prompt, setPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [targetDuration, setTargetDuration] = useState<number>(60)
+
+  const [targetFormat, setTargetFormat] = useState<string>(
+    project.targetFormat || 'custom',
+  )
+  const [targetDuration, setTargetDuration] = useState<number>(
+    project.videoDuration || 60,
+  )
 
   const [sourceLanguage, setSourceLanguage] = useState<Language>(
     project.sourceLanguage || project.language || 'pt-BR',
@@ -140,6 +153,21 @@ export function AiCreatorPanel({
   const [statusText, setStatusText] = useState('')
   const [result, setResult] = useState<GeneratedResult | null>(null)
   const { toast } = useToast()
+
+  const handleFormatChange = (v: string) => {
+    setTargetFormat(v)
+    const f = VIDEO_FORMATS.find((x) => x.id === v)
+    if (f) {
+      if (f.max) setTargetDuration(f.max)
+      else if (f.min) setTargetDuration(f.min)
+    }
+  }
+
+  const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
+  const isExceedingMax =
+    selectedFormatObj?.max && targetDuration > selectedFormatObj.max
+  const isBelowMin =
+    selectedFormatObj?.min && targetDuration < selectedFormatObj.min
 
   const handleGenerate = () => {
     if (sourceType === 'text' && !prompt.trim()) {
@@ -162,6 +190,14 @@ export function AiCreatorPanel({
       return toast({
         title: 'Duração inválida',
         description: 'A duração desejada deve ser de pelo menos 10 segundos.',
+        variant: 'destructive',
+      })
+    }
+
+    if (isExceedingMax) {
+      toast({
+        title: 'Aviso de Limite da Plataforma',
+        description: `O vídeo gerado excederá o limite do formato ${selectedFormatObj?.label}.`,
         variant: 'destructive',
       })
     }
@@ -252,19 +288,17 @@ export function AiCreatorPanel({
 
       let currentStartTime = 0
 
-      // Dynamic Multicam Detection logic based solely on original video source
       scenes = Array.from({ length: numSegments }).map((_, i) => {
         const text = interviewTexts[i % interviewTexts.length]
         const start = currentStartTime
         const end = start + segmentDuration
         currentStartTime = end
 
-        // AI logic identifies and alternates between speakers (mocked via source offsets)
         let cutSourceStart = 0
         if (i % 2 === 0) {
-          cutSourceStart = 50 + i * 20 // Speaker 1 focus
+          cutSourceStart = 50 + i * 20
         } else {
-          cutSourceStart = 150 + i * 20 // Speaker 2 focus
+          cutSourceStart = 150 + i * 20
         }
 
         const cutSourceEnd = cutSourceStart + segmentDuration
@@ -288,7 +322,6 @@ export function AiCreatorPanel({
         sourceEnd: s.sourceEnd,
       }))
 
-      // Pure Editing Mode: Ensure zero external B-rolls are added
       bRolls = []
       rawText = interviewTexts.slice(0, numSegments).join(' ')
     } else {
@@ -389,17 +422,18 @@ export function AiCreatorPanel({
       snapshot: {
         videoUrl: underlyingVideo,
         videoDuration: totalDuration,
+        targetFormat,
         bRolls,
         aiClips,
         cuts,
-        elements: [], // UI Reset: Clear elements from previous sessions
+        elements: [],
         globalCaptionStyle: 'none',
         captions: {
           tiktok: captionText,
           instagram: captionText,
           facebook: captionText,
         },
-        sfx: [], // UI Reset: clear SFX
+        sfx: [],
         audioTrack:
           sourceType === 'video'
             ? null
@@ -417,11 +451,10 @@ export function AiCreatorPanel({
       },
     }
 
-    // State & Cache Management: Hard Reset
-    // Passing the complete clean snapshot to completely overwrite old state/styles
     update({
       videoUrl: newDraft.snapshot.videoUrl,
       videoDuration: newDraft.snapshot.videoDuration,
+      targetFormat: newDraft.snapshot.targetFormat,
       bRolls: newDraft.snapshot.bRolls || [],
       aiClips: newDraft.snapshot.aiClips,
       cuts: newDraft.snapshot.cuts || [],
@@ -589,6 +622,75 @@ export function AiCreatorPanel({
         </Tabs>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 space-y-3">
+                <Label className="font-semibold text-sm flex items-center gap-2">
+                  <MonitorPlay className="w-4 h-4 text-primary" /> Plataforma
+                  Alvo
+                </Label>
+                <Select value={targetFormat} onValueChange={handleFormatChange}>
+                  <SelectTrigger className="bg-background/50 h-10">
+                    <SelectValue placeholder="Selecione o formato" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['YouTube', 'TikTok', 'Instagram', 'Outros'].map(
+                      (groupName) => (
+                        <SelectGroup key={groupName}>
+                          <SelectLabel>{groupName}</SelectLabel>
+                          {VIDEO_FORMATS.filter(
+                            (f) => f.group === groupName,
+                          ).map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:w-32 space-y-3 shrink-0">
+                <Label className="font-semibold text-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" /> Duração (s)
+                </Label>
+                <Input
+                  type="number"
+                  min={10}
+                  max={3600}
+                  value={targetDuration}
+                  onChange={(e) => setTargetDuration(Number(e.target.value))}
+                  className="bg-background/50 h-10"
+                />
+              </div>
+            </div>
+
+            {isExceedingMax && selectedFormatObj && (
+              <Alert
+                variant="destructive"
+                className="py-2 px-3 animate-in slide-in-from-top-2"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <AlertDescription className="text-xs ml-2">
+                  O formato <strong>{selectedFormatObj.label}</strong> exige
+                  duração máxima de {selectedFormatObj.max}s. Seu corte atual
+                  pode impedir a monetização ou publicação.
+                </AlertDescription>
+              </Alert>
+            )}
+            {isBelowMin && selectedFormatObj && (
+              <Alert className="py-2 px-3 bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300 animate-in slide-in-from-top-2">
+                <AlertCircle className="w-4 h-4 text-blue-500" />
+                <AlertDescription className="text-xs ml-2">
+                  Para elegibilidade de mid-roll no{' '}
+                  <strong>{selectedFormatObj.label}</strong>, o vídeo deve ter
+                  no mínimo {selectedFormatObj.min}s.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" /> Idioma Original
@@ -632,21 +734,6 @@ export function AiCreatorPanel({
                 <SelectItem value="it-IT">Italiano</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" /> Duração (s)
-            </Label>
-            <Input
-              type="number"
-              min={10}
-              max={300}
-              value={targetDuration}
-              onChange={(e) => setTargetDuration(Number(e.target.value))}
-              className="bg-background/50 h-10"
-              placeholder="Ex: 60"
-            />
           </div>
 
           <div className="space-y-3">

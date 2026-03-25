@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover'
+import { VIDEO_FORMATS } from '@/lib/video-formats'
 
 export function InteractiveTimeline({
   project,
@@ -20,7 +21,14 @@ export function InteractiveTimeline({
   const { play, pause, seek } = usePlayerControls()
 
   const PIXELS_PER_SEC = 40
-  const minWidth = Math.max(800, (duration || 10) * PIXELS_PER_SEC)
+  const format = VIDEO_FORMATS.find((f) => f.id === project.targetFormat)
+
+  const maxFormatTime = Math.max(
+    duration || 10,
+    format?.max || 0,
+    format?.min || 0,
+  )
+  const minWidth = Math.max(800, maxFormatTime * PIXELS_PER_SEC + 150)
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -82,6 +90,28 @@ export function InteractiveTimeline({
               onClick={handleSeek}
             />
 
+            {/* Safe Zone Markers */}
+            {format?.max && (
+              <div
+                className="absolute top-0 bottom-0 border-r-2 border-red-500/80 border-dashed z-40 pointer-events-none transition-all"
+                style={{ left: format.max * PIXELS_PER_SEC }}
+              >
+                <div className="absolute top-2 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  Limite: {format.label}
+                </div>
+              </div>
+            )}
+            {format?.min && (
+              <div
+                className="absolute top-0 bottom-0 border-r-2 border-blue-500/80 border-dashed z-40 pointer-events-none transition-all"
+                style={{ left: format.min * PIXELS_PER_SEC }}
+              >
+                <div className="absolute top-8 left-1 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                  Mínimo: {format.label}
+                </div>
+              </div>
+            )}
+
             <div className="pt-6 px-4 space-y-3 pointer-events-none">
               {/* Visuals Track */}
               {project.bRolls && project.bRolls.length > 0 && (
@@ -106,10 +136,8 @@ export function InteractiveTimeline({
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
                           <ImageIcon className="w-5 h-5 text-white" />
                         </div>
-                        {/* Drag Handle Mock */}
                         <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-indigo-500/50" />
                       </div>
-                      {/* Transition Hover Button */}
                       {i < (project.bRolls?.length || 0) - 1 && (
                         <div
                           className="absolute top-1/2 -translate-y-1/2 z-20 pointer-events-auto"
