@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useProject } from '@/hooks/useProject'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -195,23 +195,24 @@ function VersionsSidebar({
 export default function Editor() {
   const { id } = useParams()
   const [project, update] = useProject(id || '')
-  const [activeTab, setActiveTab] = useState('ai-creator')
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'ai-creator'
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true })
+  }
+
   const [aiStatus, setAiStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
   )
+  const [creatorKey, setCreatorKey] = useState(0)
   const { toast } = useToast()
 
-  // Listener para eventos customizados
-  useEffect(() => {
-    const handleSetTab = (e: Event) => {
-      const customEvent = e as CustomEvent<string>
-      if (customEvent.detail) {
-        setActiveTab(customEvent.detail)
-      }
-    }
-    window.addEventListener('set_tab', handleSetTab)
-    return () => window.removeEventListener('set_tab', handleSetTab)
-  }, [])
+  const handleReturnToCorrection = () => {
+    setCreatorKey((k) => k + 1)
+    setActiveTab('ai-creator')
+  }
 
   if (project === null) {
     return (
@@ -403,6 +404,7 @@ export default function Editor() {
                         className="mt-0 outline-none"
                       >
                         <AiCreatorPanel
+                          key={creatorKey}
                           project={project}
                           update={update}
                           onNext={() => setActiveTab('audio')}
@@ -450,10 +452,15 @@ export default function Editor() {
                   project={project}
                   isGenerating={aiStatus === 'generating'}
                   update={update}
+                  onReturnToCorrection={handleReturnToCorrection}
                 />
               </div>
 
-              <InteractiveTimeline project={project} update={update} />
+              <InteractiveTimeline
+                project={project}
+                update={update}
+                isGenerating={aiStatus === 'generating'}
+              />
             </div>
           </div>
         </div>

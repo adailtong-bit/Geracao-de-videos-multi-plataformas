@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Project,
   BRoll,
@@ -146,6 +146,17 @@ export function AiCreatorPanel({
   const [statusText, setStatusText] = useState('')
   const [result, setResult] = useState<GeneratedResult | null>(null)
   const { toast } = useToast()
+
+  // Make sure prompt state remains in sync with context if it changes unexpectedly
+  useEffect(() => {
+    if (
+      project.draftPrompt &&
+      project.draftPrompt !== prompt &&
+      status === 'idle'
+    ) {
+      setPrompt(project.draftPrompt)
+    }
+  }, [project.draftPrompt])
 
   const handleFormatChange = (v: string) => {
     setTargetFormat(v)

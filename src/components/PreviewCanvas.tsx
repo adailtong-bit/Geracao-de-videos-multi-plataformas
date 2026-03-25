@@ -39,10 +39,12 @@ export function PreviewCanvas({
   project,
   isGenerating = false,
   update,
+  onReturnToCorrection,
 }: {
   project: Project
   isGenerating?: boolean
   update?: (updates: Partial<Project>) => void
+  onReturnToCorrection?: () => void
 }) {
   const { setVideoElement, play, pause } = usePlayerControls()
   const { isPlaying, currentTime, volume, videoError, isVideoLoaded } =
@@ -448,7 +450,11 @@ export function PreviewCanvas({
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
-    window.dispatchEvent(new CustomEvent('set_tab', { detail: 'ai-creator' }))
+    if (onReturnToCorrection) {
+      onReturnToCorrection()
+    } else {
+      window.dispatchEvent(new CustomEvent('set_tab', { detail: 'ai-creator' }))
+    }
   }
 
   const avatarScale = project.avatar?.scale ?? 1

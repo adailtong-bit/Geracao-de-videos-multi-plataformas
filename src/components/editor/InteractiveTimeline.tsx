@@ -21,9 +21,11 @@ import { VIDEO_FORMATS } from '@/lib/video-formats'
 export function InteractiveTimeline({
   project,
   update,
+  isGenerating = false,
 }: {
   project: Project
   update: (updates: Partial<Project>) => void
+  isGenerating?: boolean
 }) {
   const { currentTime, duration, isPlaying, videoError, isVideoLoaded } =
     usePlayerState()
@@ -40,6 +42,7 @@ export function InteractiveTimeline({
   const minWidth = Math.max(800, maxFormatTime * PIXELS_PER_SEC + 150)
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isGenerating) return
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const time = Math.max(0, Math.min(x / PIXELS_PER_SEC, duration || 10))
@@ -54,6 +57,7 @@ export function InteractiveTimeline({
   }
 
   const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00'
     const m = Math.floor(time / 60)
     const s = Math.floor(time % 60)
     return `${m}:${s.toString().padStart(2, '0')}`
@@ -76,6 +80,7 @@ export function InteractiveTimeline({
           size="icon"
           className="w-8 h-8 rounded-full shadow-sm transition-transform active:scale-95 shrink-0"
           onClick={isPlaying ? pause : play}
+          disabled={isGenerating || !isVideoLoaded || videoError}
         >
           {isPlaying ? (
             <Pause className="w-4 h-4 fill-current" />
@@ -99,7 +104,7 @@ export function InteractiveTimeline({
               <AlertTriangle className="w-3 h-3" />{' '}
               <span className="hidden sm:inline">Erro de Mídia</span>
             </Badge>
-          ) : !isVideoLoaded ? (
+          ) : !isVideoLoaded || isGenerating ? (
             <Badge
               variant="outline"
               className="bg-blue-500/10 text-blue-600 border-blue-500/20 shadow-none gap-1 animate-pulse"
@@ -143,7 +148,10 @@ export function InteractiveTimeline({
 
             {/* Clickable Seek Area */}
             <div
-              className="absolute inset-0 z-0 cursor-text"
+              className={cn(
+                'absolute inset-0 z-0',
+                isGenerating ? 'cursor-not-allowed' : 'cursor-text',
+              )}
               onClick={handleSeek}
             />
 
@@ -183,7 +191,14 @@ export function InteractiveTimeline({
               </div>
             )}
 
-            <div className="pt-6 px-4 space-y-3 pointer-events-none z-20 relative">
+            <div
+              className={cn(
+                'pt-6 px-4 space-y-3 relative z-20 transition-opacity',
+                isGenerating
+                  ? 'opacity-50 pointer-events-none'
+                  : 'pointer-events-none',
+              )}
+            >
               {/* Visuals Track */}
               {project.bRolls && project.bRolls.length > 0 && (
                 <div className="relative h-16 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
