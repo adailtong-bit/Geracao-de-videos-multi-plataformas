@@ -479,7 +479,7 @@ export default function Editor() {
                             className="mt-0 outline-none"
                           >
                             <AiCreatorPanel
-                              key={creatorKey}
+                              key={`${creatorKey}-${project.activeDraftId || 'new'}`}
                               project={project}
                               update={update}
                               onNext={() => setActiveTab('audio')}

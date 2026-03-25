@@ -111,12 +111,23 @@ export function AiCreatorPanel({
   onNext,
   onStatusChange,
 }: Props) {
+  const initialSourceType = project.videoUrl
+    ? project.videoUrl.startsWith('data:') ||
+      project.videoUrl.startsWith('blob:')
+      ? 'upload'
+      : 'video'
+    : 'text'
+
   const [sourceType, setSourceType] = useState<'text' | 'video' | 'upload'>(
-    'text',
+    initialSourceType,
   )
   const [prompt, setPrompt] = useState(project.draftPrompt || '')
-  const [videoUrl, setVideoUrl] = useState('')
-  const [uploadedDataUrl, setUploadedDataUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState(
+    initialSourceType === 'video' ? project.videoUrl || '' : '',
+  )
+  const [uploadedDataUrl, setUploadedDataUrl] = useState(
+    initialSourceType === 'upload' ? project.videoUrl || '' : '',
+  )
 
   const [targetFormat, setTargetFormat] = useState<string>(
     project.targetFormat || 'yt_shorts',
@@ -139,8 +150,10 @@ export function AiCreatorPanel({
   const [voiceProfile, setVoiceProfile] = useState<string>(
     project.voiceProfile || 'deep',
   )
-  const [visualStyle, setVisualStyle] = useState<VisualStyle>('realistic')
-  const [mood, setMood] = useState<Mood>('inspirational')
+  const [visualStyle, setVisualStyle] = useState<VisualStyle>(
+    project.visualStyle || 'realistic',
+  )
+  const [mood, setMood] = useState<Mood>(project.mood || 'inspirational')
 
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',

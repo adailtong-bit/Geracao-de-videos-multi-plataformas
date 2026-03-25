@@ -1,4 +1,5 @@
-import { Project, TransitionStyle } from '@/types'
+import { useState } from 'react'
+import { Project, TransitionStyle, BRoll } from '@/types'
 import { usePlayerState, usePlayerControls } from '@/stores/usePlayerStore'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import {
@@ -8,6 +9,7 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +33,11 @@ export function InteractiveTimeline({
   const { currentTime, duration, isPlaying, videoError, isVideoLoaded } =
     usePlayerState()
   const { play, pause, seek } = usePlayerControls()
+
+  const [selectedItem, setSelectedItem] = useState<{
+    id: string
+    type: 'cut' | 'broll'
+  } | null>(null)
 
   const PIXELS_PER_SEC = 40
   const format = VIDEO_FORMATS.find((f) => f.id === project.targetFormat)
@@ -72,6 +79,95 @@ export function InteractiveTimeline({
   const isBelowMin = format?.min !== undefined && totalDuration < format.min
   const isCompliant =
     !isExceedingMax && !isBelowMin && !videoError && isVideoLoaded
+
+  const handleSplit = () => {
+    const cutIndex = project.cuts?.findIndex(
+      (c) => currentTime > c.start && currentTime < c.end,
+    )
+    if (cutIndex !== undefined && cutIndex >= 0 && project.cuts) {
+      const c = project.cuts[cutIndex]
+      const splitPoint = currentTime
+      const splitSourcePoint =
+        c.sourceStart !== undefined
+          ? c.sourceStart + (splitPoint - c.start)
+          : undefined
+
+      const cut1 = {
+        ...c,
+        id: crypto.randomUUID(),
+        end: splitPoint,
+        sourceEnd: splitSourcePoint,
+      }
+      const cut2 = {
+        ...c,
+        id: crypto.randomUUID(),
+        start: splitPoint,
+        sourceStart: splitSourcePoint,
+      }
+
+      const newCuts = [...project.cuts]
+      newCuts.splice(cutIndex, 1, cut1, cut2)
+      update({ cuts: newCuts })
+    }
+  }
+
+  const handleDeleteItem = () => {
+    if (!selectedItem) return
+    if (selectedItem.type === 'cut' && project.cuts) {
+      const cutToRemove = project.cuts.find((c) => c.id === selectedItem.id)
+      if (!cutToRemove) return
+
+      const cutDur = cutToRemove.end - cutToRemove.start
+
+      const newCuts = project.cuts
+        .filter((c) => c.id !== selectedItem.id)
+        .map((c) => {
+          if (c.start >= cutToRemove.end) {
+            return { ...c, start: c.start - cutDur, end: c.end - cutDur }
+          }
+          return c
+        })
+
+      const newBRolls = project.bRolls?.map((b) => {
+        if (b.start >= cutToRemove.end) {
+          return { ...b, start: b.start - cutDur, end: b.end - cutDur }
+        }
+        return b
+      })
+
+      const newAiClips = project.aiClips?.map((clip) => ({
+        ...clip,
+        subtitles: clip.subtitles.map((s) => {
+          if (s.start >= cutToRemove.end) {
+            return { ...s, start: s.start - cutDur, end: s.end - cutDur }
+          }
+          return s
+        }),
+      }))
+
+      update({
+        cuts: newCuts,
+        bRolls: newBRolls,
+        aiClips: newAiClips,
+        videoDuration: Math.max(0, (project.videoDuration || 0) - cutDur),
+      })
+      setSelectedItem(null)
+    } else if (selectedItem.type === 'broll' && project.bRolls) {
+      update({ bRolls: project.bRolls.filter((b) => b.id !== selectedItem.id) })
+      setSelectedItem(null)
+    }
+  }
+
+  const handleAddBRoll = () => {
+    const newBRoll: BRoll = {
+      id: crypto.randomUUID(),
+      start: currentTime,
+      end: currentTime + 3,
+      url: `https://img.usecurling.com/p/800/1200?q=scene&dpr=2&seed=${Date.now()}`,
+      transitionStyle: 'fade',
+    }
+    update({ bRolls: [...(project.bRolls || []), newBRoll] })
+  }
 
   return (
     <div className="h-64 bg-background border-t flex flex-col shrink-0 z-10 shadow-[0_-5px_20px_rgba(0,0,0,0.02)] relative select-none">
@@ -131,6 +227,41 @@ export function InteractiveTimeline({
             </Badge>
           )}
         </div>
+
+        <div className="flex items-center gap-2 ml-auto shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSplit}
+            disabled={isGenerating || !project.cuts?.length}
+            title="Dividir Corte no Playhead"
+            className="hidden sm:flex"
+          >
+            <Scissors className="w-4 h-4 mr-1" />
+            Dividir
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddBRoll}
+            disabled={isGenerating}
+            title="Incluir Segmento Visual"
+            className="hidden sm:flex"
+          >
+            <ImageIcon className="w-4 h-4 mr-1" />
+            Incluir Frame
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteItem}
+            disabled={isGenerating || !selectedItem}
+            title="Deletar Selecionado"
+          >
+            <Trash2 className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">Remover Segmento</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 relative bg-muted/5 overflow-hidden">
@@ -153,7 +284,10 @@ export function InteractiveTimeline({
                 'absolute inset-0 z-0',
                 isGenerating ? 'cursor-not-allowed' : 'cursor-text',
               )}
-              onClick={handleSeek}
+              onClick={(e) => {
+                handleSeek(e)
+                setSelectedItem(null)
+              }}
             />
 
             {/* Monetization Safety Zone */}
@@ -195,24 +329,31 @@ export function InteractiveTimeline({
             <div
               className={cn(
                 'pt-6 px-4 space-y-3 relative z-20 transition-opacity',
-                isGenerating
-                  ? 'opacity-50 pointer-events-none'
-                  : 'pointer-events-none',
+                isGenerating ? 'opacity-50' : '',
               )}
             >
               {/* Visuals Track */}
               {project.bRolls && project.bRolls.length > 0 && (
                 <div className="relative h-16 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
-                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end">
+                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end pointer-events-none">
                     Visuais
                   </div>
                   {project.bRolls?.map((br, i) => (
                     <div key={br.id}>
                       <div
-                        className="absolute top-1 bottom-1 bg-indigo-500/20 border border-indigo-500/50 rounded overflow-hidden group hover:bg-indigo-500/30 transition-colors shadow-sm"
+                        className={cn(
+                          'absolute top-1 bottom-1 border rounded overflow-hidden group transition-colors shadow-sm cursor-pointer',
+                          selectedItem?.id === br.id
+                            ? 'bg-indigo-500/40 border-primary ring-2 ring-primary/50 z-10'
+                            : 'bg-indigo-500/20 border-indigo-500/50 hover:bg-indigo-500/30',
+                        )}
                         style={{
                           left: br.start * PIXELS_PER_SEC,
                           width: (br.end - br.start) * PIXELS_PER_SEC,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedItem({ id: br.id, type: 'broll' })
                         }}
                       >
                         {br.url && (
@@ -286,7 +427,7 @@ export function InteractiveTimeline({
               )}
 
               {/* Audio Track */}
-              <div className="relative h-10 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto">
+              <div className="relative h-10 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-none">
                 <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end">
                   Narração
                 </div>
@@ -309,13 +450,18 @@ export function InteractiveTimeline({
               {/* Cuts Track */}
               {project.cuts && project.cuts.length > 0 && (
                 <div className="relative h-10 bg-black/5 dark:bg-white/5 rounded-md border border-border pointer-events-auto mt-3">
-                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end text-right leading-tight">
+                  <div className="absolute -left-2 top-0 bottom-0 flex items-center -translate-x-full px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-20 justify-end text-right leading-tight pointer-events-none">
                     Smart Cuts
                   </div>
                   {project.cuts.map((cut, i) => (
                     <div
                       key={cut.id}
-                      className="absolute top-1 bottom-1 bg-emerald-500/20 border border-emerald-500/50 rounded flex items-center px-2 text-[10px] whitespace-nowrap text-emerald-800 dark:text-emerald-200 font-medium overflow-hidden shadow-sm group hover:bg-emerald-500/30 transition-colors"
+                      className={cn(
+                        'absolute top-1 bottom-1 border rounded flex items-center px-2 text-[10px] whitespace-nowrap font-medium overflow-hidden shadow-sm group transition-colors cursor-pointer',
+                        selectedItem?.id === cut.id
+                          ? 'bg-emerald-500/40 border-primary ring-2 ring-primary/50 text-emerald-900 dark:text-emerald-100 z-10'
+                          : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/30',
+                      )}
                       style={{
                         left: cut.start * PIXELS_PER_SEC,
                         width: (cut.end - cut.start) * PIXELS_PER_SEC,
@@ -325,8 +471,12 @@ export function InteractiveTimeline({
                           ? `Source: ${cut.sourceStart.toFixed(1)}s - ${cut.sourceEnd?.toFixed(1)}s`
                           : `Corte ${i + 1}`
                       }
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedItem({ id: cut.id, type: 'cut' })
+                      }}
                     >
-                      <span className="truncate w-full font-bold px-1">
+                      <span className="truncate w-full font-bold px-1 pointer-events-none">
                         Corte #{i + 1}
                       </span>
                     </div>
