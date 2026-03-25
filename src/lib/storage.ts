@@ -1,6 +1,6 @@
 import { Project } from '@/types'
 
-const KEY = 'multiproject_projects'
+const KEY = 'multiproject_projects_v3'
 
 export const getProjects = (): Project[] => {
   try {
@@ -13,13 +13,139 @@ export const getProjects = (): Project[] => {
     // Ignore error and fall back to mock data
   }
 
-  const defaultDraftId = crypto.randomUUID()
+  // Clear old versions to reset data
+  localStorage.removeItem('multiproject_projects')
+  localStorage.removeItem('multiproject_projects_v2')
 
-  // Provide fully populated mock data by default so the interface is never blank
-  const defaultProject: Project = {
-    id: 'mock-project-1',
-    name: 'História com IA',
-    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+  const defaultDraftId1 = crypto.randomUUID()
+  const defaultDraftId2 = crypto.randomUUID()
+
+  const aiClips1 = [
+    {
+      id: crypto.randomUUID(),
+      start: 0,
+      end: 12,
+      title: 'A História do Universo',
+      description: 'Uma breve introdução sobre as maravilhas do cosmos.',
+      keywords: ['universo', 'espaço', 'estrelas'],
+      subtitles: [
+        {
+          id: crypto.randomUUID(),
+          start: 0,
+          end: 4,
+          text: 'O universo é vasto e cheio de maravilhas.',
+        },
+        {
+          id: crypto.randomUUID(),
+          start: 4,
+          end: 8,
+          text: 'Bilhões de galáxias se espalham pelo infinito vazio.',
+        },
+        {
+          id: crypto.randomUUID(),
+          start: 8,
+          end: 12,
+          text: 'Somos todos exploradores deste grande cosmos.',
+        },
+      ],
+    },
+  ]
+
+  const project1: Project = {
+    id: 'example-1',
+    name: 'Vídeo 1: Com Legendas',
+    videoUrl:
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    videoDuration: 12,
+    trimStart: 0,
+    trimEnd: 12,
+    cuts: [],
+    elements: [],
+    sourceLanguage: 'pt-BR',
+    subtitleLanguage: 'none',
+    avatar: {
+      enabled: false,
+      mode: 'preset',
+      position: 'custom',
+      positionX: 50,
+      positionY: 80,
+      scale: 1,
+    },
+    subtitleStyle: {
+      color: '#ffffff',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      fontSize: 11,
+      enabled: true,
+    },
+    glossary: [],
+    aiClips: aiClips1,
+    targetPlatforms: ['tiktok', 'instagram'],
+    aspectRatio: '9:16',
+    captions: {
+      instagram: 'A beleza do universo explicada. 🌌 #cosmos',
+      tiktok: 'Nós somos poeira estelar ✨ #universo',
+      facebook: 'Uma jornada pelo cosmos.',
+    },
+    createdAt: Date.now(),
+    drafts: [],
+    activeDraftId: defaultDraftId1,
+  }
+
+  project1.drafts = [
+    {
+      id: defaultDraftId1,
+      name: 'Versão 1',
+      createdAt: Date.now(),
+      snapshot: {
+        videoUrl: project1.videoUrl,
+        videoDuration: project1.videoDuration,
+        trimStart: project1.trimStart,
+        trimEnd: project1.trimEnd,
+        cuts: project1.cuts,
+        elements: project1.elements,
+        aiClips: project1.aiClips,
+        targetPlatforms: project1.targetPlatforms,
+        aspectRatio: project1.aspectRatio,
+        captions: project1.captions,
+        sourceLanguage: project1.sourceLanguage,
+        subtitleLanguage: project1.subtitleLanguage,
+        avatar: project1.avatar,
+        subtitleStyle: project1.subtitleStyle,
+        glossary: project1.glossary,
+      },
+    },
+  ]
+
+  const aiClips2 = [
+    {
+      id: crypto.randomUUID(),
+      start: 0,
+      end: 10,
+      title: 'Meditação e Foco',
+      description: 'Um vídeo calmo para relaxamento.',
+      keywords: ['foco', 'meditacao', 'paz'],
+      subtitles: [
+        {
+          id: crypto.randomUUID(),
+          start: 0,
+          end: 5,
+          text: 'Respire fundo e encontre o seu centro.',
+        },
+        {
+          id: crypto.randomUUID(),
+          start: 5,
+          end: 10,
+          text: 'Deixe as preocupações de lado e foque no agora.',
+        },
+      ],
+    },
+  ]
+
+  const project2: Project = {
+    id: 'example-2',
+    name: 'Vídeo 2: Sem Legendas (Voz)',
+    videoUrl:
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     videoDuration: 10,
     trimStart: 0,
     trimEnd: 10,
@@ -37,76 +163,52 @@ export const getProjects = (): Project[] => {
     },
     subtitleStyle: {
       color: '#ffffff',
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 12,
-      enabled: true,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      fontSize: 11,
+      enabled: false,
     },
     glossary: [],
-    aiClips: [
-      {
-        id: crypto.randomUUID(),
-        start: 0,
-        end: 10,
-        title: 'Bem-vindo ao Criador de Histórias',
-        description:
-          'Gere vídeos incríveis baseados em textos com apenas um clique.',
-        keywords: ['historia', 'ia', 'educacao'],
-        subtitles: [
-          {
-            id: crypto.randomUUID(),
-            start: 0,
-            end: 5,
-            text: 'Bem-vindo ao Criador de Histórias com IA!',
-          },
-          {
-            id: crypto.randomUUID(),
-            start: 5,
-            end: 10,
-            text: 'Digite um texto (ex: Salmo 21) e veja a mágica.',
-          },
-        ],
-      },
-    ],
+    aiClips: aiClips2,
     targetPlatforms: ['tiktok', 'instagram'],
     aspectRatio: '9:16',
     captions: {
-      instagram: 'Nova história gerada com IA! #reels',
-      tiktok: 'Criado automaticamente #fyp',
-      facebook: 'Vídeo educativo.',
+      instagram: 'Momento de paz. 🧘 #meditacao',
+      tiktok: 'Respire fundo 🍃 #foco',
+      facebook: 'Relaxamento guiado.',
     },
-    createdAt: Date.now(),
+    createdAt: Date.now() - 1000,
     drafts: [],
-    activeDraftId: defaultDraftId,
+    activeDraftId: defaultDraftId2,
   }
 
-  // Populate the default draft with the initial snapshot state
-  defaultProject.drafts = [
+  project2.drafts = [
     {
-      id: defaultDraftId,
-      name: 'Bem-vindo ao Criador',
+      id: defaultDraftId2,
+      name: 'Versão 1',
       createdAt: Date.now(),
       snapshot: {
-        videoUrl: defaultProject.videoUrl,
-        videoDuration: defaultProject.videoDuration,
-        trimStart: defaultProject.trimStart,
-        trimEnd: defaultProject.trimEnd,
-        cuts: defaultProject.cuts,
-        elements: defaultProject.elements,
-        aiClips: defaultProject.aiClips,
-        targetPlatforms: defaultProject.targetPlatforms,
-        aspectRatio: defaultProject.aspectRatio,
-        captions: defaultProject.captions,
-        sourceLanguage: defaultProject.sourceLanguage,
-        subtitleLanguage: defaultProject.subtitleLanguage,
-        avatar: defaultProject.avatar,
-        subtitleStyle: defaultProject.subtitleStyle,
-        glossary: defaultProject.glossary,
+        videoUrl: project2.videoUrl,
+        videoDuration: project2.videoDuration,
+        trimStart: project2.trimStart,
+        trimEnd: project2.trimEnd,
+        cuts: project2.cuts,
+        elements: project2.elements,
+        aiClips: project2.aiClips,
+        targetPlatforms: project2.targetPlatforms,
+        aspectRatio: project2.aspectRatio,
+        captions: project2.captions,
+        sourceLanguage: project2.sourceLanguage,
+        subtitleLanguage: project2.subtitleLanguage,
+        avatar: project2.avatar,
+        subtitleStyle: project2.subtitleStyle,
+        glossary: project2.glossary,
       },
     },
   ]
 
-  localStorage.setItem(KEY, JSON.stringify([defaultProject]))
-  return [defaultProject]
+  const initialProjects = [project1, project2]
+  localStorage.setItem(KEY, JSON.stringify(initialProjects))
+  return initialProjects
 }
 
 export const saveProjects = (projects: Project[]) => {
@@ -135,7 +237,8 @@ export const createProject = (
   const newProject: Project = {
     id: crypto.randomUUID(),
     name,
-    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    videoUrl:
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     videoDuration: 10,
     trimStart: 0,
     trimEnd: 10,
@@ -158,8 +261,8 @@ export const createProject = (
     },
     subtitleStyle: {
       color: '#ffffff',
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      fontSize: 12,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      fontSize: 11,
       enabled: true,
     },
     glossary: [],

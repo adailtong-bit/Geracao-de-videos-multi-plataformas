@@ -494,8 +494,8 @@ export function PreviewCanvas({
     (isTtsSpeaking || (hasSourceAudio && isPlaying)) && !videoError
 
   const subColor = project.subtitleStyle?.color || '#ffffff'
-  const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
-  const subSize = project.subtitleStyle?.fontSize || 10
+  const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.6)'
+  const subSize = project.subtitleStyle?.fontSize || 11
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -692,9 +692,6 @@ export function PreviewCanvas({
       >
         {isSplitView && project.videoUrl && (
           <div className="flex-1 h-full flex flex-col items-center justify-center animate-in slide-in-from-left-4 fade-in min-w-0">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 bg-background/50 px-3 py-1 rounded-full border shadow-sm backdrop-blur-md">
-              Original (Raw)
-            </span>
             <div
               className="relative bg-black rounded-xl overflow-hidden shadow-xl ring-1 ring-white/10 flex items-center justify-center w-full"
               style={getRatioStyle()}
@@ -717,18 +714,13 @@ export function PreviewCanvas({
             isSplitView ? 'flex-1' : '',
           )}
         >
-          {isSplitView && (
-            <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 bg-primary/10 px-3 py-1 rounded-full border border-primary/20 shadow-sm backdrop-blur-md">
-              Edição Pura
-            </span>
-          )}
           <div
             ref={canvasRef}
             onPointerMove={handleCanvasPointerMove}
             onPointerUp={handleCanvasPointerUp}
             onPointerLeave={handleCanvasPointerUp}
             className={cn(
-              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 w-full select-none group',
+              'relative bg-zinc-950 rounded-xl shadow-2xl overflow-hidden flex items-center justify-center transition-all duration-500 ring-1 ring-white/10 shrink-0 w-full select-none group z-10',
             )}
             style={getRatioStyle()}
           >
@@ -961,10 +953,10 @@ export function PreviewCanvas({
                     return (
                       <div
                         key={clip.id}
-                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-2 px-2"
+                        className="absolute left-0 right-0 z-30 flex justify-center pointer-events-none animate-in fade-in duration-150 bottom-4 px-4"
                       >
                         <div
-                          className="px-2.5 py-1 rounded-md font-medium shadow-md text-center max-w-[95%] leading-snug tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
+                          className="px-2 py-1 rounded font-medium shadow-md text-center max-w-[85%] leading-snug tracking-wide transition-colors whitespace-pre-wrap backdrop-blur-md"
                           style={{
                             color: subColor,
                             backgroundColor: subBg,
