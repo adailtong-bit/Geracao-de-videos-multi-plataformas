@@ -70,9 +70,13 @@ export function MusicEditor({
   const bgAudioRef = useRef<HTMLAudioElement>(null)
   const vocalAudioRef = useRef<HTMLAudioElement>(null)
 
-  // Visualizer State
-  const [visualizerData, setVisualizerData] = useState<number[]>(
-    new Array(40).fill(5),
+  // Generate a realistic looking static waveform for interaction
+  const [waveform] = useState(() =>
+    Array.from({ length: 80 }, (_, i) => {
+      const base = 15
+      const variance = 60 * Math.abs(Math.sin(i * 0.15) * Math.cos(i * 0.05))
+      return Math.min(100, Math.max(5, base + variance + Math.random() * 20))
+    }),
   )
 
   // Example / Placeholder Tracks
@@ -129,6 +133,11 @@ export function MusicEditor({
       vocalAudioRef.current?.pause()
       setIsPlaying(false)
     } else {
+      if (currentTime >= duration) {
+        setCurrentTime(0)
+        if (bgAudioRef.current) bgAudioRef.current.currentTime = 0
+        if (vocalAudioRef.current) vocalAudioRef.current.currentTime = 0
+      }
       bgAudioRef.current?.play().catch(() => {})
       vocalAudioRef.current?.play().catch(() => {})
       setIsPlaying(true)
@@ -145,9 +154,31 @@ export function MusicEditor({
   }
 
   const handleSeek = (value: number) => {
-    setCurrentTime(value)
-    if (bgAudioRef.current) bgAudioRef.current.currentTime = value
-    if (vocalAudioRef.current) vocalAudioRef.current.currentTime = value
+    const clampedValue = Math.max(0, Math.min(value, duration))
+    setCurrentTime(clampedValue)
+    if (bgAudioRef.current) bgAudioRef.current.currentTime = clampedValue
+    if (vocalAudioRef.current) vocalAudioRef.current.currentTime = clampedValue
+  }
+
+  const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const percent = Math.max(
+      0,
+      Math.min(1, (e.clientX - rect.left) / rect.width),
+    )
+    handleSeek(percent * duration)
+  }
+
+  const handleEnded = () => {
+    setIsPlaying(false)
+    setCurrentTime(duration)
+  }
+
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
+    const d = e.currentTarget.duration
+    if (d && d !== Infinity && !isNaN(d)) {
+      setDuration(d)
+    }
   }
 
   // Sync Volume Levels
@@ -164,44 +195,43 @@ export function MusicEditor({
     }
   }, [masterVol, bgVol, vocalVol, bgMuted, vocalMuted])
 
-  // Fake Visualizer Animation
+  // Track Time Update via RequestAnimationFrame for smooth UI
   useEffect(() => {
-    if (!isPlaying) {
-      setVisualizerData((prev) => prev.map(() => 5))
-      return
+    let frameId: number
+    const updatePlayhead = () => {
+      if (bgAudioRef.current) {
+        setCurrentTime(bgAudioRef.current.currentTime)
+      }
+      if (isPlaying) {
+        frameId = requestAnimationFrame(updatePlayhead)
+      }
     }
-    const int = setInterval(() => {
-      setVisualizerData(
-        Array.from({ length: 40 }, () => 10 + Math.random() * 90),
-      )
-    }, 100)
-    return () => clearInterval(int)
+
+    if (isPlaying) {
+      frameId = requestAnimationFrame(updatePlayhead)
+    } else {
+      // Sync one last time when paused
+      if (bgAudioRef.current) {
+        setCurrentTime(bgAudioRef.current.currentTime)
+      }
+    }
+
+    return () => cancelAnimationFrame(frameId)
   }, [isPlaying])
 
-  // Track Time Update
+  // Clean up audio on unmount to prevent memory leaks or stray playing audio
   useEffect(() => {
-    let int: NodeJS.Timeout
-    if (isPlaying) {
-      int = setInterval(() => {
-        if (bgAudioRef.current) {
-          setCurrentTime(bgAudioRef.current.currentTime)
-          if (
-            bgAudioRef.current.duration &&
-            bgAudioRef.current.duration !== Infinity
-          ) {
-            setDuration(bgAudioRef.current.duration)
-          }
-        }
-      }, 250)
+    return () => {
+      if (bgAudioRef.current) bgAudioRef.current.pause()
+      if (vocalAudioRef.current) vocalAudioRef.current.pause()
     }
-    return () => clearInterval(int)
-  }, [isPlaying])
+  }, [])
 
   const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '0:00'
+    if (isNaN(seconds) || !isFinite(seconds)) return '00:00'
     const m = Math.floor(seconds / 60)
     const s = Math.floor(seconds % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
   return (
@@ -210,12 +240,14 @@ export function MusicEditor({
       <audio
         ref={bgAudioRef}
         src="https://actions.google.com/sounds/v1/water/rain_on_roof.ogg"
-        loop
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        preload="auto"
       />
       <audio
         ref={vocalAudioRef}
         src="https://actions.google.com/sounds/v1/human_voices/human_singing_choir.ogg"
-        loop
+        preload="auto"
       />
 
       {/* Header */}
@@ -571,28 +603,41 @@ export function MusicEditor({
                 </p>
               </div>
 
-              {/* Real-time Frequency Visualizer */}
-              <div className="w-full h-32 flex items-end justify-center gap-1 sm:gap-2 px-4">
-                {visualizerData.map((val, i) => (
-                  <div
-                    key={i}
-                    className="w-3 sm:w-5 bg-gradient-to-t from-indigo-600 to-purple-400 rounded-t-sm transition-all duration-75 ease-out shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                    style={{
-                      height: `${val}%`,
-                      opacity: isPlaying ? 0.6 + val / 200 : 0.2,
-                    }}
-                  />
-                ))}
+              {/* Interactive Waveform Display */}
+              <div
+                className="w-full h-32 flex items-center justify-between gap-[2px] sm:gap-1 px-4 cursor-pointer group relative"
+                onClick={handleWaveformClick}
+              >
+                {waveform.map((val, i) => {
+                  const barPercent = i / waveform.length
+                  const playPercent = currentTime / duration
+                  const isPlayed = barPercent <= playPercent
+
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        'flex-1 rounded-full transition-all duration-100',
+                        isPlayed
+                          ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]'
+                          : 'bg-zinc-800 group-hover:bg-zinc-700',
+                      )}
+                      style={{ height: `${val}%` }}
+                    />
+                  )
+                })}
               </div>
             </div>
           </div>
 
           {/* Transport Controls Bottom Bar */}
           <div className="h-32 bg-zinc-900 border-t border-white/10 shrink-0 flex flex-col px-6 py-4 z-20">
-            {/* Seek Bar */}
+            {/* Seek Bar and Time Display */}
             <div className="flex items-center gap-4 w-full max-w-5xl mx-auto mb-4 group">
-              <span className="text-xs font-mono font-medium text-zinc-400 w-12 text-right">
-                {formatTime(currentTime)}
+              <span className="text-sm font-mono font-medium text-zinc-300 min-w-[120px] text-right">
+                {formatTime(currentTime)}{' '}
+                <span className="text-zinc-500 mx-1">/</span>{' '}
+                {formatTime(duration)}
               </span>
               <div className="flex-1 relative flex items-center">
                 <Slider
@@ -603,9 +648,6 @@ export function MusicEditor({
                   className="cursor-pointer py-2 [&_[role=slider]]:bg-white [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-md"
                 />
               </div>
-              <span className="text-xs font-mono font-medium text-zinc-400 w-12">
-                {formatTime(duration)}
-              </span>
             </div>
 
             {/* Buttons */}
