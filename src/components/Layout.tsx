@@ -83,7 +83,7 @@ function AppSidebar() {
                   isActive={isActive}
                   tooltip={link.name}
                   className={cn(
-                    'h-11 transition-all font-medium text-sm',
+                    'h-11 md:h-10 transition-all font-medium text-base md:text-sm',
                     isActive
                       ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-sm'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -94,7 +94,7 @@ function AppSidebar() {
                     onClick={() => setOpenMobile(false)}
                     className="flex items-center gap-3 w-full"
                   >
-                    <Icon className="w-4 h-4 shrink-0" />
+                    <Icon className="w-5 h-5 md:w-4 md:h-4 shrink-0" />
                     <span className="truncate">{link.name}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -120,9 +120,9 @@ function AppSidebar() {
                 setOpenMobile(false)
                 logout()
               }}
-              className="w-full h-11 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm"
+              className="w-full h-11 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors font-medium text-base md:text-sm"
             >
-              <LogOut className="w-4 h-4 mr-2 shrink-0" />
+              <LogOut className="w-5 h-5 md:w-4 md:h-4 mr-2 shrink-0" />
               Sair da Conta
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -146,17 +146,17 @@ export default function Layout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-muted/20 min-h-screen w-full">
-        {/* Mobile Header */}
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:hidden sticky top-0 z-40 shadow-sm">
-          <SidebarTrigger className="-ml-1" />
-          <div className="font-bold flex items-center ml-2 text-foreground">
+      <SidebarInset className="bg-muted/20 min-h-screen w-full flex flex-col">
+        {/* Mobile Header with safe area support */}
+        <header className="flex min-h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:hidden sticky top-0 z-40 shadow-sm pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] box-content">
+          <SidebarTrigger className="-ml-2" />
+          <div className="font-bold flex items-center ml-1 text-foreground">
             <Video className="w-5 h-5 text-primary mr-2" />
             MultiProject
           </div>
         </header>
 
-        <main className="flex-1 w-full overflow-x-hidden">
+        <main className="flex-1 w-full overflow-x-hidden pb-[env(safe-area-inset-bottom)]">
           <Outlet />
         </main>
       </SidebarInset>

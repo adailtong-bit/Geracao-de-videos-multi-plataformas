@@ -83,12 +83,12 @@ function VersionsSidebar({
 
   return (
     <Sidebar variant="sidebar" className="border-r shadow-sm">
-      <SidebarHeader className="h-14 border-b px-4 flex items-center justify-center shrink-0 bg-card">
+      <SidebarHeader className="h-14 border-b px-4 flex items-center justify-center shrink-0 bg-card pt-[env(safe-area-inset-top)] box-content">
         <h2 className="text-sm font-bold flex items-center gap-2 w-full text-foreground">
           <Video className="w-4 h-4 text-primary" /> Meus Vídeos Gerados
         </h2>
       </SidebarHeader>
-      <SidebarContent className="bg-muted/10">
+      <SidebarContent className="bg-muted/10 pb-[env(safe-area-inset-bottom)]">
         <ScrollArea className="flex-1">
           <SidebarGroup>
             <SidebarGroupContent className="p-3 space-y-3">
@@ -247,7 +247,7 @@ export default function Editor() {
             foi excluído.
           </p>
         </div>
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="h-11 shadow-md">
           <Link to="/">Voltar aos Projetos</Link>
         </Button>
       </div>
@@ -257,7 +257,7 @@ export default function Editor() {
   if (project === undefined) {
     return (
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
-        <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0">
+        <header className="h-14 border-b flex items-center justify-between px-4 bg-card shrink-0 pt-[env(safe-area-inset-top)] box-content">
           <div className="flex items-center gap-4">
             <Skeleton className="w-8 h-8 rounded" />
             <div className="space-y-2">
@@ -267,8 +267,8 @@ export default function Editor() {
           </div>
           <Skeleton className="h-8 w-24 hidden sm:block" />
         </header>
-        <div className="flex-1 flex overflow-hidden min-h-0 w-full">
-          <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 p-4 space-y-6">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 w-full pb-[env(safe-area-inset-bottom)] box-content">
+          <div className="h-[45vh] md:h-auto w-full md:w-80 lg:w-[400px] border-b md:border-b-0 md:border-r flex flex-col bg-muted/5 shrink-0 p-4 space-y-6">
             <div className="flex gap-2">
               <Skeleton className="h-10 flex-1" />
               <Skeleton className="h-10 flex-1" />
@@ -323,24 +323,23 @@ export default function Editor() {
         )}
 
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-          <header className="h-14 border-b flex items-center justify-between px-2 sm:px-4 bg-card shrink-0 z-20 shadow-sm">
-            <div className="flex items-center gap-2 sm:gap-4">
+          <header className="min-h-[3.5rem] border-b flex items-center justify-between px-2 sm:px-4 bg-card shrink-0 z-20 shadow-sm pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] box-content">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 py-2">
               {hasMultipleCreations && (
                 <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
               )}
               <Button
                 variant="secondary"
-                size="sm"
                 asChild
-                className="text-foreground shrink-0 font-medium hover:bg-secondary/80"
+                className="text-foreground shrink-0 font-medium hover:bg-secondary/80 h-10 w-10 sm:h-9 sm:w-auto p-0 sm:px-3 flex items-center justify-center"
               >
                 <Link to="/">
-                  <ArrowLeft className="w-4 h-4 sm:mr-2" />{' '}
-                  <span className="hidden sm:inline">Voltar aos Projetos</span>
+                  <ArrowLeft className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2" />{' '}
+                  <span className="hidden sm:inline">Voltar</span>
                 </Link>
               </Button>
               <div className="flex flex-col justify-center min-w-0 pl-2 sm:pl-4 border-l">
-                <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[150px] md:max-w-xs">
+                <h1 className="font-semibold text-sm md:text-base leading-tight truncate max-w-[140px] sm:max-w-[200px] md:max-w-xs">
                   {project.name}
                 </h1>
                 <div className="text-[10px] text-muted-foreground flex items-center mt-0.5">
@@ -348,7 +347,7 @@ export default function Editor() {
                 </div>
               </div>
 
-              <div className="hidden md:flex items-center bg-muted/50 p-1 rounded-lg ml-4">
+              <div className="hidden lg:flex items-center bg-muted/50 p-1 rounded-lg ml-4 shrink-0">
                 <Button
                   variant={
                     project.projectType !== 'music' ? 'secondary' : 'ghost'
@@ -372,7 +371,7 @@ export default function Editor() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0 py-2">
               <div className="hidden lg:flex items-center border-r pr-4 mr-2">
                 <ToggleGroup
                   type="single"
@@ -420,23 +419,23 @@ export default function Editor() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="hidden md:flex"
+                    className="hidden sm:flex h-10 sm:h-9"
                   >
-                    <Download className="w-4 h-4 mr-2" /> Baixar
+                    <Download className="w-4 h-4 sm:mr-2" />{' '}
+                    <span className="hidden sm:inline">Baixar</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem
                     onClick={handleDownload}
-                    className="cursor-pointer font-medium"
+                    className="cursor-pointer font-medium h-10"
                   >
                     <Video className="w-4 h-4 mr-2 text-indigo-500" />
                     Vídeo MP4 (HD)
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => exportSrt(project)}
-                    className="cursor-pointer font-medium"
+                    className="cursor-pointer font-medium h-10"
                   >
                     <FileText className="w-4 h-4 mr-2 text-emerald-600" />
                     Legendas (.srt)
@@ -446,9 +445,8 @@ export default function Editor() {
 
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={handleSave}
-                className="hidden md:flex"
+                className="hidden md:flex h-9"
               >
                 <Save className="w-4 h-4 mr-2" /> Salvar
               </Button>
@@ -456,10 +454,10 @@ export default function Editor() {
             </div>
           </header>
 
-          <div className="flex-1 flex overflow-hidden min-h-0 w-full">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 w-full pb-[env(safe-area-inset-bottom)] box-content">
             {viewMode === 'standard' ? (
               <>
-                <div className="w-80 lg:w-[400px] border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm">
+                <div className="h-[50vh] md:h-auto w-full md:w-80 lg:w-[400px] border-b md:border-b-0 md:border-r flex flex-col bg-muted/5 shrink-0 overflow-hidden z-10 shadow-sm relative">
                   <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
@@ -468,37 +466,37 @@ export default function Editor() {
                     <TabsList className="w-full justify-start rounded-none border-b h-14 px-2 bg-background shadow-sm shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden [scrollbar-width:none]">
                       <TabsTrigger
                         value="ai-creator"
-                        className="shrink-0 min-w-[90px] text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold h-10"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm text-blue-600 data-[state=active]:text-blue-700 font-bold h-11 sm:h-10"
                       >
                         <Wand2 className="w-4 h-4 mr-2" /> Criar
                       </TabsTrigger>
                       <TabsTrigger
                         value="audio"
-                        className="shrink-0 min-w-[90px] text-sm text-green-600 data-[state=active]:text-green-700 font-bold h-10"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm text-green-600 data-[state=active]:text-green-700 font-bold h-11 sm:h-10"
                       >
                         <Music className="w-4 h-4 mr-2" /> Áudio
                       </TabsTrigger>
                       <TabsTrigger
                         value="timeline"
-                        className="shrink-0 min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-10"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm text-indigo-600 data-[state=active]:text-indigo-700 font-bold h-11 sm:h-10"
                       >
                         <Film className="w-4 h-4 mr-2" /> Sequência
                       </TabsTrigger>
                       <TabsTrigger
                         value="review"
-                        className="shrink-0 min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-10"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm text-amber-600 data-[state=active]:text-amber-700 font-bold h-11 sm:h-10"
                       >
                         <Settings2 className="w-4 h-4 mr-2" /> Studio
                       </TabsTrigger>
                       <TabsTrigger
                         value="glossary"
-                        className="shrink-0 min-w-[90px] text-sm text-fuchsia-600 data-[state=active]:text-fuchsia-700 font-bold h-10"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm text-fuchsia-600 data-[state=active]:text-fuchsia-700 font-bold h-11 sm:h-10"
                       >
                         <BookA className="w-4 h-4 mr-2" /> Glossário
                       </TabsTrigger>
                       <TabsTrigger
                         value="publish"
-                        className="shrink-0 min-w-[90px] text-sm h-10 font-medium"
+                        className="shrink-0 min-w-[100px] sm:min-w-[90px] text-sm h-11 sm:h-10 font-medium"
                       >
                         <Send className="w-4 h-4 mr-2" /> Publicar
                       </TabsTrigger>
@@ -563,7 +561,7 @@ export default function Editor() {
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
-                  <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                  <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 min-h-0 relative overflow-hidden">
                     <PreviewCanvas
                       project={project}
                       isGenerating={aiStatus === 'generating'}
@@ -581,11 +579,11 @@ export default function Editor() {
               </>
             ) : (
               <>
-                <div className="w-[45%] border-r flex flex-col bg-background min-w-0 overflow-hidden z-10 shadow-sm relative">
+                <div className="w-full md:w-[45%] h-[50vh] md:h-auto border-b md:border-b-0 md:border-r flex flex-col bg-background min-w-0 overflow-hidden z-10 shadow-sm relative">
                   <ScriptEditorPanel project={project} update={update} />
                 </div>
                 <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black/5 dark:bg-white/5 relative">
-                  <div className="flex-1 flex items-center justify-center p-4 md:p-8 min-h-0 relative overflow-hidden">
+                  <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 min-h-0 relative overflow-hidden">
                     <PreviewCanvas
                       project={project}
                       isGenerating={aiStatus === 'generating'}

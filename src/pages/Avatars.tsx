@@ -138,7 +138,7 @@ export default function Avatars() {
           <p>{emptyMessage}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
           {items.map((avatar) => {
             const isProcessing =
               avatar.status === 'processing_bg' ||
@@ -161,9 +161,9 @@ export default function Avatars() {
                     alt={avatar.name}
                   />
                   {isProcessing && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white backdrop-blur-md z-10 p-4 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mb-3 text-primary" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider animate-pulse leading-relaxed">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white backdrop-blur-md z-10 p-2 sm:p-4 text-center">
+                      <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mb-2 sm:mb-3 text-primary" />
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider animate-pulse leading-tight sm:leading-relaxed">
                         {avatar.status === 'processing_bg'
                           ? 'Segmentação Alpha &\nInpainting Anatômico...'
                           : 'Rigging de Movimento\nLip-Sync Fonético...'}
@@ -171,11 +171,11 @@ export default function Avatars() {
                     </div>
                   )}
                   {avatar.status === 'ready' && (
-                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="w-8 h-8 rounded-full shadow-sm"
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full shadow-sm"
                         onClick={() => setPreviewAvatar(avatar)}
                       >
                         <Play className="w-4 h-4" />
@@ -183,19 +183,19 @@ export default function Avatars() {
                     </div>
                   )}
                 </div>
-                <div className="p-4 flex items-center justify-between flex-1">
+                <div className="p-3 sm:p-4 flex items-center justify-between flex-1">
                   <div className="min-w-0 pr-2">
                     <h4
-                      className="font-semibold text-sm truncate"
+                      className="font-semibold text-xs sm:text-sm truncate"
                       title={avatar.name}
                     >
                       {avatar.name}
                     </h4>
                     <Badge
                       variant="secondary"
-                      className="mt-1 text-[10px] uppercase font-bold tracking-wider"
+                      className="mt-1 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider"
                     >
-                      {avatar.type === 'preset' ? 'Modelo IA' : 'Meu Clone'}
+                      {avatar.type === 'preset' ? 'Modelo IA' : 'Clone'}
                     </Badge>
                   </div>
                   <DropdownMenu>
@@ -203,7 +203,7 @@ export default function Avatars() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-8 h-8 text-muted-foreground"
+                        className="w-8 h-8 sm:w-9 sm:h-9 text-muted-foreground shrink-0"
                       >
                         <MoreVertical className="w-4 h-4" />
                       </Button>
@@ -212,6 +212,7 @@ export default function Avatars() {
                       <DropdownMenuItem
                         onClick={() => setPreviewAvatar(avatar)}
                         disabled={avatar.status !== 'ready'}
+                        className="h-11 sm:h-9"
                       >
                         <Play className="w-4 h-4 mr-2" /> Visualizar
                       </DropdownMenuItem>
@@ -222,12 +223,13 @@ export default function Avatars() {
                               setEditAvatar(avatar)
                               setEditName(avatar.name)
                             }}
+                            className="h-11 sm:h-9"
                           >
                             <Pencil className="w-4 h-4 mr-2" /> Editar Nome
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => removeAvatar(avatar.id)}
-                            className="text-destructive focus:text-destructive"
+                            className="text-destructive focus:text-destructive h-11 sm:h-9"
                           >
                             <Trash2 className="w-4 h-4 mr-2" /> Excluir
                           </DropdownMenuItem>
@@ -245,13 +247,14 @@ export default function Avatars() {
   )
 
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <User className="w-8 h-8 text-primary" /> Minhas Personas
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-3">
+            <User className="w-6 h-6 md:w-8 md:h-8 text-primary" /> Minhas
+            Personas
           </h1>
-          <p className="text-muted-foreground mt-1 max-w-2xl">
+          <p className="text-sm md:text-base text-muted-foreground mt-1 max-w-2xl">
             Gerencie seus clones digitais independentes. Nossa IA reconstrói
             ombros e braços ausentes (Inpainting), extrai o fundo perfeitamente
             livre de bordas, e aplica um motor de movimento de corpo inteiro
@@ -260,13 +263,13 @@ export default function Avatars() {
         </div>
         <Button
           onClick={() => setIsCreateOpen(true)}
-          className="h-11 shadow-md shrink-0"
+          className="h-12 sm:h-11 shadow-md shrink-0 w-full sm:w-auto"
         >
-          <Plus className="w-4 h-4 mr-2" /> Nova Persona
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-2" /> Nova Persona
         </Button>
       </div>
 
-      <div className="space-y-12">
+      <div className="space-y-8 md:space-y-12">
         <AvatarGrid
           items={customs}
           title="Meus Clones (Uploads & Gerados)"
@@ -284,7 +287,7 @@ export default function Avatars() {
         open={!!previewAvatar}
         onOpenChange={(o) => !o && setPreviewAvatar(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[calc(100vw-2rem)]">
           <DialogHeader>
             <DialogTitle>Visualizar Persona Digital</DialogTitle>
             <DialogDescription>
@@ -293,7 +296,7 @@ export default function Avatars() {
             </DialogDescription>
           </DialogHeader>
           {previewAvatar && (
-            <div className="flex flex-col items-center justify-center p-6 space-y-6">
+            <div className="flex flex-col items-center justify-center p-4 sm:p-6 space-y-6">
               <style>{`
                 @keyframes neural-idle {
                   0%, 100% { transform: scale(1) rotate(0deg) translateY(0) perspective(500px) rotateY(0deg) rotateX(0deg); }
@@ -313,7 +316,7 @@ export default function Avatars() {
               `}</style>
               <div
                 className={cn(
-                  'w-64 h-80 rounded-xl overflow-hidden shadow-2xl transition-all relative border border-border bg-muted p-4',
+                  'w-56 h-72 sm:w-64 sm:h-80 rounded-xl overflow-hidden shadow-2xl transition-all relative border border-border bg-muted p-4',
                   isPreviewPlaying
                     ? 'animate-neural-talking ring-4 ring-primary/30'
                     : 'animate-neural-idle',
@@ -350,7 +353,7 @@ export default function Avatars() {
               <Button
                 onClick={handlePreviewPlay}
                 disabled={isPreviewPlaying}
-                className="w-full h-11 text-base font-bold shadow-md"
+                className="w-full h-12 sm:h-11 text-base font-bold shadow-md"
               >
                 {isPreviewPlaying ? (
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
@@ -368,7 +371,7 @@ export default function Avatars() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Persona Digital</DialogTitle>
             <DialogDescription>
@@ -383,11 +386,17 @@ export default function Avatars() {
             onValueChange={setCreateTab}
             className="w-full pt-4"
           >
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="upload" className="font-semibold text-xs">
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-11">
+              <TabsTrigger
+                value="upload"
+                className="font-semibold text-xs h-full"
+              >
                 <Upload className="w-4 h-4 mr-2" /> Fazer Upload
               </TabsTrigger>
-              <TabsTrigger value="generate" className="font-semibold text-xs">
+              <TabsTrigger
+                value="generate"
+                className="font-semibold text-xs h-full"
+              >
                 <Wand2 className="w-4 h-4 mr-2" /> Gerar por Descrição
               </TabsTrigger>
             </TabsList>
@@ -399,6 +408,7 @@ export default function Avatars() {
                   placeholder="Ex: Eu (Formal)"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -413,7 +423,7 @@ export default function Avatars() {
                     <Button
                       size="icon"
                       variant="destructive"
-                      className="absolute bottom-1 right-1 w-8 h-8 rounded-full"
+                      className="absolute bottom-1 right-1 w-9 h-9 rounded-full"
                       onClick={() => setNewImage('')}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -437,10 +447,14 @@ export default function Avatars() {
 
               <div className="space-y-2 mt-4 bg-primary/5 p-3 rounded-xl border border-primary/20">
                 <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm text-primary">
+                  <Label
+                    className="font-semibold text-sm text-primary cursor-pointer"
+                    htmlFor="reconstruct-switch"
+                  >
                     Inpainting Anatômico
                   </Label>
                   <Switch
+                    id="reconstruct-switch"
                     checked={reconstruct}
                     onCheckedChange={setReconstruct}
                   />
@@ -453,7 +467,7 @@ export default function Avatars() {
               </div>
 
               <Button
-                className="w-full mt-2"
+                className="w-full mt-2 h-12 sm:h-11"
                 onClick={handleCreateUpload}
                 disabled={!newName || !newImage}
               >
@@ -468,13 +482,14 @@ export default function Avatars() {
                   placeholder="Ex: Personagem 3D, Ilustração, Realista..."
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Descrição da Persona (Prompt)</Label>
                 <Textarea
                   placeholder="Ex: Mulher realista de terno profissional, personagem 3D estilo cartoon, ilustrador minimalista..."
-                  className="resize-none h-24"
+                  className="resize-none h-24 text-base sm:text-sm"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
@@ -484,7 +499,7 @@ export default function Avatars() {
                 </p>
               </div>
               <Button
-                className="w-full"
+                className="w-full h-12 sm:h-11"
                 onClick={handleCreateGenerate}
                 disabled={!newName || !prompt}
               >
@@ -500,23 +515,31 @@ export default function Avatars() {
         open={!!editAvatar}
         onOpenChange={(o) => !o && setEditAvatar(null)}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm w-[calc(100vw-2rem)]">
           <DialogHeader>
             <DialogTitle>Editar Nome</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-2">
             <Label>Novo Nome</Label>
             <Input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="mt-2"
+              className="mt-2 h-11"
             />
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditAvatar(null)}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              onClick={() => setEditAvatar(null)}
+              className="h-11 sm:h-10"
+            >
               Cancelar
             </Button>
-            <Button onClick={saveEdit} disabled={!editName}>
+            <Button
+              onClick={saveEdit}
+              disabled={!editName}
+              className="h-11 sm:h-10"
+            >
               Salvar
             </Button>
           </DialogFooter>

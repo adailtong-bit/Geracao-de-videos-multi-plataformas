@@ -170,7 +170,7 @@ export default function Index() {
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 mt-2">
             <div
-              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md"
+              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md min-h-[160px]"
               onClick={() => handleCreate('video')}
             >
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
@@ -188,7 +188,7 @@ export default function Index() {
             </div>
 
             <div
-              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md"
+              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md min-h-[160px]"
               onClick={() => handleCreate('music')}
             >
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
@@ -219,28 +219,28 @@ export default function Index() {
         </div>
         <Button
           onClick={() => setIsCreateOpen(true)}
-          className="shadow-md w-full sm:w-auto h-11 sm:h-10"
+          className="shadow-md w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
         >
-          <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-2" /> Novo Projeto
         </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 bg-muted/20 p-3 md:p-4 rounded-xl border">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-4 sm:h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar projetos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-11 sm:h-10 bg-background"
+            className="pl-10 sm:pl-9 h-12 sm:h-10 bg-background text-base sm:text-sm"
           />
         </div>
         {selectedIds.size > 0 && (
           <Button
             onClick={handleBatchExport}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto h-11 sm:h-10 transition-all animate-in fade-in zoom-in-95 duration-200"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto h-12 sm:h-10 transition-all animate-in fade-in zoom-in-95 duration-200 text-base sm:text-sm"
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
             Exportação em Lote ({selectedIds.size})
           </Button>
         )}
@@ -248,15 +248,20 @@ export default function Index() {
 
       <div className="space-y-4">
         {filtered.length > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 rounded-lg border w-full sm:w-max transition-colors hover:bg-muted/50">
-            <Checkbox
-              id="select-all"
-              checked={
-                selectedIds.size > 0 && selectedIds.size === filtered.length
-              }
-              onCheckedChange={toggleSelectAll}
-              className="w-5 h-5 sm:w-4 sm:h-4"
-            />
+          <div
+            className="flex items-center gap-3 px-4 py-3 sm:py-2.5 bg-muted/30 rounded-lg border w-full sm:w-max transition-colors hover:bg-muted/50 cursor-pointer"
+            onClick={toggleSelectAll}
+          >
+            <div className="p-1 -m-1">
+              <Checkbox
+                id="select-all"
+                checked={
+                  selectedIds.size > 0 && selectedIds.size === filtered.length
+                }
+                onCheckedChange={toggleSelectAll}
+                className="w-5 h-5 sm:w-4 sm:h-4"
+              />
+            </div>
             <label
               htmlFor="select-all"
               className="text-sm font-semibold text-muted-foreground cursor-pointer flex-1"
@@ -275,10 +280,10 @@ export default function Index() {
             return (
               <Card
                 key={project.id}
-                className={`overflow-hidden transition-all duration-300 ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'hover:border-indigo-300 hover:shadow-sm'}`}
+                className={`overflow-hidden transition-all duration-300 flex flex-col ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'hover:border-indigo-300 hover:shadow-sm'}`}
               >
                 <div
-                  className="relative aspect-video bg-muted border-b flex items-center justify-center group cursor-pointer"
+                  className="relative aspect-video bg-muted border-b flex items-center justify-center group cursor-pointer shrink-0"
                   onClick={() => toggleSelect(project.id)}
                 >
                   {project.projectType === 'music' ? (
@@ -305,7 +310,7 @@ export default function Index() {
                   <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors pointer-events-none" />
 
                   <div
-                    className="absolute top-3 left-3 z-10"
+                    className="absolute top-2 left-2 z-10 p-2 cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Checkbox
@@ -321,7 +326,7 @@ export default function Index() {
                     </div>
                   )}
                 </div>
-                <CardContent className="p-4 space-y-4 bg-card">
+                <CardContent className="p-4 flex flex-col flex-1 space-y-4 bg-card">
                   <div className="flex items-start justify-between gap-4">
                     <div
                       className="min-w-0 flex-1 cursor-pointer"
@@ -348,7 +353,7 @@ export default function Index() {
                   </div>
 
                   {isExporting && (
-                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 p-3 bg-indigo-50/50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 p-3 bg-indigo-50/50 dark:bg-indigo-500/10 rounded-lg border border-indigo-100 dark:border-indigo-500/20 mt-auto">
                       <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                         <span className="flex items-center gap-1.5">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />{' '}
@@ -363,27 +368,27 @@ export default function Index() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 pt-2 border-t">
+                  <div className="flex items-center gap-2 pt-2 border-t mt-auto">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex-1 h-10 sm:h-9 font-semibold hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
+                      className="flex-1 h-11 sm:h-9 font-semibold hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
                       asChild
                       disabled={isExporting}
                     >
                       <Link to={`/editor/${project.id}`}>
-                        <Edit2 className="w-4 h-4 mr-2" />{' '}
+                        <Edit2 className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />{' '}
                         {project.projectType === 'music' ? 'Estúdio' : 'Editar'}
                       </Link>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 sm:h-9 sm:w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
+                      className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
                       onClick={() => handleDelete(project.id)}
                       disabled={isExporting}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     </Button>
                   </div>
                 </CardContent>
@@ -401,9 +406,9 @@ export default function Index() {
             </p>
             <Button
               onClick={() => setIsCreateOpen(true)}
-              className="mt-6 font-bold shadow-md hover:-translate-y-0.5 transition-transform h-11 px-6"
+              className="mt-6 font-bold shadow-md hover:-translate-y-0.5 transition-transform h-12 px-6 text-base sm:text-sm"
             >
-              <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+              <Plus className="w-5 h-5 sm:w-4 sm:h-4 mr-2" /> Novo Projeto
             </Button>
           </div>
         )}

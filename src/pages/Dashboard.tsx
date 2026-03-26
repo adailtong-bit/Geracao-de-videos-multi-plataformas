@@ -87,13 +87,13 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 bg-muted/20 p-3 md:p-4 rounded-xl border border-border/50">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-muted/20 p-4 rounded-xl border border-border/50">
         <div className="flex-1 w-full space-y-1.5">
           <Label className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Filtrar por Projeto
           </Label>
           <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger className="h-11 sm:h-10 bg-background">
+            <SelectTrigger className="h-11 sm:h-10 bg-background text-base sm:text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -110,13 +110,19 @@ export default function Dashboard() {
           <Label className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Data Início
           </Label>
-          <Input type="date" className="h-11 sm:h-10 bg-background" />
+          <Input
+            type="date"
+            className="h-11 sm:h-10 bg-background text-base sm:text-sm"
+          />
         </div>
         <div className="w-full sm:w-48 space-y-1.5">
           <Label className="text-[10px] md:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Data Fim
           </Label>
-          <Input type="date" className="h-11 sm:h-10 bg-background" />
+          <Input
+            type="date"
+            className="h-11 sm:h-10 bg-background text-base sm:text-sm"
+          />
         </div>
       </div>
 
@@ -182,14 +188,18 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent className="p-0 md:p-6 md:pt-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[80px] pl-4 md:pl-2">Capa</TableHead>
                   <TableHead>Título</TableHead>
-                  <TableHead className="text-right">Visualizações</TableHead>
-                  <TableHead className="text-right">Alcance (Reach)</TableHead>
-                  <TableHead className="text-right pr-4 md:pr-2">
+                  <TableHead className="text-right whitespace-nowrap">
+                    Visualizações
+                  </TableHead>
+                  <TableHead className="text-right whitespace-nowrap">
+                    Alcance (Reach)
+                  </TableHead>
+                  <TableHead className="text-right pr-4 md:pr-2 whitespace-nowrap">
                     Engajamento
                   </TableHead>
                 </TableRow>

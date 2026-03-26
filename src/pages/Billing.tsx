@@ -66,14 +66,14 @@ export default function Billing() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto p-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
       {user?.isBlocked && (
-        <Card className="mb-8 border-destructive shadow-lg bg-destructive/5">
+        <Card className="mb-6 md:mb-8 border-destructive shadow-lg bg-destructive/5">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-8 h-8 text-destructive" />
+              <AlertTriangle className="w-8 h-8 text-destructive shrink-0" />
               <div>
-                <CardTitle className="text-destructive">
+                <CardTitle className="text-destructive text-lg md:text-xl">
                   Acesso Restrito - Pagamento Pendente
                 </CardTitle>
                 <CardDescription className="text-destructive/80 font-medium mt-1">
@@ -91,7 +91,7 @@ export default function Billing() {
             <Button
               variant="destructive"
               onClick={handleRegularize}
-              className="shadow-md"
+              className="shadow-md w-full sm:w-auto h-12 sm:h-10"
             >
               Pagar Agora e Desbloquear
             </Button>
@@ -100,15 +100,15 @@ export default function Billing() {
       )}
 
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           Planos & Assinaturas
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground mt-1">
           Gerencie seu plano, faturas e acompanhe o uso da sua conta.
         </p>
       </div>
 
-      <Card className="mb-8 border-l-4 border-l-primary shadow-subtle">
+      <Card className="mb-6 md:mb-8 border-l-4 border-l-primary shadow-subtle">
         <CardHeader>
           <CardTitle>Uso & Limites de Criação</CardTitle>
           <CardDescription>
@@ -135,7 +135,7 @@ export default function Billing() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mt-8">
+      <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mt-6 md:mt-8">
         <Card
           className={`relative ${user?.plan === 'free' ? 'border-primary shadow-md' : ''}`}
         >
@@ -161,7 +161,7 @@ export default function Billing() {
                   className="flex items-center gap-2 text-muted-foreground"
                 >
                   <Check className="w-4 h-4 text-green-500 shrink-0" />{' '}
-                  {feature}
+                  <span className="leading-tight">{feature}</span>
                 </li>
               ))}
             </ul>
@@ -169,7 +169,7 @@ export default function Billing() {
           <CardFooter>
             <Button
               variant={user?.plan === 'free' ? 'secondary' : 'outline'}
-              className="w-full"
+              className="w-full h-12 sm:h-11 font-medium"
               disabled={user?.plan === 'free'}
             >
               {user?.plan === 'free' ? 'Plano Atual' : 'Fazer Downgrade'}
@@ -209,18 +209,25 @@ export default function Billing() {
                 'Suporte prioritário',
               ].map((feature, i) => (
                 <li key={i} className="flex items-center gap-2 font-medium">
-                  <Check className="w-4 h-4 text-primary shrink-0" /> {feature}
+                  <Check className="w-4 h-4 text-primary shrink-0" />{' '}
+                  <span className="leading-tight">{feature}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
           <CardFooter>
             {user?.plan === 'pro' ? (
-              <Button className="w-full" variant="outline">
+              <Button
+                className="w-full h-12 sm:h-11 font-medium"
+                variant="outline"
+              >
                 Gerenciar Assinatura
               </Button>
             ) : (
-              <Button className="w-full" onClick={handleUpgrade}>
+              <Button
+                className="w-full h-12 sm:h-11 font-medium"
+                onClick={handleUpgrade}
+              >
                 Fazer Upgrade para Pro
               </Button>
             )}
@@ -228,15 +235,15 @@ export default function Billing() {
         </Card>
       </div>
 
-      <Card className="mt-12 shadow-subtle">
+      <Card className="mt-8 md:mt-12 shadow-subtle">
         <CardHeader>
           <CardTitle>Histórico de Pagamentos</CardTitle>
           <CardDescription>
             Visualize suas faturas e transações anteriores.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="p-0 sm:p-6 overflow-x-auto">
+          <Table className="min-w-[500px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>

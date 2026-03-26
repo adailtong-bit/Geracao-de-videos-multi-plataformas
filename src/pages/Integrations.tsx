@@ -33,10 +33,12 @@ export default function Integrations() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          Integrations
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-1">
           Connect your social media accounts via OAuth for direct publishing.
         </p>
       </div>
@@ -55,11 +57,11 @@ export default function Integrations() {
             return (
               <div
                 key={platform}
-                className="flex items-center justify-between p-5 border rounded-xl bg-background shadow-sm hover:shadow-md transition-shadow"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 border rounded-xl bg-background shadow-sm hover:shadow-md transition-shadow gap-4 sm:gap-6"
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`p-3 rounded-full ${platform === 'instagram' ? 'bg-pink-100 text-pink-600' : platform === 'facebook' ? 'bg-blue-100 text-blue-600' : 'bg-zinc-100 text-zinc-900'}`}
+                    className={`p-3 rounded-full shrink-0 ${platform === 'instagram' ? 'bg-pink-100 text-pink-600' : platform === 'facebook' ? 'bg-blue-100 text-blue-600' : 'bg-zinc-100 text-zinc-900'}`}
                   >
                     {platform === 'instagram' && (
                       <Instagram className="w-6 h-6" />
@@ -69,15 +71,15 @@ export default function Integrations() {
                     )}
                     {platform === 'tiktok' && <Music className="w-6 h-6" />}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold capitalize text-base">
                       {platform}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {connected ? (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                          <span className="text-sm text-green-600 font-medium truncate">
                             Connected as {user.linkedAccounts[platform]}
                           </span>
                         </>
@@ -92,7 +94,7 @@ export default function Integrations() {
                 <Button
                   variant={connected ? 'outline' : 'default'}
                   onClick={() => toggleAccount(platform)}
-                  className="w-36"
+                  className="w-full sm:w-40 h-12 sm:h-11 shadow-sm shrink-0 font-medium"
                 >
                   {connected ? 'Disconnect' : 'Connect Account'}
                 </Button>

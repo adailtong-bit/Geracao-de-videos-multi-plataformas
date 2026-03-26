@@ -33,14 +33,14 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-      <Card className="w-full max-w-md shadow-elevation animate-fade-in-up">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
+      <Card className="w-full max-w-md shadow-elevation animate-fade-in-up border-0 sm:border">
+        <CardHeader className="text-center space-y-2 p-6 sm:p-6">
+          <div className="flex justify-center mb-2 sm:mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
               <Video className="w-8 h-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-2xl sm:text-2xl">
             {isLogin ? 'Welcome back' : 'Create an account'}
           </CardTitle>
           <CardDescription>
@@ -50,7 +50,7 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5 p-6 pt-0 sm:p-6 sm:pt-0">
             {!isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -60,6 +60,7 @@ export default function Login() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Jane Doe"
+                  className="h-12 sm:h-10 text-base sm:text-sm"
                 />
               </div>
             )}
@@ -72,6 +73,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jane@example.com"
+                className="h-12 sm:h-10 text-base sm:text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -81,77 +83,74 @@ export default function Login() {
                 type="password"
                 required
                 placeholder="••••••••"
+                className="h-12 sm:h-10 text-base sm:text-sm"
               />
             </div>
 
             {/* Helper buttons for quick testing of User Stories */}
-            <div className="mt-6 pt-6 border-t space-y-3">
+            <div className="mt-8 pt-6 border-t space-y-4">
               <p className="text-xs text-center text-muted-foreground font-semibold uppercase tracking-wider">
                 Fast Login (Sample Data)
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3 sm:gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
                   type="button"
                   onClick={() => {
                     setEmail('admin@admin.com')
                     setName('Platform Owner')
                   }}
-                  className="text-xs"
+                  className="text-xs sm:text-xs h-10 sm:h-9"
                 >
                   Admin Owner
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
                   type="button"
                   onClick={() => {
                     setEmail('free@user.com')
                     setName('Test Free User')
                   }}
-                  className="text-xs"
+                  className="text-xs sm:text-xs h-10 sm:h-9"
                 >
                   Free User
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
                   type="button"
                   onClick={() => {
                     setEmail('paid@user.com')
                     setName('Test Paid User')
                   }}
-                  className="text-xs"
+                  className="text-xs sm:text-xs h-10 sm:h-9"
                 >
                   Paid User
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
                   type="button"
                   onClick={() => {
                     setEmail('overdue@user.com')
                     setName('Overdue User')
                   }}
-                  className="text-xs border-red-200 text-red-600 hover:bg-red-50"
+                  className="text-xs sm:text-xs h-10 sm:h-9 border-red-200 text-red-600 hover:bg-red-50"
                 >
                   Delinquent
                 </Button>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <CardFooter className="flex flex-col space-y-4 p-6 pt-0 sm:p-6 sm:pt-0">
             <Button
               type="submit"
-              className="w-full h-11 text-base font-medium shadow-md"
+              className="w-full h-12 sm:h-11 text-base font-medium shadow-md"
             >
               {isLogin ? 'Sign In' : 'Sign Up'}
             </Button>
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors p-2"
             >
               {isLogin
                 ? "Don't have an account? Sign up"

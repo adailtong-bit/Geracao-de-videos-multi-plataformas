@@ -43,18 +43,18 @@ const churnData = [
 
 export default function AdminDashboard() {
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-8 animate-fade-in-up">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
           Market Performance
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground mt-1">
           Monitoramento de saúde do negócio, crescimento de base e retenção (MRR
           & Churn).
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         <Card className="shadow-sm border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">MRR Atual</CardTitle>
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid md:grid-cols-2 gap-6 md:gap-8">
         <Card className="shadow-subtle">
           <CardHeader>
             <CardTitle>Crescimento do MRR (Receita Recorrente)</CardTitle>
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
               config={{
                 mrr: { label: 'MRR ($)', color: 'hsl(var(--primary))' },
               }}
-              className="h-[300px]"
+              className="h-[300px] w-full"
             >
               <AreaChart
                 data={mrrData}
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
                 novos: { label: 'Novos', color: '#10b981' },
                 churn: { label: 'Churn', color: '#ef4444' },
               }}
-              className="h-[300px]"
+              className="h-[300px] w-full"
             >
               <BarChart
                 data={churnData}
