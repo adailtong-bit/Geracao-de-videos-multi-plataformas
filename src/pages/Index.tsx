@@ -6,6 +6,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
   Plus,
   Search,
   Video,
@@ -14,9 +21,10 @@ import {
   Download,
   Loader2,
   CheckCircle2,
+  Music,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import type { Project } from '@/types'
+import type { Project, ProjectType } from '@/types'
 import { getProjects, createProject, deleteProject } from '@/lib/storage'
 import useAuthStore from '@/stores/useAuthStore'
 import useAdminStore from '@/stores/useAdminStore'
@@ -29,6 +37,7 @@ export default function Index() {
   const [exportProgress, setExportProgress] = useState<Record<string, number>>(
     {},
   )
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const { user, updateUser } = useAuthStore()
   const { settings } = useAdminStore()
@@ -49,8 +58,7 @@ export default function Index() {
     }
   }, [])
 
-  const handleCreate = () => {
-    // Check Freemium limits before creating
+  const handleCreate = (type: ProjectType) => {
     if (
       user?.role !== 'admin' &&
       user?.plan === 'free' &&
@@ -58,16 +66,21 @@ export default function Index() {
     ) {
       toast({
         title: 'Limite Atingido',
-        description: `Você atingiu o limite de ${settings.freeVideoLimit} vídeos gratuitos. Faça upgrade para continuar criando.`,
+        description: `Você atingiu o limite de ${settings.freeVideoLimit} criações gratuitas. Faça upgrade para continuar criando.`,
         variant: 'destructive',
       })
       navigate('/billing')
+      setIsCreateOpen(false)
       return
     }
 
     const newProject: Project = {
       id: crypto.randomUUID(),
-      name: `Novo Projeto ${projects.length + 1}`,
+      name:
+        type === 'music'
+          ? `Nova Música ${projects.length + 1}`
+          : `Novo Vídeo ${projects.length + 1}`,
+      projectType: type,
       videoUrl: null,
       videoDuration: 60,
       trimStart: 0,
@@ -80,9 +93,8 @@ export default function Index() {
     }
     createProject(newProject)
 
-    // Increment usage tracking
     updateUser({ videosGenerated: (user?.videosGenerated || 0) + 1 })
-
+    setIsCreateOpen(false)
     navigate(`/editor/${newProject.id}`)
   }
 
@@ -145,14 +157,65 @@ export default function Index() {
 
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-8 animate-fade-in-up">
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              O que você deseja criar?
+            </DialogTitle>
+            <DialogDescription>
+              Selecione o tipo de projeto para iniciar a produção do seu
+              conteúdo com Inteligência Artificial.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 mt-2">
+            <div
+              className="border-2 rounded-2xl p-6 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex flex-col items-center text-center gap-4 group shadow-sm hover:shadow-md"
+              onClick={() => handleCreate('video')}
+            >
+              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                <Video className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground">
+                  Produção de Vídeo
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  Crie vídeos do zero usando textos, ou importe seus vídeos para
+                  cortes dinâmicos com B-rolls e narração.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="border-2 rounded-2xl p-6 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition-all flex flex-col items-center text-center gap-4 group shadow-sm hover:shadow-md"
+              onClick={() => handleCreate('music')}
+            >
+              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                <Music className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground">
+                  Composição Musical
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  Gere faixas musicais, batidas de fundo ou músicas completas
+                  com vocais a partir de texto (Text-to-Music).
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Meus Projetos</h1>
           <p className="text-muted-foreground">
-            Gerencie e exporte seus vídeos.
+            Gerencie e exporte seus vídeos e músicas.
           </p>
         </div>
-        <Button onClick={handleCreate} className="shadow-md">
+        <Button onClick={() => setIsCreateOpen(true)} className="shadow-md">
           <Plus className="w-4 h-4 mr-2" /> Novo Projeto
         </Button>
       </div>
@@ -212,7 +275,14 @@ export default function Index() {
                   className="relative aspect-video bg-muted border-b flex items-center justify-center group cursor-pointer"
                   onClick={() => toggleSelect(project.id)}
                 >
-                  {project.videoUrl || project.bRolls?.[0]?.url ? (
+                  {project.projectType === 'music' ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-purple-500/10 text-purple-600/50 group-hover:bg-purple-500/20 transition-colors">
+                      <Music className="w-12 h-12 mb-2 opacity-60" />
+                      <span className="font-bold uppercase tracking-widest text-[10px]">
+                        Studio Musical
+                      </span>
+                    </div>
+                  ) : project.videoUrl || project.bRolls?.[0]?.url ? (
                     <img
                       src={
                         project.bRolls?.[0]?.url ||
@@ -225,6 +295,7 @@ export default function Index() {
                   ) : (
                     <Video className="w-10 h-10 text-muted-foreground/30" />
                   )}
+
                   <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors pointer-events-none" />
 
                   <div
@@ -256,7 +327,12 @@ export default function Index() {
                       >
                         {project.name}
                       </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                        {project.projectType === 'music' ? (
+                          <Music className="w-3 h-3" />
+                        ) : (
+                          <Video className="w-3 h-3" />
+                        )}
                         {new Date(project.createdAt).toLocaleDateString(
                           'pt-BR',
                         )}{' '}
@@ -270,7 +346,7 @@ export default function Index() {
                       <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                         <span className="flex items-center gap-1.5">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />{' '}
-                          Renderizando HD...
+                          Renderizando...
                         </span>
                         <span>{Math.round(progress)}%</span>
                       </div>
@@ -290,7 +366,10 @@ export default function Index() {
                       disabled={isExporting}
                     >
                       <Link to={`/editor/${project.id}`}>
-                        <Edit2 className="w-4 h-4 mr-2" /> Editar Vídeo
+                        <Edit2 className="w-4 h-4 mr-2" />{' '}
+                        {project.projectType === 'music'
+                          ? 'Abrir Editor Musical'
+                          : 'Editar Vídeo'}
                       </Link>
                     </Button>
                     <Button
@@ -314,13 +393,13 @@ export default function Index() {
             <Video className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
             <h3 className="text-lg font-bold">Nenhum projeto encontrado</h3>
             <p className="text-muted-foreground mt-1">
-              Crie seu primeiro vídeo com IA para começar.
+              Crie seu primeiro vídeo ou música com IA para começar.
             </p>
             <Button
-              onClick={handleCreate}
+              onClick={() => setIsCreateOpen(true)}
               className="mt-6 font-bold shadow-md hover:-translate-y-0.5 transition-transform"
             >
-              <Plus className="w-4 h-4 mr-2" /> Novo Projeto HD
+              <Plus className="w-4 h-4 mr-2" /> Novo Projeto
             </Button>
           </div>
         )}

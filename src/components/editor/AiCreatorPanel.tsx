@@ -16,8 +16,6 @@ import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -34,7 +32,6 @@ import {
   Mic,
   Hash,
   Film,
-  Palette,
   Youtube,
   Upload,
   Type,
@@ -125,7 +122,6 @@ export function AiCreatorPanel({
     initialSourceType,
   )
   const [prompt, setPrompt] = useState(project.draftPrompt || '')
-  const [musicPrompt, setMusicPrompt] = useState(project.musicPrompt || '')
   const [videoUrl, setVideoUrl] = useState(
     initialSourceType === 'video' ? project.videoUrl || '' : '',
   )
@@ -213,10 +209,10 @@ export function AiCreatorPanel({
   const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
 
   const handleGenerate = () => {
-    if (sourceType === 'text' && !prompt.trim() && !musicPrompt.trim()) {
+    if (sourceType === 'text' && !prompt.trim()) {
       return toast({
         title: 'Faltando informações',
-        description: 'Descreva o texto da narração ou a música primeiro.',
+        description: 'Descreva o roteiro ou narração primeiro.',
         variant: 'destructive',
       })
     }
@@ -266,7 +262,7 @@ export function AiCreatorPanel({
     const initialText =
       sourceType === 'video' || sourceType === 'upload'
         ? 'Analisando vídeo...'
-        : 'Criando voz e música...'
+        : 'Criando narração e cenas...'
     setStatusText(initialText)
 
     const steps =
@@ -280,12 +276,7 @@ export function AiCreatorPanel({
           ]
         : [
             { p: 25, t: `Gerando narração humana...` },
-            {
-              p: 50,
-              t: musicPrompt
-                ? `Compondo música com IA...`
-                : `Buscando imagens relacionadas...`,
-            },
+            { p: 50, t: `Buscando imagens relacionadas...` },
             { p: 75, t: `Sincronizando áudio e imagens...` },
             { p: 100, t: 'Pronto para revisão...' },
           ]
@@ -476,16 +467,7 @@ export function AiCreatorPanel({
           facebook: captionText,
         },
         sfx: [],
-        audioTrack:
-          sourceType === 'video' || sourceType === 'upload'
-            ? null
-            : {
-                id: crypto.randomUUID(),
-                name: musicPrompt ? 'Trilha Gerada com IA' : 'Trilha Ambiente',
-                mood: mood,
-                url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
-                adaptiveLeveling: true,
-              },
+        audioTrack: null, // User can assign music in the dedicated Audio panel
         sourceLanguage,
         subtitleLanguage,
         voiceProfile,
@@ -494,7 +476,6 @@ export function AiCreatorPanel({
         mediaType,
         imageCategory,
         draftPrompt: prompt,
-        musicPrompt: musicPrompt,
         avatar: project.avatar || {
           enabled: false,
           mode: 'preset',
@@ -539,7 +520,6 @@ export function AiCreatorPanel({
       avatar: newDraft.snapshot.avatar,
       subtitleStyle: newDraft.snapshot.subtitleStyle,
       draftPrompt: newDraft.snapshot.draftPrompt,
-      musicPrompt: newDraft.snapshot.musicPrompt,
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
       glossary: newDraft.snapshot.glossary,
@@ -624,7 +604,8 @@ export function AiCreatorPanel({
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Crie seu vídeo digitando um texto, ou importando um arquivo. A
-          inteligência artificial fará todo o trabalho pesado.
+          inteligência artificial fará todo o trabalho pesado de buscar cenas e
+          gerar a narração.
         </p>
 
         <Tabs
@@ -635,7 +616,7 @@ export function AiCreatorPanel({
           <TabsList className="grid w-full grid-cols-3 mb-4 h-auto p-1">
             <TabsTrigger value="text" className="text-xs font-semibold py-2">
               <Type className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Texto e Áudio</span>
+              <span className="hidden sm:inline">Texto e Voz</span>
             </TabsTrigger>
             <TabsTrigger value="video" className="text-xs font-semibold py-2">
               <Youtube className="w-4 h-4 sm:mr-2" />
@@ -654,26 +635,11 @@ export function AiCreatorPanel({
               </Label>
               <Textarea
                 placeholder="Escreva a história ou o texto que a voz irá narrar..."
-                className="min-h-[100px] resize-none text-sm bg-background/50"
+                className="min-h-[150px] resize-none text-sm bg-background/50"
                 value={prompt}
                 onChange={(e) => {
                   setPrompt(e.target.value)
                   update({ draftPrompt: e.target.value })
-                }}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label className="font-semibold text-sm">
-                Música / Letra (Opcional)
-              </Label>
-              <Textarea
-                placeholder="Descreva o estilo musical (ex: Pop animado) ou cole a letra da música para a IA cantar..."
-                className="min-h-[80px] resize-none text-sm bg-background/50"
-                value={musicPrompt}
-                onChange={(e) => {
-                  setMusicPrompt(e.target.value)
-                  update({ musicPrompt: e.target.value })
                 }}
               />
             </div>

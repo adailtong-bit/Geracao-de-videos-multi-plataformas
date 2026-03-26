@@ -170,9 +170,12 @@ export interface AudioSettings {
   clearAudioBuffer?: boolean
 }
 
+export type ProjectType = 'video' | 'music'
+
 export interface Project {
   id: string
   name: string
+  projectType?: ProjectType
   draftPrompt?: string
   musicPrompt?: string
   videoUrl: string | null

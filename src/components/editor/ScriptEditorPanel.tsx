@@ -1,7 +1,7 @@
 import { Project, GlossaryTerm } from '@/types'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
-import { FileText, AlertTriangle, Music } from 'lucide-react'
+import { FileText, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -125,23 +125,6 @@ export function ScriptEditorPanel({
               onChange={(val) => update({ draftPrompt: val })}
               placeholder="Escreva a narração..."
               glossary={project.glossary || []}
-            />
-          </div>
-
-          <div className="space-y-3 pt-4 border-t">
-            <Label className="text-base font-bold flex items-center gap-2">
-              <Music className="w-4 h-4 text-pink-500" /> Música / Letra
-            </Label>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Descreva o estilo musical ou insira a letra da música para a
-              trilha sonora.
-            </p>
-            <HighlightedTextarea
-              className="min-h-[100px]"
-              value={project.musicPrompt || ''}
-              onChange={(val) => update({ musicPrompt: val })}
-              placeholder="Ex: Música pop animada com vocais..."
-              glossary={[]}
             />
           </div>
 

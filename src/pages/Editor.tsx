@@ -31,6 +31,7 @@ import { PublishDialog } from '@/components/editor/PublishDialog'
 import { TeamDialog } from '@/components/editor/TeamDialog'
 import { GlossaryPanel } from '@/components/editor/GlossaryPanel'
 import { ScriptEditorPanel } from '@/components/editor/ScriptEditorPanel'
+import { MusicEditor } from '@/components/editor/MusicEditor'
 import { Avatar, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
@@ -281,6 +282,11 @@ export default function Editor() {
         </div>
       </div>
     )
+  }
+
+  // Handle standalone Music Projects
+  if (project.projectType === 'music') {
+    return <MusicEditor project={project} update={update} />
   }
 
   const handleSave = () =>
