@@ -15,18 +15,24 @@ import {
 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+  useSidebar,
+} from '@/components/ui/sidebar'
 
-export default function Layout() {
+function AppSidebar() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
-
-  if (location.pathname.startsWith('/editor')) {
-    return (
-      <main className="flex flex-col min-h-screen">
-        <Outlet />
-      </main>
-    )
-  }
+  const { setOpenMobile } = useSidebar()
 
   const adminLinks = [
     { name: 'Dashboard BI', path: '/admin', icon: LayoutDashboard },
@@ -52,59 +58,108 @@ export default function Layout() {
   const links = user?.role === 'admin' ? adminLinks : userLinks
 
   return (
-    <div className="flex min-h-screen bg-muted/20">
-      <aside className="w-64 bg-background border-r flex flex-col shrink-0 sticky top-0 h-screen shadow-sm">
-        <div className="h-16 flex items-center px-6 border-b">
-          <Video className="w-6 h-6 text-primary mr-2" />
-          <span className="font-bold text-lg">
-            MultiProject{' '}
-            {user?.role === 'admin' && (
-              <span className="text-xs text-primary ml-1 uppercase tracking-wider">
-                Admin
-              </span>
-            )}
-          </span>
-        </div>
-        <nav className="flex-1 p-4 space-y-1.5">
+    <Sidebar variant="sidebar" collapsible="offcanvas">
+      <SidebarHeader className="h-16 flex flex-row items-center px-6 border-b border-sidebar-border">
+        <Video className="w-6 h-6 text-primary mr-2 shrink-0" />
+        <span className="font-bold text-lg truncate">
+          MultiProject{' '}
+          {user?.role === 'admin' && (
+            <span className="text-[10px] text-primary ml-1 uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded-full">
+              Admin
+            </span>
+          )}
+        </span>
+      </SidebarHeader>
+
+      <SidebarContent className="px-3 py-4">
+        <SidebarMenu className="space-y-1.5">
           {links.map((link) => {
             const Icon = link.icon
             const isActive = location.pathname === link.path
             return (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors font-medium text-sm',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {link.name}
-              </Link>
+              <SidebarMenuItem key={link.path}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={link.name}
+                  className={cn(
+                    'h-11 transition-all font-medium text-sm',
+                    isActive
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-sm'
+                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )}
+                >
+                  <Link
+                    to={link.path}
+                    onClick={() => setOpenMobile(false)}
+                    className="flex items-center gap-3 w-full"
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{link.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             )
           })}
-        </nav>
-        <div className="p-4 border-t bg-muted/10">
-          <div className="mb-4 px-3">
-            <p className="text-sm font-bold truncate">{user?.name}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.email}
-            </p>
-          </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-destructive/10 text-sm font-medium"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair da Conta
-          </button>
+        </SidebarMenu>
+      </SidebarContent>
+
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        <div className="mb-4 px-2 overflow-hidden">
+          <p className="text-sm font-bold truncate text-sidebar-foreground">
+            {user?.name}
+          </p>
+          <p className="text-xs text-sidebar-foreground/60 truncate">
+            {user?.email}
+          </p>
         </div>
-      </aside>
-      <main className="flex-1 overflow-auto">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => {
+                setOpenMobile(false)
+                logout()
+              }}
+              className="w-full h-11 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm"
+            >
+              <LogOut className="w-4 h-4 mr-2 shrink-0" />
+              Sair da Conta
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
+export default function Layout() {
+  const location = useLocation()
+
+  if (location.pathname.startsWith('/editor')) {
+    return (
+      <main className="flex flex-col min-h-screen">
         <Outlet />
       </main>
-    </div>
+    )
+  }
+
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="bg-muted/20 min-h-screen w-full">
+        {/* Mobile Header */}
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:hidden sticky top-0 z-40 shadow-sm">
+          <SidebarTrigger className="-ml-1" />
+          <div className="font-bold flex items-center ml-2 text-foreground">
+            <Video className="w-5 h-5 text-primary mr-2" />
+            MultiProject
+          </div>
+        </header>
+
+        <main className="flex-1 w-full overflow-x-hidden">
+          <Outlet />
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

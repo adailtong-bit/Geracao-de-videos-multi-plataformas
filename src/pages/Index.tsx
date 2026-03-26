@@ -156,11 +156,11 @@ export default function Index() {
   )
 
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-6xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-fade-in-up">
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
+            <DialogTitle className="text-xl sm:text-2xl font-bold">
               O que você deseja criar?
             </DialogTitle>
             <DialogDescription>
@@ -170,17 +170,17 @@ export default function Index() {
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 mt-2">
             <div
-              className="border-2 rounded-2xl p-6 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex flex-col items-center text-center gap-4 group shadow-sm hover:shadow-md"
+              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md"
               onClick={() => handleCreate('video')}
             >
-              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
-                <Video className="w-8 h-8" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                <Video className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-foreground">
+                <h3 className="font-bold text-base sm:text-lg text-foreground">
                   Produção de Vídeo
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
                   Crie vídeos do zero usando textos, ou importe seus vídeos para
                   cortes dinâmicos com B-rolls e narração.
                 </p>
@@ -188,19 +188,19 @@ export default function Index() {
             </div>
 
             <div
-              className="border-2 rounded-2xl p-6 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition-all flex flex-col items-center text-center gap-4 group shadow-sm hover:shadow-md"
+              className="border-2 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 transition-all flex flex-col items-center text-center gap-3 sm:gap-4 group shadow-sm hover:shadow-md"
               onClick={() => handleCreate('music')}
             >
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                <Music className="w-8 h-8" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                <Music className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-foreground">
+                <h3 className="font-bold text-base sm:text-lg text-foreground">
                   Composição Musical
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
                   Gere faixas musicais, batidas de fundo ou músicas completas
-                  com vocais a partir de texto (Text-to-Music).
+                  com vocais a partir de texto.
                 </p>
               </div>
             </div>
@@ -210,30 +210,35 @@ export default function Index() {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Meus Projetos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Meus Projetos
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Gerencie e exporte seus vídeos e músicas.
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="shadow-md">
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="shadow-md w-full sm:w-auto h-11 sm:h-10"
+        >
           <Plus className="w-4 h-4 mr-2" /> Novo Projeto
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 bg-muted/20 p-4 rounded-xl border">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 bg-muted/20 p-3 md:p-4 rounded-xl border">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar projetos..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-background"
+            className="pl-9 h-11 sm:h-10 bg-background"
           />
         </div>
         {selectedIds.size > 0 && (
           <Button
             onClick={handleBatchExport}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto transition-all animate-in fade-in zoom-in-95 duration-200"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto h-11 sm:h-10 transition-all animate-in fade-in zoom-in-95 duration-200"
           >
             <Download className="w-4 h-4 mr-2" />
             Exportação em Lote ({selectedIds.size})
@@ -243,24 +248,25 @@ export default function Index() {
 
       <div className="space-y-4">
         {filtered.length > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 rounded-lg border w-max transition-colors hover:bg-muted/50">
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30 rounded-lg border w-full sm:w-max transition-colors hover:bg-muted/50">
             <Checkbox
               id="select-all"
               checked={
                 selectedIds.size > 0 && selectedIds.size === filtered.length
               }
               onCheckedChange={toggleSelectAll}
+              className="w-5 h-5 sm:w-4 sm:h-4"
             />
             <label
               htmlFor="select-all"
-              className="text-sm font-semibold text-muted-foreground cursor-pointer"
+              className="text-sm font-semibold text-muted-foreground cursor-pointer flex-1"
             >
-              Selecionar Todos
+              Selecionar Todos os Projetos
             </label>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filtered.map((project) => {
             const isExporting = exportingIds.has(project.id)
             const progress = exportProgress[project.id] || 0
@@ -305,7 +311,7 @@ export default function Index() {
                     <Checkbox
                       checked={isSelected}
                       onCheckedChange={() => toggleSelect(project.id)}
-                      className="bg-background/80 backdrop-blur-sm data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-sm w-5 h-5"
+                      className="bg-background/80 backdrop-blur-sm data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-sm w-6 h-6 sm:w-5 sm:h-5 rounded"
                     />
                   </div>
 
@@ -322,7 +328,7 @@ export default function Index() {
                       onClick={() => navigate(`/editor/${project.id}`)}
                     >
                       <h3
-                        className="font-bold text-lg truncate hover:text-indigo-600 transition-colors"
+                        className="font-bold text-base sm:text-lg truncate hover:text-indigo-600 transition-colors"
                         title={project.name}
                       >
                         {project.name}
@@ -361,21 +367,19 @@ export default function Index() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex-1 font-semibold hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
+                      className="flex-1 h-10 sm:h-9 font-semibold hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-400"
                       asChild
                       disabled={isExporting}
                     >
                       <Link to={`/editor/${project.id}`}>
                         <Edit2 className="w-4 h-4 mr-2" />{' '}
-                        {project.projectType === 'music'
-                          ? 'Abrir Editor Musical'
-                          : 'Editar Vídeo'}
+                        {project.projectType === 'music' ? 'Estúdio' : 'Editar'}
                       </Link>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
+                      className="h-10 w-10 sm:h-9 sm:w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
                       onClick={() => handleDelete(project.id)}
                       disabled={isExporting}
                     >
@@ -389,15 +393,15 @@ export default function Index() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed animate-in fade-in">
+          <div className="text-center py-16 md:py-20 px-4 bg-muted/20 rounded-xl border border-dashed animate-in fade-in">
             <Video className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
             <h3 className="text-lg font-bold">Nenhum projeto encontrado</h3>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
               Crie seu primeiro vídeo ou música com IA para começar.
             </p>
             <Button
               onClick={() => setIsCreateOpen(true)}
-              className="mt-6 font-bold shadow-md hover:-translate-y-0.5 transition-transform"
+              className="mt-6 font-bold shadow-md hover:-translate-y-0.5 transition-transform h-11 px-6"
             >
               <Plus className="w-4 h-4 mr-2" /> Novo Projeto
             </Button>
