@@ -38,11 +38,15 @@ export default function useAuthStore() {
   return {
     user,
     login: (email: string, name: string) => {
+      // Mock an admin role if the email contains 'admin'
+      const role = email.toLowerCase().includes('admin') ? 'admin' : 'user'
       setAuthUser({
         id: crypto.randomUUID(),
         email,
         name,
         plan: 'free',
+        role,
+        videosGenerated: 0,
         linkedAccounts: {},
       })
     },

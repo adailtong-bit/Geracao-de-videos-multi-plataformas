@@ -9,12 +9,13 @@ import {
   Link as LinkIcon,
   Home,
   UserCircle,
+  ShieldAlert,
 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
 
 export default function Layout() {
-  const { logout } = useAuthStore()
+  const { user, logout } = useAuthStore()
   const location = useLocation()
 
   // Don't show sidebar in editor
@@ -35,6 +36,10 @@ export default function Layout() {
     { name: 'Billing', path: '/billing', icon: CreditCard },
     { name: 'Profile', path: '/profile', icon: User },
   ]
+
+  if (user?.role === 'admin') {
+    links.push({ name: 'Admin Panel', path: '/admin', icon: ShieldAlert })
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/20">

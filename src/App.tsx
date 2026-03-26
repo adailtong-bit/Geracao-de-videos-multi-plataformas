@@ -11,6 +11,7 @@ import Integrations from './pages/Integrations'
 import Billing from './pages/Billing'
 import Analytics from './pages/Analytics'
 import Avatars from './pages/Avatars'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import useAuthStore from './stores/useAuthStore'
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

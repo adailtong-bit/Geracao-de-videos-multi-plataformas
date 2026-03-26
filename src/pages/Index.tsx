@@ -18,6 +18,8 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Project } from '@/types'
 import { getProjects, createProject, deleteProject } from '@/lib/storage'
+import useAuthStore from '@/stores/useAuthStore'
+import useAdminStore from '@/stores/useAdminStore'
 
 export default function Index() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -28,6 +30,8 @@ export default function Index() {
     {},
   )
 
+  const { user, updateUser } = useAuthStore()
+  const { settings } = useAdminStore()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -46,6 +50,21 @@ export default function Index() {
   }, [])
 
   const handleCreate = () => {
+    // Check Freemium limits before creating
+    if (
+      user?.role !== 'admin' &&
+      user?.plan === 'free' &&
+      (user?.videosGenerated || 0) >= settings.freeVideoLimit
+    ) {
+      toast({
+        title: 'Limite Atingido',
+        description: `Você atingiu o limite de ${settings.freeVideoLimit} vídeos gratuitos. Faça upgrade para continuar criando.`,
+        variant: 'destructive',
+      })
+      navigate('/billing')
+      return
+    }
+
     const newProject: Project = {
       id: crypto.randomUUID(),
       name: `Novo Projeto ${projects.length + 1}`,
@@ -60,6 +79,10 @@ export default function Index() {
       createdAt: Date.now(),
     }
     createProject(newProject)
+
+    // Increment usage tracking
+    updateUser({ videosGenerated: (user?.videosGenerated || 0) + 1 })
+
     navigate(`/editor/${newProject.id}`)
   }
 

@@ -234,6 +234,8 @@ export interface User {
   name: string
   email: string
   plan: 'free' | 'pro'
+  role?: 'admin' | 'user'
+  videosGenerated?: number
   linkedAccounts: {
     instagram?: string
     tiktok?: string
@@ -249,4 +251,23 @@ export interface Asset {
   type: 'banner' | 'cta'
   bgColor: string
   content: string
+}
+
+export interface Transaction {
+  id: string
+  date: string
+  amount: number
+  status: 'paid' | 'pending' | 'failed'
+  description: string
+}
+
+export interface PlatformSettings {
+  freeVideoLimit: number
+  pricePerVideo: number
+  subscriptionPrice: number
+  paymentMethods: {
+    stripe: boolean
+    paypal: boolean
+    pix: boolean
+  }
 }
