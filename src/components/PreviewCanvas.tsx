@@ -496,6 +496,7 @@ export function PreviewCanvas({
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.6)'
   const subSize = project.subtitleStyle?.fontSize || 11
+  const subFontFamily = project.subtitleStyle?.fontFamily || 'Inter'
 
   const handleReturnToCorrection = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -974,6 +975,7 @@ export function PreviewCanvas({
                             color: subColor,
                             backgroundColor: subBg,
                             fontSize: `${subSize}px`,
+                            fontFamily: subFontFamily,
                             textShadow: '0px 1px 2px rgba(0,0,0,0.8)',
                             border: '1px solid rgba(255,255,255,0.05)',
                           }}

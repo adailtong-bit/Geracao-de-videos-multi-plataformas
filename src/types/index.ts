@@ -141,6 +141,7 @@ export interface SubtitleStyle {
   backgroundColor: string
   fontSize: number
   enabled?: boolean
+  fontFamily?: string
 }
 
 export interface Draft {
@@ -217,6 +218,7 @@ export interface Project {
   approvalStatus?: ApprovalStatus
   glossary?: GlossaryTerm[]
   collaborationMode?: boolean
+  imageCategory?: string
 }
 
 export interface User {

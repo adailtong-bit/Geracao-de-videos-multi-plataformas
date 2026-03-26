@@ -113,6 +113,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
       backgroundColor: 'rgba(0,0,0,0.75)',
       fontSize: 10,
       enabled: true,
+      fontFamily: 'Inter',
     }
     update({
       subtitleStyle: { ...current, [key]: value },
@@ -273,6 +274,7 @@ export function ReviewPanel({ project, update, onNext }: Props) {
   const subColor = project.subtitleStyle?.color || '#ffffff'
   const subBg = project.subtitleStyle?.backgroundColor || 'rgba(0,0,0,0.75)'
   const subSize = project.subtitleStyle?.fontSize || 10
+  const subFontFamily = project.subtitleStyle?.fontFamily || 'Inter'
 
   const statusConfig = {
     review: {
@@ -572,20 +574,43 @@ export function ReviewPanel({ project, update, onNext }: Props) {
                   </div>
                 </div>
               </div>
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between items-center">
-                  <Label className="text-xs">Tamanho da Fonte</Label>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {subSize}px
-                  </span>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-xs">Fonte da Legenda</Label>
+                  <Select
+                    value={subFontFamily}
+                    onValueChange={(v) => updateSubStyle('fontFamily', v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Inter">Inter (Padrão)</SelectItem>
+                      <SelectItem value="Impact">Impact (Bold)</SelectItem>
+                      <SelectItem value="Comic Sans MS">Comic Sans</SelectItem>
+                      <SelectItem value="Georgia">Serif (Clássico)</SelectItem>
+                      <SelectItem value="Courier New">
+                        Mono (Máquina)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Slider
-                  value={[subSize]}
-                  min={8}
-                  max={40}
-                  step={1}
-                  onValueChange={([v]) => updateSubStyle('fontSize', v)}
-                />
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs">Tamanho da Fonte</Label>
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {subSize}px
+                    </span>
+                  </div>
+                  <Slider
+                    value={[subSize]}
+                    min={8}
+                    max={40}
+                    step={1}
+                    onValueChange={([v]) => updateSubStyle('fontSize', v)}
+                  />
+                </div>
               </div>
             </div>
 

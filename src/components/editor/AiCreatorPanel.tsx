@@ -65,34 +65,39 @@ interface GeneratedResult {
   hashtags: string
 }
 
-const extractEnglishVisualKeyword = (t: string, style: string): string => {
-  const lower = t.toLowerCase()
-  let base = 'epic landscape'
-  if (lower.match(/sol|pôr do sol|entardecer|amanhecer|luz|sun|light|sunset/))
-    base = 'sunset light'
-  else if (lower.match(/mar|oceano|água|onda|praia|rio|ocean|water|sea|beach/))
-    base = 'ocean water'
-  else if (lower.match(/montanha|colina|pico|pedra|rocha|mountain|rock/))
-    base = 'mountain peak'
-  else if (lower.match(/cidade|urbano|rua|prédio|metrópole|city|urban|street/))
-    base = 'urban city'
-  else if (
-    lower.match(/floresta|árvore|mato|natureza|selva|folha|forest|nature|tree/)
-  )
-    base = 'forest nature'
-  else if (
-    lower.match(/céu|nuvem|estrela|espaço|galáxia|universo|sky|star|space/)
-  )
-    base = 'night sky stars'
-  else if (
-    lower.match(
-      /pessoas|homem|mulher|rosto|olhos|multidão|criança|people|man|woman|face/,
-    )
-  )
-    base = 'people portrait'
-  else if (lower.match(/tecnologia|computador|ia|futuro|tech|future/))
-    base = 'futuristic technology'
+const IMAGE_CATEGORIES = [
+  { id: 'forest', label: 'Floresta', query: 'forest nature trees' },
+  {
+    id: 'biblical',
+    label: 'Imagens Bíblicas',
+    query: 'biblical ancient desert history',
+  },
+  { id: 'sea', label: 'Mar', query: 'sea ocean waves' },
+  {
+    id: 'modern-cities',
+    label: 'Cidades Modernas',
+    query: 'modern city street skyline',
+  },
+  {
+    id: 'ancient-cities',
+    label: 'Cidades Antigas',
+    query: 'ancient city ruins history',
+  },
+  { id: 'horses', label: 'Cavalos', query: 'horses galloping' },
+  {
+    id: 'savanna',
+    label: 'Savana Africana',
+    query: 'african savanna wildlife',
+  },
+]
 
+const extractEnglishVisualKeyword = (
+  t: string,
+  style: string,
+  categoryId: string,
+): string => {
+  const cat = IMAGE_CATEGORIES.find((c) => c.id === categoryId)
+  const base = cat ? cat.query : 'epic landscape'
   return `${base} ${style}`
 }
 
@@ -154,6 +159,9 @@ export function AiCreatorPanel({
     project.visualStyle || 'realistic',
   )
   const [mood, setMood] = useState<Mood>(project.mood || 'inspirational')
+  const [imageCategory, setImageCategory] = useState<string>(
+    project.imageCategory || 'forest',
+  )
 
   const [status, setStatus] = useState<'idle' | 'generating' | 'success'>(
     'idle',
@@ -395,7 +403,7 @@ export function AiCreatorPanel({
         const end = start + duration
         currentStartTime = end
         const query = encodeURIComponent(
-          extractEnglishVisualKeyword(text, visualStyle),
+          extractEnglishVisualKeyword(text, visualStyle, imageCategory),
         )
         return {
           id: crypto.randomUUID(),
@@ -500,6 +508,7 @@ export function AiCreatorPanel({
         visualStyle,
         mood,
         mediaType,
+        imageCategory,
         avatar: project.avatar || {
           enabled: false,
           mode: 'preset',
@@ -516,6 +525,7 @@ export function AiCreatorPanel({
           backgroundColor: 'rgba(0,0,0,0.75)',
           fontSize: 10,
           enabled: true,
+          fontFamily: 'Inter',
         },
         glossary: project.glossary || [],
       },
@@ -539,6 +549,7 @@ export function AiCreatorPanel({
       visualStyle: newDraft.snapshot.visualStyle,
       mood: newDraft.snapshot.mood,
       mediaType: newDraft.snapshot.mediaType,
+      imageCategory: newDraft.snapshot.imageCategory,
       avatar: newDraft.snapshot.avatar,
       subtitleStyle: newDraft.snapshot.subtitleStyle,
       drafts: [...(project.drafts || []), newDraft],
@@ -653,17 +664,44 @@ export function AiCreatorPanel({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="text" className="space-y-3 mt-0">
-            <Label className="font-semibold text-sm">Texto da Narração</Label>
-            <Textarea
-              placeholder="Cole seu texto longo aqui..."
-              className="min-h-[120px] resize-none text-sm bg-background/50"
-              value={prompt}
-              onChange={(e) => {
-                setPrompt(e.target.value)
-                update({ draftPrompt: e.target.value })
-              }}
-            />
+          <TabsContent value="text" className="space-y-4 mt-0">
+            <div className="space-y-3">
+              <Label className="font-semibold text-sm">Texto da Narração</Label>
+              <Textarea
+                placeholder="Cole seu texto longo aqui..."
+                className="min-h-[120px] resize-none text-sm bg-background/50"
+                value={prompt}
+                onChange={(e) => {
+                  setPrompt(e.target.value)
+                  update({ draftPrompt: e.target.value })
+                }}
+              />
+            </div>
+
+            <div className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+              <Label className="font-semibold text-sm flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" /> Tema Visual de
+                Fundo
+              </Label>
+              <Select
+                value={imageCategory}
+                onValueChange={(v) => {
+                  setImageCategory(v)
+                  update({ imageCategory: v })
+                }}
+              >
+                <SelectTrigger className="bg-background h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {IMAGE_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </TabsContent>
 
           <TabsContent value="video" className="space-y-4 mt-0">

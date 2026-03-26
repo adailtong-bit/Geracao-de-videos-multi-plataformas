@@ -27,6 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useToast } from '@/hooks/use-toast'
 
 interface Props {
   project: Project
@@ -154,6 +155,7 @@ const ASSET_CATEGORIES: Record<string, string[]> = {
 
 export function TimelinePanel({ project, onNext, update }: Props) {
   const [editingCutId, setEditingCutId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   // Asset Library State
   const [assetLibOpenFor, setAssetLibOpenFor] = useState<{
@@ -250,6 +252,46 @@ export function TimelinePanel({ project, onNext, update }: Props) {
     })
   }
 
+  const handleAdjustIdealDuration = () => {
+    if (!project.aiClips?.[0]?.subtitles || !project.bRolls) return
+
+    let currentStart = 0
+    const newSubtitles = project.aiClips[0].subtitles.map((sub) => {
+      // Calculo do tempo ideal de leitura baseado em caracteres
+      const idealDuration = Math.max(2.0, sub.text.length * 0.065)
+      const start = currentStart
+      const end = start + idealDuration
+      currentStart = end
+      return { ...sub, start, end }
+    })
+
+    let currentBRollStart = 0
+    const newBRolls = project.bRolls.map((br, i) => {
+      const sub = newSubtitles[i]
+      if (sub) {
+        return { ...br, start: sub.start, end: sub.end }
+      }
+      const dur = br.end - br.start
+      const start = currentBRollStart
+      const end = start + dur
+      currentBRollStart = end
+      return { ...br, start, end }
+    })
+
+    if (update) {
+      update({
+        aiClips: [{ ...project.aiClips[0], subtitles: newSubtitles }],
+        bRolls: newBRolls,
+        videoDuration: currentStart,
+      })
+      toast({
+        title: 'Duração Ajustada',
+        description:
+          'O tempo de cada cena foi recalculado automaticamente para leitura ideal.',
+      })
+    }
+  }
+
   if (segments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-muted-foreground p-4 text-center">
@@ -299,6 +341,18 @@ export function TimelinePanel({ project, onNext, update }: Props) {
               Aviso: Para monetização no {format?.label}, o mínimo é{' '}
               {format?.min}s.
             </div>
+          )}
+
+          {!isVideoSource && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAdjustIdealDuration}
+              className="w-full sm:w-max mt-2 font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Ajustar para Duração Ideal
+            </Button>
           )}
         </div>
       </div>
