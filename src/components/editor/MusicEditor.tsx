@@ -1,5 +1,5 @@
 import { Project } from '@/types'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -86,6 +86,22 @@ export function MusicEditor({
   const vocalAudioRef = useRef<HTMLAudioElement>(null)
   const readyFlags = useRef({ bg: false, voc: false })
 
+  // Web Audio API Refs
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const masterGainRef = useRef<GainNode | null>(null)
+  const masterAnalyserRef = useRef<AnalyserNode | null>(null)
+  const bgSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const bgGainRef = useRef<GainNode | null>(null)
+  const bgAnalyserRef = useRef<AnalyserNode | null>(null)
+  const vocalSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
+  const vocalGainRef = useRef<GainNode | null>(null)
+  const vocalAnalyserRef = useRef<AnalyserNode | null>(null)
+
+  // VU Meter DOM Refs
+  const masterVuRef = useRef<HTMLDivElement>(null)
+  const bgVuRef = useRef<HTMLDivElement>(null)
+  const vocalVuRef = useRef<HTMLDivElement>(null)
+
   const primaryUrl =
     project.audioTrack?.url ||
     'https://actions.google.com/sounds/v1/water/rain_on_roof.ogg'
@@ -114,6 +130,67 @@ export function MusicEditor({
       duration: 120,
     },
   ]
+
+  const initAudioEngine = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        const AudioContextClass =
+          window.AudioContext || (window as any).webkitAudioContext
+        audioCtxRef.current = new AudioContextClass()
+
+        masterGainRef.current = audioCtxRef.current.createGain()
+        masterAnalyserRef.current = audioCtxRef.current.createAnalyser()
+        masterAnalyserRef.current.fftSize = 256
+        masterGainRef.current.connect(masterAnalyserRef.current)
+        masterAnalyserRef.current.connect(audioCtxRef.current.destination)
+
+        if (bgAudioRef.current) {
+          bgSourceRef.current = audioCtxRef.current.createMediaElementSource(
+            bgAudioRef.current,
+          )
+          bgGainRef.current = audioCtxRef.current.createGain()
+          bgAnalyserRef.current = audioCtxRef.current.createAnalyser()
+          bgAnalyserRef.current.fftSize = 256
+          bgSourceRef.current.connect(bgGainRef.current)
+          bgGainRef.current.connect(bgAnalyserRef.current)
+          bgAnalyserRef.current.connect(masterGainRef.current)
+        }
+
+        if (vocalAudioRef.current) {
+          vocalSourceRef.current = audioCtxRef.current.createMediaElementSource(
+            vocalAudioRef.current,
+          )
+          vocalGainRef.current = audioCtxRef.current.createGain()
+          vocalAnalyserRef.current = audioCtxRef.current.createAnalyser()
+          vocalAnalyserRef.current.fftSize = 256
+          vocalSourceRef.current.connect(vocalGainRef.current)
+          vocalGainRef.current.connect(vocalAnalyserRef.current)
+          vocalAnalyserRef.current.connect(masterGainRef.current)
+        }
+
+        if (masterGainRef.current)
+          masterGainRef.current.gain.value = masterVol / 100
+        if (bgGainRef.current)
+          bgGainRef.current.gain.value = bgMuted ? 0 : bgVol / 100
+        if (vocalGainRef.current)
+          vocalGainRef.current.gain.value = vocalMuted ? 0 : vocalVol / 100
+      }
+    } catch (err) {
+      console.error('Audio engine init failed:', err)
+      setAudioStatus('error')
+      setAudioErrorMsg(
+        'Falha ao inicializar o motor de áudio. Verifique as permissões do navegador.',
+      )
+    }
+  }, [bgMuted, bgVol, masterVol, vocalMuted, vocalVol])
+
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(console.error)
+      }
+    }
+  }, [])
 
   const handleGenerate = () => {
     setIsGenerating(true)
@@ -148,6 +225,15 @@ export function MusicEditor({
   const togglePlay = async () => {
     if (audioStatus === 'error' || audioStatus === 'loading') return
 
+    if (!audioCtxRef.current) {
+      initAudioEngine()
+    }
+
+    if (!audioCtxRef.current) {
+      setIsPlaying(false)
+      return
+    }
+
     if (isPlaying) {
       if (!bgError) bgAudioRef.current?.pause()
       if (!vocalError) vocalAudioRef.current?.pause()
@@ -159,26 +245,46 @@ export function MusicEditor({
 
       setIsBuffering(true)
       try {
+        if (audioCtxRef.current.state === 'suspended') {
+          await audioCtxRef.current.resume()
+        }
+
         const promises = []
         if (!bgError && bgAudioRef.current) {
           promises.push(
-            bgAudioRef.current.play().catch((e) => console.warn('BG Err', e)),
+            bgAudioRef.current.play().catch((e) => {
+              console.warn('BG Err', e)
+              throw e
+            }),
           )
         }
         if (!vocalError && vocalAudioRef.current) {
           promises.push(
-            vocalAudioRef.current
-              .play()
-              .catch((e) => console.warn('Voc Err', e)),
+            vocalAudioRef.current.play().catch((e) => {
+              console.warn('Voc Err', e)
+              throw e
+            }),
           )
         }
         await Promise.all(promises)
+
+        if (audioCtxRef.current.state !== 'running') {
+          throw new Error('AudioContext failed to transition to running state')
+        }
+
         setIsPlaying(true)
       } catch (err: any) {
         console.error(
           'Playback failed:',
           err instanceof Error ? err.message : 'Unknown error',
         )
+        setIsPlaying(false)
+        toast({
+          title: 'Erro de Reprodução',
+          description:
+            'Não foi possível iniciar o áudio. O navegador pode ter bloqueado.',
+          variant: 'destructive',
+        })
       } finally {
         setIsBuffering(false)
       }
@@ -355,20 +461,31 @@ export function MusicEditor({
   }, [primaryUrl, vocalUrl, retryKey])
 
   useEffect(() => {
-    if (bgAudioRef.current && !bgError) {
-      bgAudioRef.current.volume = bgMuted
-        ? 0
-        : (bgVol / 100) * (masterVol / 100)
-    }
-    if (vocalAudioRef.current && !vocalError) {
-      vocalAudioRef.current.volume = vocalMuted
-        ? 0
-        : (vocalVol / 100) * (masterVol / 100)
-    }
+    if (masterGainRef.current)
+      masterGainRef.current.gain.value = masterVol / 100
+    if (bgGainRef.current)
+      bgGainRef.current.gain.value = bgMuted ? 0 : bgVol / 100
+    if (vocalGainRef.current)
+      vocalGainRef.current.gain.value = vocalMuted ? 0 : vocalVol / 100
+
+    if (bgAudioRef.current) bgAudioRef.current.volume = 1
+    if (vocalAudioRef.current) vocalAudioRef.current.volume = 1
   }, [masterVol, bgVol, vocalVol, bgMuted, vocalMuted, bgError, vocalError])
 
   useEffect(() => {
     let frameId: number
+    const dataArray = new Uint8Array(256)
+
+    const getRms = (analyser: AnalyserNode) => {
+      analyser.getByteTimeDomainData(dataArray)
+      let sum = 0
+      for (let i = 0; i < dataArray.length; i++) {
+        const val = (dataArray[i] - 128) / 128
+        sum += val * val
+      }
+      return Math.sqrt(sum / dataArray.length)
+    }
+
     const updatePlayhead = () => {
       let mainTime = 0
       if (!bgError && bgAudioRef.current) {
@@ -391,6 +508,22 @@ export function MusicEditor({
         }
       }
 
+      if (isPlaying && audioCtxRef.current?.state === 'running') {
+        if (masterAnalyserRef.current && masterVuRef.current) {
+          masterVuRef.current.style.width = `${Math.min(100, getRms(masterAnalyserRef.current) * 300)}%`
+        }
+        if (bgAnalyserRef.current && bgVuRef.current) {
+          bgVuRef.current.style.width = `${Math.min(100, getRms(bgAnalyserRef.current) * 300)}%`
+        }
+        if (vocalAnalyserRef.current && vocalVuRef.current) {
+          vocalVuRef.current.style.width = `${Math.min(100, getRms(vocalAnalyserRef.current) * 300)}%`
+        }
+      } else {
+        if (masterVuRef.current) masterVuRef.current.style.width = '0%'
+        if (bgVuRef.current) bgVuRef.current.style.width = '0%'
+        if (vocalVuRef.current) vocalVuRef.current.style.width = '0%'
+      }
+
       if (isPlaying) {
         frameId = requestAnimationFrame(updatePlayhead)
       }
@@ -404,6 +537,9 @@ export function MusicEditor({
       } else if (!vocalError && vocalAudioRef.current) {
         setCurrentTime(vocalAudioRef.current.currentTime)
       }
+      if (masterVuRef.current) masterVuRef.current.style.width = '0%'
+      if (bgVuRef.current) bgVuRef.current.style.width = '0%'
+      if (vocalVuRef.current) vocalVuRef.current.style.width = '0%'
     }
 
     return () => cancelAnimationFrame(frameId)
@@ -623,31 +759,42 @@ export function MusicEditor({
                       Console de Mixagem
                     </h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Ajuste o volume das camadas de áudio do seu projeto.
+                      Ajuste o volume e monitore as camadas de áudio do seu
+                      projeto.
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between">
+                    {/* Master Volume */}
+                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between mb-1">
                         <Label className="font-bold flex items-center gap-2">
-                          <Sliders className="w-4 h-4" /> Master
+                          <Sliders className="w-4 h-4" /> Master Output
                         </Label>
                         <span className="text-xs font-mono font-bold">
                           {masterVol}%
                         </span>
                       </div>
-                      <Slider
-                        value={[masterVol]}
-                        max={100}
-                        step={1}
-                        onValueChange={([v]) => setMasterVol(v)}
-                        className="py-2"
-                      />
+                      <div className="space-y-2">
+                        <Slider
+                          value={[masterVol]}
+                          max={100}
+                          step={1}
+                          onValueChange={([v]) => setMasterVol(v)}
+                          className="py-1"
+                        />
+                        <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden flex">
+                          <div
+                            ref={masterVuRef}
+                            className="h-full bg-indigo-500 w-0 transition-[width] duration-75 ease-out"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="bg-card p-4 rounded-xl border shadow-sm space-y-4">
-                      <div className="flex items-center justify-between">
+                    {/* Vocal Volume */}
+                    <div className="bg-card p-4 rounded-xl border shadow-sm space-y-3">
+                      <div className="flex items-center justify-between mb-1">
                         <Label className="font-semibold flex items-center gap-2">
                           <Mic2 className="w-4 h-4 text-pink-500" /> Melodia /
                           Vocais
@@ -675,24 +822,38 @@ export function MusicEditor({
                           {vocalError ? 'Erro' : vocalMuted ? 'Muted' : 'Mute'}
                         </Button>
                       </div>
-                      <Slider
-                        value={[vocalVol]}
-                        max={100}
-                        step={1}
-                        onValueChange={([v]) => setVocalVol(v)}
-                        disabled={vocalMuted || vocalError}
-                        className={cn(
-                          'py-2',
-                          (vocalMuted || vocalError) && 'opacity-50 grayscale',
-                        )}
-                      />
+                      <div className="space-y-2">
+                        <Slider
+                          value={[vocalVol]}
+                          max={100}
+                          step={1}
+                          onValueChange={([v]) => setVocalVol(v)}
+                          disabled={vocalMuted || vocalError}
+                          className={cn(
+                            'py-1',
+                            (vocalMuted || vocalError) &&
+                              'opacity-50 grayscale',
+                          )}
+                        />
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden flex">
+                          <div
+                            ref={vocalVuRef}
+                            className={cn(
+                              'h-full bg-pink-500 w-0 transition-[width] duration-75 ease-out',
+                              (vocalMuted || vocalError) &&
+                                'bg-muted-foreground opacity-30',
+                            )}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="bg-card p-4 rounded-xl border shadow-sm space-y-4">
-                      <div className="flex items-center justify-between">
+                    {/* Background Volume */}
+                    <div className="bg-card p-4 rounded-xl border shadow-sm space-y-3">
+                      <div className="flex items-center justify-between mb-1">
                         <Label className="font-semibold flex items-center gap-2">
                           <ListMusic className="w-4 h-4 text-emerald-500" />{' '}
-                          Background
+                          Instrumental
                           {bgError && (
                             <AlertCircle
                               className="w-4 h-4 text-destructive"
@@ -717,17 +878,29 @@ export function MusicEditor({
                           {bgError ? 'Erro' : bgMuted ? 'Muted' : 'Mute'}
                         </Button>
                       </div>
-                      <Slider
-                        value={[bgVol]}
-                        max={100}
-                        step={1}
-                        onValueChange={([v]) => setBgVol(v)}
-                        disabled={bgMuted || bgError}
-                        className={cn(
-                          'py-2',
-                          (bgMuted || bgError) && 'opacity-50 grayscale',
-                        )}
-                      />
+                      <div className="space-y-2">
+                        <Slider
+                          value={[bgVol]}
+                          max={100}
+                          step={1}
+                          onValueChange={([v]) => setBgVol(v)}
+                          disabled={bgMuted || bgError}
+                          className={cn(
+                            'py-1',
+                            (bgMuted || bgError) && 'opacity-50 grayscale',
+                          )}
+                        />
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden flex">
+                          <div
+                            ref={bgVuRef}
+                            className={cn(
+                              'h-full bg-emerald-500 w-0 transition-[width] duration-75 ease-out',
+                              (bgMuted || bgError) &&
+                                'bg-muted-foreground opacity-30',
+                            )}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
