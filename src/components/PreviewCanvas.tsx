@@ -837,30 +837,43 @@ export function PreviewCanvas({
                   project.bRolls &&
                   project.bRolls.length > 0 && (
                     <div className="absolute inset-0 z-10 pointer-events-none bg-black/20">
-                      {project.bRolls.map((br) => {
-                        const isActive =
-                          currentTime >= br.start && currentTime < br.end
-                        const isRendered =
-                          currentTime >= br.start - 0.5 &&
-                          currentTime <= br.end + 1.5
-                        if (!isRendered || !br.url) return null
-                        return (
-                          <img
-                            key={br.id}
-                            src={br.url}
-                            alt="Semantic"
-                            crossOrigin="anonymous"
-                            className={cn(
-                              'absolute inset-0 w-full h-full object-cover transition-opacity ease-in-out',
-                              isActive ? 'opacity-100' : 'opacity-0',
-                            )}
-                            style={{
-                              transitionDuration: '2000ms',
-                              ...getFilterStyle(),
-                            }}
-                          />
-                        )
-                      })}
+                      {[...project.bRolls]
+                        .sort((a, b) => a.start - b.start)
+                        .map((br) => {
+                          const isActive =
+                            currentTime >= br.start && currentTime < br.end
+                          const isJustEnded =
+                            currentTime >= br.end && currentTime < br.end + 2.0
+                          const isRendered =
+                            currentTime >= br.start - 3.0 &&
+                            currentTime <= br.end + 2.5
+
+                          if (!isRendered || !br.url) return null
+
+                          const isFade =
+                            br.transitionStyle === 'fade' || !br.transitionStyle
+                          const dur = isFade ? '1000ms' : '0ms'
+                          const filterStyle = getFilterStyle()
+
+                          return (
+                            <img
+                              key={br.id}
+                              src={br.url}
+                              alt="Semantic"
+                              crossOrigin="anonymous"
+                              className={cn(
+                                'absolute inset-0 w-full h-full object-cover',
+                                isActive || isJustEnded
+                                  ? 'opacity-100'
+                                  : 'opacity-0',
+                              )}
+                              style={{
+                                transition: `opacity ${dur} ease-in-out, ${filterStyle.transition}`,
+                                filter: filterStyle.filter,
+                              }}
+                            />
+                          )
+                        })}
                     </div>
                   )}
 

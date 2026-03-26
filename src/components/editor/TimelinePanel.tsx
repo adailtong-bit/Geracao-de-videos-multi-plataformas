@@ -22,6 +22,11 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface Props {
   project: Project
@@ -299,104 +304,128 @@ export function TimelinePanel({ project, onNext, update }: Props) {
       </div>
 
       <div className="space-y-3">
-        {segments.map((seg, idx) => (
-          <div
-            key={seg.id}
-            className="flex flex-col bg-card border rounded-xl shadow-sm relative overflow-hidden group hover:border-indigo-500/30 transition-colors"
-          >
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors z-10" />
+        {segments.map((seg, idx) => {
+          const isTooShort =
+            seg.end - seg.start > 0 &&
+            seg.text.length / 18 > seg.end - seg.start
 
-            <div className="flex gap-4 p-3">
-              <div className="w-20 h-28 sm:w-24 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-muted relative border border-border/50 flex items-center justify-center">
-                {seg.imageUrl ? (
-                  <img
-                    src={seg.imageUrl}
-                    alt={`Cena ${idx}`}
-                    crossOrigin="anonymous"
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 text-muted-foreground/50 gap-1">
-                    {seg.isCut ? (
-                      <Video className="w-6 h-6" />
-                    ) : (
-                      <ImageIcon className="w-6 h-6" />
-                    )}
-                    {seg.isCut && (
-                      <span className="text-[9px] font-bold">Corte Fonte</span>
-                    )}
-                  </div>
-                )}
-                <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded backdrop-blur-sm flex items-center gap-1 shadow-sm">
-                  <Clock className="w-3 h-3" />
-                  {formatTime(seg.start)}
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
+          return (
+            <div
+              key={seg.id}
+              className="flex flex-col bg-card border rounded-xl shadow-sm relative overflow-hidden group hover:border-indigo-500/30 transition-colors"
+            >
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors z-10" />
+
+              <div className="flex gap-4 p-3">
+                <div className="w-20 h-28 sm:w-24 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-muted relative border border-border/50 flex items-center justify-center">
+                  {seg.imageUrl ? (
+                    <img
+                      src={seg.imageUrl}
+                      alt={`Cena ${idx}`}
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 text-muted-foreground/50 gap-1">
                       {seg.isCut ? (
-                        <Scissors className="w-3 h-3" />
+                        <Video className="w-6 h-6" />
                       ) : (
-                        <Film className="w-3 h-3" />
+                        <ImageIcon className="w-6 h-6" />
                       )}
-                      {seg.isCut
-                        ? `Corte Inteligente ${idx + 1}`
-                        : `Cena Visual ${idx + 1}`}
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
-                        {(seg.end - seg.start).toFixed(2)}s
-                      </span>
-                      {seg.isCut && update && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`h-6 w-6 rounded-md ${editingCutId === seg.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-muted-foreground hover:text-foreground'}`}
-                          onClick={() =>
-                            setEditingCutId(
-                              editingCutId === seg.id ? null : seg.id,
-                            )
-                          }
-                        >
-                          <Settings2 className="w-3.5 h-3.5" />
-                        </Button>
+                      {seg.isCut && (
+                        <span className="text-[9px] font-bold">
+                          Corte Fonte
+                        </span>
                       )}
                     </div>
+                  )}
+                  <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded backdrop-blur-sm flex items-center gap-1 shadow-sm">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(seg.start)}
                   </div>
-                  <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2 line-clamp-2">
-                    "{seg.text}"
-                  </p>
                 </div>
+                <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                        {seg.isCut ? (
+                          <Scissors className="w-3 h-3" />
+                        ) : (
+                          <Film className="w-3 h-3" />
+                        )}
+                        {seg.isCut
+                          ? `Corte Inteligente ${idx + 1}`
+                          : `Cena Visual ${idx + 1}`}
+                      </p>
 
-                {!seg.isCut && update && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs w-max mt-2 text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      setAssetLibOpenFor({ start: seg.start, end: seg.end })
-                    }
-                  >
-                    <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Biblioteca de
-                    Assets
-                  </Button>
-                )}
+                      <div className="flex items-center gap-2">
+                        {isTooShort && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle className="w-4 h-4 text-red-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              className="bg-destructive text-destructive-foreground"
+                            >
+                              <p>
+                                O tempo na tela é muito curto para a leitura
+                                deste texto.
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
+                          {(seg.end - seg.start).toFixed(2)}s
+                        </span>
+                        {seg.isCut && update && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-6 w-6 rounded-md ${editingCutId === seg.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() =>
+                              setEditingCutId(
+                                editingCutId === seg.id ? null : seg.id,
+                              )
+                            }
+                          >
+                            <Settings2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2 line-clamp-2">
+                      "{seg.text}"
+                    </p>
+                  </div>
+
+                  {!seg.isCut && update && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs w-max mt-2 text-muted-foreground hover:text-foreground"
+                      onClick={() =>
+                        setAssetLibOpenFor({ start: seg.start, end: seg.end })
+                      }
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Biblioteca de
+                      Assets
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {editingCutId === seg.id && seg.isCut && seg.originalCut && (
+                <div className="px-3 pb-3 pt-1 bg-muted/10">
+                  <ManualTrimEditor
+                    cut={seg.originalCut}
+                    updateCut={handleUpdateCut}
+                  />
+                </div>
+              )}
             </div>
-
-            {editingCutId === seg.id && seg.isCut && seg.originalCut && (
-              <div className="px-3 pb-3 pt-1 bg-muted/10">
-                <ManualTrimEditor
-                  cut={seg.originalCut}
-                  updateCut={handleUpdateCut}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <Dialog

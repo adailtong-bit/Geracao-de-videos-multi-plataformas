@@ -1,7 +1,7 @@
 import { Project, GlossaryTerm } from '@/types'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
-import { FileText } from 'lucide-react'
+import { FileText, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -138,26 +138,52 @@ export function ScriptEditorPanel({
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {project.aiClips?.map((clip) =>
-                clip.subtitles.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="flex gap-3 items-start p-3 bg-card rounded-lg border focus-within:border-primary/50 focus-within:ring-1 ring-primary/20 transition-all shadow-sm"
-                  >
-                    <div className="w-14 shrink-0 mt-2 text-[10px] font-mono font-bold text-muted-foreground text-center bg-muted px-1.5 py-0.5 rounded">
-                      {sub.start.toFixed(1)}s
+                clip.subtitles.map((sub) => {
+                  const duration = sub.end - sub.start
+                  const isTooShort =
+                    duration > 0 && sub.text.length / 18 > duration
+
+                  return (
+                    <div key={sub.id} className="flex flex-col gap-1.5">
+                      <div
+                        className={cn(
+                          'flex gap-3 items-start p-3 bg-card rounded-lg border focus-within:ring-1 transition-all shadow-sm',
+                          isTooShort
+                            ? 'border-red-500/50 bg-red-500/5 focus-within:border-red-500/50 focus-within:ring-red-500/20'
+                            : 'border-border focus-within:border-primary/50 focus-within:ring-primary/20',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'w-14 shrink-0 mt-2 text-[10px] font-mono font-bold text-center px-1.5 py-0.5 rounded',
+                            isTooShort
+                              ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                              : 'bg-muted text-muted-foreground',
+                          )}
+                        >
+                          {sub.start.toFixed(1)}s
+                        </div>
+                        <HighlightedTextarea
+                          className="min-h-[50px] border-none shadow-none focus-within:ring-0 focus-within:ring-offset-0 px-1 py-1"
+                          value={sub.text}
+                          onChange={(val) =>
+                            handleSubtitleChange(clip.id, sub.id, val)
+                          }
+                          glossary={project.glossary || []}
+                        />
+                      </div>
+                      {isTooShort && (
+                        <div className="flex items-center text-[10px] font-semibold text-red-500 px-1 animate-in fade-in">
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          Atenção: A duração ({duration.toFixed(1)}s) é muito
+                          curta para a leitura de {sub.text.length} caracteres.
+                        </div>
+                      )}
                     </div>
-                    <HighlightedTextarea
-                      className="min-h-[50px] border-none shadow-none focus-within:ring-0 focus-within:ring-offset-0 px-1 py-1"
-                      value={sub.text}
-                      onChange={(val) =>
-                        handleSubtitleChange(clip.id, sub.id, val)
-                      }
-                      glossary={project.glossary || []}
-                    />
-                  </div>
-                )),
+                  )
+                }),
               )}
               {(!project.aiClips || project.aiClips.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-card/50">
