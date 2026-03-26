@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -18,7 +24,16 @@ import useAuthStore from './stores/useAuthStore'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuthStore()
+  const location = useLocation()
+
   if (!user) return <Navigate to="/login" replace />
+
+  // Service Interruption System check
+  const isAllowedRoute = ['/billing', '/profile'].includes(location.pathname)
+  if (user.isBlocked && !isAllowedRoute) {
+    return <Navigate to="/billing" replace />
+  }
+
   return <>{children}</>
 }
 

@@ -38,15 +38,38 @@ export default function useAuthStore() {
   return {
     user,
     login: (email: string, name: string) => {
-      // Mock an admin role if the email contains 'admin'
-      const role = email.toLowerCase().includes('admin') ? 'admin' : 'user'
+      let role: 'admin' | 'user' = 'user'
+      let plan: 'free' | 'pro' = 'free'
+      let videosGenerated = 0
+      let paymentStatus: 'paid' | 'overdue' | 'pending' = 'paid'
+      let isBlocked = false
+
+      // Sample Data Implementation based on email patterns
+      if (email.toLowerCase().includes('admin')) {
+        role = 'admin'
+        plan = 'pro'
+      } else if (email.toLowerCase().includes('paid')) {
+        plan = 'pro'
+        videosGenerated = 45
+      } else if (email.toLowerCase().includes('free')) {
+        plan = 'free'
+        videosGenerated = 3
+      } else if (email.toLowerCase().includes('overdue')) {
+        plan = 'pro'
+        videosGenerated = 12
+        paymentStatus = 'overdue'
+        isBlocked = true
+      }
+
       setAuthUser({
         id: crypto.randomUUID(),
         email,
-        name,
-        plan: 'free',
+        name: name || (role === 'admin' ? 'Admin' : 'Creator'),
+        plan,
         role,
-        videosGenerated: 0,
+        videosGenerated,
+        paymentStatus,
+        isBlocked,
         linkedAccounts: {},
       })
     },

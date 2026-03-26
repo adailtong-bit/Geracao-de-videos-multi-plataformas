@@ -83,6 +83,63 @@ export default function Login() {
                 placeholder="••••••••"
               />
             </div>
+
+            {/* Helper buttons for quick testing of User Stories */}
+            <div className="mt-6 pt-6 border-t space-y-3">
+              <p className="text-xs text-center text-muted-foreground font-semibold uppercase tracking-wider">
+                Fast Login (Sample Data)
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin@admin.com')
+                    setName('Platform Owner')
+                  }}
+                  className="text-xs"
+                >
+                  Admin Owner
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setEmail('free@user.com')
+                    setName('Test Free User')
+                  }}
+                  className="text-xs"
+                >
+                  Free User
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setEmail('paid@user.com')
+                    setName('Test Paid User')
+                  }}
+                  className="text-xs"
+                >
+                  Paid User
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setEmail('overdue@user.com')
+                    setName('Overdue User')
+                  }}
+                  className="text-xs border-red-200 text-red-600 hover:bg-red-50"
+                >
+                  Delinquent
+                </Button>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button

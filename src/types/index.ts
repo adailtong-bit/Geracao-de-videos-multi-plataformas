@@ -236,6 +236,8 @@ export interface User {
   plan: 'free' | 'pro'
   role?: 'admin' | 'user'
   videosGenerated?: number
+  paymentStatus?: 'paid' | 'overdue' | 'pending'
+  isBlocked?: boolean
   linkedAccounts: {
     instagram?: string
     tiktok?: string

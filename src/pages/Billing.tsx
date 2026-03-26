@@ -19,7 +19,7 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card'
-import { Check, Star } from 'lucide-react'
+import { Check, Star, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Billing() {
@@ -28,11 +28,19 @@ export default function Billing() {
   const { toast } = useToast()
 
   const handleUpgrade = () => {
-    updateUser({ plan: 'pro' })
+    updateUser({ plan: 'pro', paymentStatus: 'paid', isBlocked: false })
     toast({
       title: 'Upgraded to Pro! 🚀',
       description:
         'You now have access to direct publishing, global assets, and more.',
+    })
+  }
+
+  const handleRegularize = () => {
+    updateUser({ isBlocked: false, paymentStatus: 'paid' })
+    toast({
+      title: 'Pagamento Confirmado',
+      description: 'Seu acesso foi restaurado com sucesso.',
     })
   }
 
@@ -59,6 +67,38 @@ export default function Billing() {
 
   return (
     <div className="max-w-5xl mx-auto p-8 space-y-8 animate-fade-in-up">
+      {user?.isBlocked && (
+        <Card className="mb-8 border-destructive shadow-lg bg-destructive/5">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-8 h-8 text-destructive" />
+              <div>
+                <CardTitle className="text-destructive">
+                  Acesso Restrito - Pagamento Pendente
+                </CardTitle>
+                <CardDescription className="text-destructive/80 font-medium mt-1">
+                  Sua conta foi suspensa temporariamente devido a pendências
+                  financeiras.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm mb-4 text-destructive/90">
+              Para restaurar seu acesso e continuar criando vídeos, por favor,
+              regularize sua situação.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={handleRegularize}
+              className="shadow-md"
+            >
+              Pagar Agora e Desbloquear
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
           Planos & Assinaturas
