@@ -180,6 +180,13 @@ export interface GlossaryTerm {
   target: string
 }
 
+export interface AudioSettings {
+  organicProsody?: boolean
+  removeArtifacts?: boolean
+  tailSilenceEnforcement?: boolean
+  clearAudioBuffer?: boolean
+}
+
 export interface Project {
   id: string
   name: string
@@ -219,6 +226,7 @@ export interface Project {
   glossary?: GlossaryTerm[]
   collaborationMode?: boolean
   imageCategory?: string
+  audioSettings?: AudioSettings
 }
 
 export interface User {
