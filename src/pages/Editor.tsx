@@ -83,7 +83,7 @@ function VersionsSidebar({
 
   return (
     <Sidebar variant="sidebar" className="border-r shadow-sm">
-      <SidebarHeader className="h-14 border-b px-4 flex items-center justify-center shrink-0 bg-card pt-[env(safe-area-inset-top)] box-content">
+      <SidebarHeader className="h-14 border-b px-4 pr-12 flex items-center justify-center shrink-0 bg-card pt-[env(safe-area-inset-top)] box-content">
         <h2 className="text-sm font-bold flex items-center gap-2 w-full text-foreground">
           <Video className="w-4 h-4 text-primary" /> Meus Vídeos Gerados
         </h2>

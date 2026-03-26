@@ -59,7 +59,7 @@ function AppSidebar() {
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
-      <SidebarHeader className="h-16 flex flex-row items-center px-6 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 flex flex-row items-center px-6 pr-12 border-b border-sidebar-border">
         <Video className="w-6 h-6 text-primary mr-2 shrink-0" />
         <span className="font-bold text-lg truncate">
           MultiProject{' '}

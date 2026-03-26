@@ -2,7 +2,7 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { VariantProps, cva } from 'class-variance-authority'
-import { PanelLeft } from 'lucide-react'
+import { PanelLeft, Menu } from 'lucide-react'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
@@ -204,7 +204,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
             style={
               {
                 '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
@@ -286,10 +286,9 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <span>
-        <PanelLeft className="w-6 h-6 md:w-4 md:h-4" />
-        <span className="sr-only">Toggle Sidebar</span>
-      </span>
+      <Menu className="w-6 h-6 md:hidden" />
+      <PanelLeft className="hidden w-6 h-6 md:block md:w-4 md:h-4" />
+      <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
 })
