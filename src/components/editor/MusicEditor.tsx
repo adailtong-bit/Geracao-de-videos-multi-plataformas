@@ -48,7 +48,7 @@ export function MusicEditor({
 }) {
   const { toast } = useToast()
 
-  // Sidebar & Form State (Persistent across tab switches)
+  // Sidebar & Form State
   const [activeTab, setActiveTab] = useState('create')
   const [prompt, setPrompt] = useState(project.musicPrompt || '')
   const [lyrics, setLyrics] = useState(project.draftPrompt || '')
@@ -59,7 +59,7 @@ export function MusicEditor({
   // Transport & Playback State
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(120) // Default mock duration
+  const [duration, setDuration] = useState(120)
 
   // Audio Engine State
   const [audioStatus, setAudioStatus] = useState<'loading' | 'ready' | 'error'>(
@@ -68,6 +68,11 @@ export function MusicEditor({
   const [isBuffering, setIsBuffering] = useState(true)
   const [audioErrorMsg, setAudioErrorMsg] = useState<string>('')
   const [retryKey, setRetryKey] = useState(0)
+
+  const [bgError, setBgError] = useState(false)
+  const [vocalError, setVocalError] = useState(false)
+  const bgErrorRef = useRef(false)
+  const vocalErrorRef = useRef(false)
 
   // Mixer State
   const [masterVol, setMasterVol] = useState(100)
@@ -87,7 +92,6 @@ export function MusicEditor({
   const vocalUrl =
     'https://actions.google.com/sounds/v1/human_voices/human_singing_choir.ogg'
 
-  // Generate a realistic looking static waveform for interaction
   const [waveform] = useState(() =>
     Array.from({ length: 80 }, (_, i) => {
       const base = 15
@@ -96,7 +100,6 @@ export function MusicEditor({
     }),
   )
 
-  // Example / Placeholder Tracks
   const tracks = [
     {
       id: 'trk-bg',
@@ -112,7 +115,6 @@ export function MusicEditor({
     },
   ]
 
-  // Mock Generation
   const handleGenerate = () => {
     setIsGenerating(true)
     setGenProgress(0)
@@ -143,36 +145,40 @@ export function MusicEditor({
     }, 300)
   }
 
-  // Audio Sync & Controls
   const togglePlay = async () => {
     if (audioStatus === 'error' || audioStatus === 'loading') return
 
     if (isPlaying) {
-      bgAudioRef.current?.pause()
-      vocalAudioRef.current?.pause()
+      if (!bgError) bgAudioRef.current?.pause()
+      if (!vocalError) vocalAudioRef.current?.pause()
       setIsPlaying(false)
     } else {
       if (currentTime >= duration) {
         handleSeek(0)
       }
 
-      setIsBuffering(true) // Optimistic UI update for immediate feedback
+      setIsBuffering(true)
       try {
-        const p1 = bgAudioRef.current?.play()
-        const p2 = vocalAudioRef.current?.play()
-        if (p1) await p1
-        if (p2) await p2
+        const promises = []
+        if (!bgError && bgAudioRef.current) {
+          promises.push(
+            bgAudioRef.current.play().catch((e) => console.warn('BG Err', e)),
+          )
+        }
+        if (!vocalError && vocalAudioRef.current) {
+          promises.push(
+            vocalAudioRef.current
+              .play()
+              .catch((e) => console.warn('Voc Err', e)),
+          )
+        }
+        await Promise.all(promises)
         setIsPlaying(true)
       } catch (err: any) {
         console.error(
           'Playback failed:',
           err instanceof Error ? err.message : 'Unknown error',
         )
-        setAudioStatus('error')
-        setAudioErrorMsg(
-          'Falha ao iniciar a reprodução. O navegador bloqueou ou a rede falhou.',
-        )
-        setIsPlaying(false)
       } finally {
         setIsBuffering(false)
       }
@@ -180,10 +186,11 @@ export function MusicEditor({
   }
 
   const handleStop = () => {
-    bgAudioRef.current?.pause()
-    vocalAudioRef.current?.pause()
-    if (bgAudioRef.current) bgAudioRef.current.currentTime = 0
-    if (vocalAudioRef.current) vocalAudioRef.current.currentTime = 0
+    if (!bgError) bgAudioRef.current?.pause()
+    if (!vocalError) vocalAudioRef.current?.pause()
+    if (bgAudioRef.current && !bgError) bgAudioRef.current.currentTime = 0
+    if (vocalAudioRef.current && !vocalError)
+      vocalAudioRef.current.currentTime = 0
     setIsPlaying(false)
     setCurrentTime(0)
   }
@@ -191,8 +198,10 @@ export function MusicEditor({
   const handleSeek = (value: number) => {
     const clampedValue = Math.max(0, Math.min(value, duration))
     setCurrentTime(clampedValue)
-    if (bgAudioRef.current) bgAudioRef.current.currentTime = clampedValue
-    if (vocalAudioRef.current) vocalAudioRef.current.currentTime = clampedValue
+    if (bgAudioRef.current && !bgError)
+      bgAudioRef.current.currentTime = clampedValue
+    if (vocalAudioRef.current && !vocalError)
+      vocalAudioRef.current.currentTime = clampedValue
   }
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -213,7 +222,7 @@ export function MusicEditor({
   const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
     const d = e.currentTarget.duration
     if (d && d !== Infinity && !isNaN(d)) {
-      setDuration(d)
+      setDuration((prev) => Math.max(prev, d))
     }
   }
 
@@ -224,7 +233,6 @@ export function MusicEditor({
     setRetryKey((prev) => prev + 1)
   }
 
-  // Robust Audio Engine Integration
   useEffect(() => {
     const bg = bgAudioRef.current
     const voc = vocalAudioRef.current
@@ -232,11 +240,23 @@ export function MusicEditor({
 
     setAudioStatus('loading')
     setIsBuffering(true)
+
+    setBgError(false)
+    setVocalError(false)
+    bgErrorRef.current = false
+    vocalErrorRef.current = false
     readyFlags.current = { bg: false, voc: false }
 
     const checkReady = () => {
       if (readyFlags.current.bg && readyFlags.current.voc) {
-        setAudioStatus('ready')
+        if (bgErrorRef.current && vocalErrorRef.current) {
+          setAudioStatus('error')
+          setAudioErrorMsg(
+            'Ambas as faixas falharam ao carregar. Verifique sua conexão e os formatos de áudio.',
+          )
+        } else {
+          setAudioStatus('ready')
+        }
         setIsBuffering(false)
       }
     }
@@ -247,17 +267,31 @@ export function MusicEditor({
           readyFlags.current.bg = true
           checkReady()
         },
-        waiting: () => setIsBuffering(true),
+        waiting: () => {
+          if (!bgErrorRef.current) setIsBuffering(true)
+        },
         playing: () => setIsBuffering(false),
         error: (e: Event) => {
           const audioEl = e.target as HTMLAudioElement
-          const errorMsg = audioEl?.error?.message || 'Media loading failed'
-          console.error('BG Track Error:', errorMsg)
-          setAudioStatus('error')
-          setAudioErrorMsg(
-            'Erro ao carregar a faixa principal. Verifique sua conexão.',
+          const isFormatError =
+            audioEl?.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+          console.warn(
+            'BG Track Error:',
+            audioEl?.error?.message,
+            'Code:',
+            audioEl?.error?.code,
           )
-          setIsPlaying(false)
+
+          bgErrorRef.current = true
+          setBgError(true)
+          toast({
+            title: isFormatError ? 'Formato Incompatível' : 'Erro de Mídia',
+            description:
+              'A faixa principal não pôde ser carregada. Tentando continuar o projeto.',
+            variant: 'destructive',
+          })
+          readyFlags.current.bg = true
+          checkReady()
         },
       },
       voc: {
@@ -265,17 +299,31 @@ export function MusicEditor({
           readyFlags.current.voc = true
           checkReady()
         },
-        waiting: () => setIsBuffering(true),
+        waiting: () => {
+          if (!vocalErrorRef.current) setIsBuffering(true)
+        },
         playing: () => setIsBuffering(false),
         error: (e: Event) => {
           const audioEl = e.target as HTMLAudioElement
-          const errorMsg = audioEl?.error?.message || 'Media loading failed'
-          console.error('Vocal Track Error:', errorMsg)
-          setAudioStatus('error')
-          setAudioErrorMsg(
-            'Erro ao carregar a faixa de vocais. O servidor pode estar indisponível.',
+          const isFormatError =
+            audioEl?.error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+          console.warn(
+            'Vocal Track Error:',
+            audioEl?.error?.message,
+            'Code:',
+            audioEl?.error?.code,
           )
-          setIsPlaying(false)
+
+          vocalErrorRef.current = true
+          setVocalError(true)
+          toast({
+            title: isFormatError ? 'Formato de Voz Inválido' : 'Erro na Voz',
+            description:
+              'A faixa vocal encontrou um problema e foi silenciada para evitar falhas no sistema.',
+            variant: 'destructive',
+          })
+          readyFlags.current.voc = true
+          checkReady()
         },
       },
     }
@@ -290,7 +338,6 @@ export function MusicEditor({
     voc.addEventListener('playing', handlers.voc.playing)
     voc.addEventListener('error', handlers.voc.error)
 
-    // Force load for pre-loading state checks
     bg.load()
     voc.load()
 
@@ -307,34 +354,43 @@ export function MusicEditor({
     }
   }, [primaryUrl, vocalUrl, retryKey])
 
-  // Sync Volume Levels
   useEffect(() => {
-    if (bgAudioRef.current) {
+    if (bgAudioRef.current && !bgError) {
       bgAudioRef.current.volume = bgMuted
         ? 0
         : (bgVol / 100) * (masterVol / 100)
     }
-    if (vocalAudioRef.current) {
+    if (vocalAudioRef.current && !vocalError) {
       vocalAudioRef.current.volume = vocalMuted
         ? 0
         : (vocalVol / 100) * (masterVol / 100)
     }
-  }, [masterVol, bgVol, vocalVol, bgMuted, vocalMuted])
+  }, [masterVol, bgVol, vocalVol, bgMuted, vocalMuted, bgError, vocalError])
 
-  // Precise Time Tracker & Sync Engine
   useEffect(() => {
     let frameId: number
     const updatePlayhead = () => {
-      if (bgAudioRef.current && vocalAudioRef.current) {
-        const bgTime = bgAudioRef.current.currentTime
-        setCurrentTime(bgTime)
+      let mainTime = 0
+      if (!bgError && bgAudioRef.current) {
+        mainTime = bgAudioRef.current.currentTime
+      } else if (!vocalError && vocalAudioRef.current) {
+        mainTime = vocalAudioRef.current.currentTime
+      }
 
-        // Strict synchronization guard
+      setCurrentTime(mainTime)
+
+      if (
+        !vocalError &&
+        vocalAudioRef.current &&
+        !bgError &&
+        bgAudioRef.current
+      ) {
         const vocTime = vocalAudioRef.current.currentTime
-        if (isPlaying && Math.abs(bgTime - vocTime) > 0.1) {
-          vocalAudioRef.current.currentTime = bgTime
+        if (isPlaying && Math.abs(mainTime - vocTime) > 0.1) {
+          vocalAudioRef.current.currentTime = mainTime
         }
       }
+
       if (isPlaying) {
         frameId = requestAnimationFrame(updatePlayhead)
       }
@@ -343,15 +399,16 @@ export function MusicEditor({
     if (isPlaying) {
       frameId = requestAnimationFrame(updatePlayhead)
     } else {
-      if (bgAudioRef.current) {
+      if (!bgError && bgAudioRef.current) {
         setCurrentTime(bgAudioRef.current.currentTime)
+      } else if (!vocalError && vocalAudioRef.current) {
+        setCurrentTime(vocalAudioRef.current.currentTime)
       }
     }
 
     return () => cancelAnimationFrame(frameId)
-  }, [isPlaying])
+  }, [isPlaying, bgError, vocalError])
 
-  // Cleanup to prevent ghost playing tracks on unmount
   useEffect(() => {
     return () => {
       if (bgAudioRef.current) bgAudioRef.current.pause()
@@ -379,6 +436,7 @@ export function MusicEditor({
       <audio
         ref={vocalAudioRef}
         src={vocalUrl}
+        onLoadedMetadata={handleLoadedMetadata}
         preload="auto"
         crossOrigin="anonymous"
       />
@@ -475,7 +533,6 @@ export function MusicEditor({
 
             <ScrollArea className="flex-1">
               <div className="p-6">
-                {/* Tab: Criar (Create) */}
                 <TabsContent value="create" className="m-0 space-y-6">
                   <div>
                     <h2 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-1">
@@ -560,7 +617,6 @@ export function MusicEditor({
                   </Button>
                 </TabsContent>
 
-                {/* Tab: Mixer */}
                 <TabsContent value="mixer" className="m-0 space-y-6">
                   <div>
                     <h2 className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-1">
@@ -595,19 +651,28 @@ export function MusicEditor({
                         <Label className="font-semibold flex items-center gap-2">
                           <Mic2 className="w-4 h-4 text-pink-500" /> Melodia /
                           Vocais
+                          {vocalError && (
+                            <AlertCircle
+                              className="w-4 h-4 text-destructive"
+                              title="Faixa Indisponível (Erro de Formato)"
+                            />
+                          )}
                         </Label>
                         <Button
-                          variant={vocalMuted ? 'destructive' : 'outline'}
+                          variant={
+                            vocalMuted || vocalError ? 'destructive' : 'outline'
+                          }
                           size="sm"
                           className="h-7 text-xs px-2"
                           onClick={() => setVocalMuted(!vocalMuted)}
+                          disabled={vocalError}
                         >
-                          {vocalMuted ? (
+                          {vocalMuted || vocalError ? (
                             <VolumeX className="w-3 h-3 mr-1" />
                           ) : (
                             <Volume2 className="w-3 h-3 mr-1" />
                           )}
-                          {vocalMuted ? 'Muted' : 'Mute'}
+                          {vocalError ? 'Erro' : vocalMuted ? 'Muted' : 'Mute'}
                         </Button>
                       </div>
                       <Slider
@@ -615,10 +680,10 @@ export function MusicEditor({
                         max={100}
                         step={1}
                         onValueChange={([v]) => setVocalVol(v)}
-                        disabled={vocalMuted}
+                        disabled={vocalMuted || vocalError}
                         className={cn(
                           'py-2',
-                          vocalMuted && 'opacity-50 grayscale',
+                          (vocalMuted || vocalError) && 'opacity-50 grayscale',
                         )}
                       />
                     </div>
@@ -628,19 +693,28 @@ export function MusicEditor({
                         <Label className="font-semibold flex items-center gap-2">
                           <ListMusic className="w-4 h-4 text-emerald-500" />{' '}
                           Background
+                          {bgError && (
+                            <AlertCircle
+                              className="w-4 h-4 text-destructive"
+                              title="Faixa Indisponível"
+                            />
+                          )}
                         </Label>
                         <Button
-                          variant={bgMuted ? 'destructive' : 'outline'}
+                          variant={
+                            bgMuted || bgError ? 'destructive' : 'outline'
+                          }
                           size="sm"
                           className="h-7 text-xs px-2"
                           onClick={() => setBgMuted(!bgMuted)}
+                          disabled={bgError}
                         >
-                          {bgMuted ? (
+                          {bgMuted || bgError ? (
                             <VolumeX className="w-3 h-3 mr-1" />
                           ) : (
                             <Volume2 className="w-3 h-3 mr-1" />
                           )}
-                          {bgMuted ? 'Muted' : 'Mute'}
+                          {bgError ? 'Erro' : bgMuted ? 'Muted' : 'Mute'}
                         </Button>
                       </div>
                       <Slider
@@ -648,17 +722,16 @@ export function MusicEditor({
                         max={100}
                         step={1}
                         onValueChange={([v]) => setBgVol(v)}
-                        disabled={bgMuted}
+                        disabled={bgMuted || bgError}
                         className={cn(
                           'py-2',
-                          bgMuted && 'opacity-50 grayscale',
+                          (bgMuted || bgError) && 'opacity-50 grayscale',
                         )}
                       />
                     </div>
                   </div>
                 </TabsContent>
 
-                {/* Tab: Ativos */}
                 <TabsContent value="tracks" className="m-0 space-y-6">
                   <div>
                     <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-1">
@@ -710,13 +783,11 @@ export function MusicEditor({
           </Tabs>
         </div>
 
-        {/* Main Stage (Right Side) */}
+        {/* Main Stage */}
         <div className="flex-1 flex flex-col bg-zinc-950 relative min-w-0">
-          {/* Main Visualizer Area */}
           <div className="flex-1 flex flex-col items-center justify-center relative p-8">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-zinc-950 to-zinc-950 pointer-events-none" />
 
-            {/* Error Overlay */}
             {audioStatus === 'error' && (
               <div className="absolute inset-0 z-50 bg-zinc-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
                 <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
@@ -736,7 +807,6 @@ export function MusicEditor({
             )}
 
             <div className="relative z-10 flex flex-col items-center w-full max-w-4xl space-y-12">
-              {/* Central Track Info */}
               <div className="text-center space-y-4">
                 <div className="inline-flex p-4 rounded-full bg-zinc-900/50 border border-white/5 shadow-2xl backdrop-blur-md mb-4 ring-1 ring-white/10 relative">
                   {isPlaying && (
@@ -758,7 +828,6 @@ export function MusicEditor({
                 </p>
               </div>
 
-              {/* Interactive Waveform Display */}
               <div
                 className={cn(
                   'w-full h-32 flex items-center justify-between gap-[2px] sm:gap-1 px-4 group relative transition-opacity',
@@ -792,9 +861,7 @@ export function MusicEditor({
             </div>
           </div>
 
-          {/* Transport Controls Bottom Bar */}
           <div className="h-32 bg-zinc-900 border-t border-white/10 shrink-0 flex flex-col px-6 py-4 z-20">
-            {/* Seek Bar and Time Display */}
             <div className="flex items-center gap-4 w-full max-w-5xl mx-auto mb-4 group">
               <span className="text-sm font-mono font-medium text-zinc-300 min-w-[120px] text-right tabular-nums">
                 {formatTime(currentTime)}{' '}
@@ -813,7 +880,6 @@ export function MusicEditor({
               </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex items-center justify-center gap-6">
               <Button
                 size="icon"
@@ -848,7 +914,7 @@ export function MusicEditor({
                   <Play className="w-7 h-7 ml-1.5 fill-current" />
                 )}
               </Button>
-              <div className="w-12 h-12" /> {/* Spacer for symmetry */}
+              <div className="w-12 h-12" />
             </div>
           </div>
         </div>
