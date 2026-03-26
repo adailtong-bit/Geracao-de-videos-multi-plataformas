@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { PlatformSettings } from '@/types'
+import { PlatformSettings, CostEntry } from '@/types'
 
 const ADMIN_SETTINGS_KEY = 'multiproject_admin_settings'
 
@@ -12,6 +12,38 @@ const defaultSettings: PlatformSettings = {
     paypal: false,
     pix: true,
   },
+  gateways: [
+    {
+      provider: 'stripe',
+      publicKey: '',
+      privateKey: '',
+      env: 'sandbox',
+      enabled: true,
+    },
+    {
+      provider: 'mercadopago',
+      publicKey: '',
+      privateKey: '',
+      env: 'sandbox',
+      enabled: false,
+    },
+  ],
+  costs: [
+    {
+      id: 'c1',
+      date: '2023-10-01',
+      description: 'Skip Cloud Hosting',
+      amount: 150,
+      type: 'hosting',
+    },
+    {
+      id: 'c2',
+      date: '2023-10-05',
+      description: 'OpenAI API Usage',
+      amount: 320,
+      type: 'api',
+    },
+  ],
 }
 
 const getStoredSettings = (): PlatformSettings => {
@@ -42,8 +74,14 @@ export default function useAdminStore() {
     }
   }, [])
 
+  const addCost = (cost: Omit<CostEntry, 'id'>) => {
+    const newCost: CostEntry = { ...cost, id: crypto.randomUUID() }
+    setAdminSettings({ costs: [...settings.costs, newCost] })
+  }
+
   return {
     settings,
     updateSettings: setAdminSettings,
+    addCost,
   }
 }

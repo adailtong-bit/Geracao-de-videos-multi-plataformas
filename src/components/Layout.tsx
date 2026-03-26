@@ -9,7 +9,9 @@ import {
   Link as LinkIcon,
   Home,
   UserCircle,
-  ShieldAlert,
+  Users,
+  DollarSign,
+  Settings,
 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
@@ -18,7 +20,6 @@ export default function Layout() {
   const { user, logout } = useAuthStore()
   const location = useLocation()
 
-  // Don't show sidebar in editor
   if (location.pathname.startsWith('/editor')) {
     return (
       <main className="flex flex-col min-h-screen">
@@ -27,28 +28,44 @@ export default function Layout() {
     )
   }
 
-  const links = [
-    { name: 'Projetos', path: '/', icon: Home },
-    { name: 'Meus Avatares', path: '/avatars', icon: UserCircle },
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Integrations', path: '/integrations', icon: LinkIcon },
-    { name: 'Billing', path: '/billing', icon: CreditCard },
-    { name: 'Profile', path: '/profile', icon: User },
+  const adminLinks = [
+    { name: 'Dashboard BI', path: '/admin', icon: LayoutDashboard },
+    { name: 'Diretório de Usuários', path: '/admin/users', icon: Users },
+    {
+      name: 'Contábil & Financeiro',
+      path: '/admin/financials',
+      icon: DollarSign,
+    },
+    { name: 'Gateways & Config', path: '/admin/settings', icon: Settings },
   ]
 
-  if (user?.role === 'admin') {
-    links.push({ name: 'Admin Panel', path: '/admin', icon: ShieldAlert })
-  }
+  const userLinks = [
+    { name: 'Meus Projetos', path: '/', icon: Home },
+    { name: 'Avatar Studio', path: '/avatars', icon: UserCircle },
+    { name: 'Performance', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    { name: 'Integrações', path: '/integrations', icon: LinkIcon },
+    { name: 'Plano & Faturamento', path: '/billing', icon: CreditCard },
+    { name: 'Perfil', path: '/profile', icon: User },
+  ]
+
+  const links = user?.role === 'admin' ? adminLinks : userLinks
 
   return (
     <div className="flex min-h-screen bg-muted/20">
-      <aside className="w-64 bg-background border-r flex flex-col shrink-0 sticky top-0 h-screen">
+      <aside className="w-64 bg-background border-r flex flex-col shrink-0 sticky top-0 h-screen shadow-sm">
         <div className="h-16 flex items-center px-6 border-b">
           <Video className="w-6 h-6 text-primary mr-2" />
-          <span className="font-bold text-lg">MultiProject</span>
+          <span className="font-bold text-lg">
+            MultiProject{' '}
+            {user?.role === 'admin' && (
+              <span className="text-xs text-primary ml-1 uppercase tracking-wider">
+                Admin
+              </span>
+            )}
+          </span>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1.5">
           {links.map((link) => {
             const Icon = link.icon
             const isActive = location.pathname === link.path
@@ -57,25 +74,31 @@ export default function Layout() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors font-medium text-sm',
                   isActive
-                    ? 'bg-primary text-primary-foreground font-medium'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-4 h-4" />
                 {link.name}
               </Link>
             )
           })}
         </nav>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t bg-muted/10">
+          <div className="mb-4 px-3">
+            <p className="text-sm font-bold truncate">{user?.name}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {user?.email}
+            </p>
+          </div>
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+            className="flex items-center gap-3 px-3 py-2 w-full text-muted-foreground hover:text-destructive transition-colors rounded-md hover:bg-destructive/10 text-sm font-medium"
           >
-            <LogOut className="w-5 h-5" />
-            Logout
+            <LogOut className="w-4 h-4" />
+            Sair da Conta
           </button>
         </div>
       </aside>

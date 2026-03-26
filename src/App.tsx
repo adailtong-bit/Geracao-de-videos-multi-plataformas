@@ -18,6 +18,9 @@ import Billing from './pages/Billing'
 import Analytics from './pages/Analytics'
 import Avatars from './pages/Avatars'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminUsers from './pages/admin/AdminUsers'
+import AdminFinancials from './pages/admin/AdminFinancials'
+import AdminSettings from './pages/admin/AdminSettings'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import useAuthStore from './stores/useAuthStore'
@@ -28,9 +31,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!user) return <Navigate to="/login" replace />
 
-  // Service Interruption System check
+  // Admin routing constraints
+  if (user.role === 'admin' && location.pathname === '/') {
+    return <Navigate to="/admin" replace />
+  }
+
+  // Service Interruption System check (bypass for admins)
   const isAllowedRoute = ['/billing', '/profile'].includes(location.pathname)
-  if (user.isBlocked && !isAllowedRoute) {
+  if (user.isBlocked && !isAllowedRoute && user.role !== 'admin') {
     return <Navigate to="/billing" replace />
   }
 
@@ -53,6 +61,7 @@ const App = () => (
             </ProtectedRoute>
           }
         >
+          {/* Creator Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/avatars" element={<Avatars />} />
@@ -61,7 +70,12 @@ const App = () => (
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/analytics" element={<Analytics />} />
+
+          {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/financials" element={<AdminFinancials />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

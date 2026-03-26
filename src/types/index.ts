@@ -5,14 +5,12 @@ export type Platform =
   | 'youtube'
   | 'linkedin'
 export type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5'
-
 export type Language = 'pt-BR' | 'en-US' | 'es-ES' | 'fr-FR' | 'de-DE' | 'it-IT'
 export type VoiceProfile = string
 export type VisualStyle = 'realistic' | 'cinematic-dark' | 'artistic'
 export type Mood = 'inspirational' | 'dramatic' | 'calm'
 export type TransitionStyle = 'none' | 'fade' | 'slide' | 'zoom'
 export type MediaType = 'image-sequence' | 'context-video'
-
 export type NarrativeTone =
   | 'neutral'
   | 'suspense'
@@ -21,7 +19,6 @@ export type NarrativeTone =
   | 'inspirational'
 export type AtmosphereEnv = 'none' | 'campfire' | 'neon' | 'studio'
 export type ListenerReaction = 'gasp' | 'nod' | 'fear'
-
 export type AvatarType = 'preset' | 'custom'
 export type AvatarStatus =
   | 'processing_bg'
@@ -56,14 +53,12 @@ export interface CutSegment {
   sourceStart?: number
   sourceEnd?: number
 }
-
 export interface Subtitle {
   id: string
   start: number
   end: number
   text: string
 }
-
 export interface AiClip {
   id: string
   start: number
@@ -73,12 +68,10 @@ export interface AiClip {
   keywords: string[]
   subtitles: Subtitle[]
 }
-
 export interface EnergyPoint {
   time: number
   value: number
 }
-
 export interface BRoll {
   id: string
   start: number
@@ -87,7 +80,6 @@ export interface BRoll {
   keyword?: string
   transitionStyle?: TransitionStyle
 }
-
 export interface AudioTrack {
   id: string
   name: string
@@ -95,7 +87,6 @@ export interface AudioTrack {
   url?: string
   adaptiveLeveling?: boolean
 }
-
 export interface SFXTrack {
   id: string
   sfxId: string
@@ -103,14 +94,12 @@ export interface SFXTrack {
   category: string
   start: number
 }
-
 export interface ScheduledPost {
   id: string
   platform: Platform
   date: string
   status: 'scheduled' | 'published'
 }
-
 export interface ListenerPersona {
   id: string
   imageUrl: string
@@ -143,21 +132,18 @@ export interface SubtitleStyle {
   enabled?: boolean
   fontFamily?: string
 }
-
 export interface Draft {
   id: string
   name: string
   createdAt: number
   snapshot: Partial<Project>
 }
-
 export interface TeamMember {
   id: string
   email: string
   role: 'viewer' | 'editor'
   avatar?: string
 }
-
 export interface ColorSettings {
   brightness: number
   contrast: number
@@ -171,15 +157,12 @@ export interface ColorSettings {
     | 'candle-light'
     | 'noir'
 }
-
 export type ApprovalStatus = 'review' | 'revised' | 'approved'
-
 export interface GlossaryTerm {
   id: string
   source: string
   target: string
 }
-
 export interface AudioSettings {
   organicProsody?: boolean
   removeArtifacts?: boolean
@@ -245,31 +228,38 @@ export interface User {
     youtube?: string
     linkedin?: string
   }
+  lastActivity?: string
 }
 
-export interface Asset {
-  id: string
-  name: string
-  type: 'banner' | 'cta'
-  bgColor: string
-  content: string
+export interface GatewayConfig {
+  provider: 'stripe' | 'mercadopago'
+  publicKey: string
+  privateKey: string
+  env: 'sandbox' | 'production'
+  enabled: boolean
 }
-
-export interface Transaction {
+export interface CostEntry {
   id: string
   date: string
-  amount: number
-  status: 'paid' | 'pending' | 'failed'
   description: string
+  amount: number
+  type: 'hosting' | 'api' | 'other'
+}
+export interface AdminTransaction {
+  id: string
+  date: string
+  user: string
+  type: 'revenue' | 'cost'
+  description: string
+  value: number
+  status: 'paid' | 'pending'
 }
 
 export interface PlatformSettings {
   freeVideoLimit: number
   pricePerVideo: number
   subscriptionPrice: number
-  paymentMethods: {
-    stripe: boolean
-    paypal: boolean
-    pix: boolean
-  }
+  paymentMethods: { stripe: boolean; paypal: boolean; pix: boolean }
+  gateways: GatewayConfig[]
+  costs: CostEntry[]
 }
