@@ -33,6 +33,8 @@ import {
   VolumeX,
   Mic2,
   ListMusic,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
@@ -59,6 +61,14 @@ export function MusicEditor({
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(120) // Default mock duration
 
+  // Audio Engine State
+  const [audioStatus, setAudioStatus] = useState<'loading' | 'ready' | 'error'>(
+    'loading',
+  )
+  const [isBuffering, setIsBuffering] = useState(true)
+  const [audioErrorMsg, setAudioErrorMsg] = useState<string>('')
+  const [retryKey, setRetryKey] = useState(0)
+
   // Mixer State
   const [masterVol, setMasterVol] = useState(100)
   const [bgVol, setBgVol] = useState(80)
@@ -69,6 +79,13 @@ export function MusicEditor({
   // Audio Elements Refs
   const bgAudioRef = useRef<HTMLAudioElement>(null)
   const vocalAudioRef = useRef<HTMLAudioElement>(null)
+  const readyFlags = useRef({ bg: false, voc: false })
+
+  const primaryUrl =
+    project.audioTrack?.url ||
+    'https://actions.google.com/sounds/v1/water/rain_on_roof.ogg'
+  const vocalUrl =
+    'https://actions.google.com/sounds/v1/human_voices/human_singing_choir.ogg'
 
   // Generate a realistic looking static waveform for interaction
   const [waveform] = useState(() =>
@@ -127,20 +144,35 @@ export function MusicEditor({
   }
 
   // Audio Sync & Controls
-  const togglePlay = () => {
+  const togglePlay = async () => {
+    if (audioStatus === 'error' || audioStatus === 'loading') return
+
     if (isPlaying) {
       bgAudioRef.current?.pause()
       vocalAudioRef.current?.pause()
       setIsPlaying(false)
     } else {
       if (currentTime >= duration) {
-        setCurrentTime(0)
-        if (bgAudioRef.current) bgAudioRef.current.currentTime = 0
-        if (vocalAudioRef.current) vocalAudioRef.current.currentTime = 0
+        handleSeek(0)
       }
-      bgAudioRef.current?.play().catch(() => {})
-      vocalAudioRef.current?.play().catch(() => {})
-      setIsPlaying(true)
+
+      setIsBuffering(true) // Optimistic UI update for immediate feedback
+      try {
+        const p1 = bgAudioRef.current?.play()
+        const p2 = vocalAudioRef.current?.play()
+        if (p1) await p1
+        if (p2) await p2
+        setIsPlaying(true)
+      } catch (err) {
+        console.error('Playback failed:', err)
+        setAudioStatus('error')
+        setAudioErrorMsg(
+          'Falha ao iniciar a reprodução. O navegador bloqueou ou a rede falhou.',
+        )
+        setIsPlaying(false)
+      } finally {
+        setIsBuffering(false)
+      }
     }
   }
 
@@ -161,6 +193,7 @@ export function MusicEditor({
   }
 
   const handleWaveformClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (audioStatus === 'error') return
     const rect = e.currentTarget.getBoundingClientRect()
     const percent = Math.max(
       0,
@@ -181,6 +214,92 @@ export function MusicEditor({
     }
   }
 
+  const handleRetry = () => {
+    setAudioStatus('loading')
+    setIsBuffering(true)
+    setAudioErrorMsg('')
+    setRetryKey((prev) => prev + 1)
+  }
+
+  // Robust Audio Engine Integration
+  useEffect(() => {
+    const bg = bgAudioRef.current
+    const voc = vocalAudioRef.current
+    if (!bg || !voc) return
+
+    setAudioStatus('loading')
+    setIsBuffering(true)
+    readyFlags.current = { bg: false, voc: false }
+
+    const checkReady = () => {
+      if (readyFlags.current.bg && readyFlags.current.voc) {
+        setAudioStatus('ready')
+        setIsBuffering(false)
+      }
+    }
+
+    const handlers = {
+      bg: {
+        canplaythrough: () => {
+          readyFlags.current.bg = true
+          checkReady()
+        },
+        waiting: () => setIsBuffering(true),
+        playing: () => setIsBuffering(false),
+        error: (e: any) => {
+          console.error('BG Track Error:', e)
+          setAudioStatus('error')
+          setAudioErrorMsg(
+            'Erro ao carregar a faixa principal. Verifique sua conexão.',
+          )
+          setIsPlaying(false)
+        },
+      },
+      voc: {
+        canplaythrough: () => {
+          readyFlags.current.voc = true
+          checkReady()
+        },
+        waiting: () => setIsBuffering(true),
+        playing: () => setIsBuffering(false),
+        error: (e: any) => {
+          console.error('Vocal Track Error:', e)
+          setAudioStatus('error')
+          setAudioErrorMsg(
+            'Erro ao carregar a faixa de vocais. O servidor pode estar indisponível.',
+          )
+          setIsPlaying(false)
+        },
+      },
+    }
+
+    bg.addEventListener('canplaythrough', handlers.bg.canplaythrough)
+    bg.addEventListener('waiting', handlers.bg.waiting)
+    bg.addEventListener('playing', handlers.bg.playing)
+    bg.addEventListener('error', handlers.bg.error)
+
+    voc.addEventListener('canplaythrough', handlers.voc.canplaythrough)
+    voc.addEventListener('waiting', handlers.voc.waiting)
+    voc.addEventListener('playing', handlers.voc.playing)
+    voc.addEventListener('error', handlers.voc.error)
+
+    // Force load for pre-loading state checks
+    bg.load()
+    voc.load()
+
+    return () => {
+      bg.removeEventListener('canplaythrough', handlers.bg.canplaythrough)
+      bg.removeEventListener('waiting', handlers.bg.waiting)
+      bg.removeEventListener('playing', handlers.bg.playing)
+      bg.removeEventListener('error', handlers.bg.error)
+
+      voc.removeEventListener('canplaythrough', handlers.voc.canplaythrough)
+      voc.removeEventListener('waiting', handlers.voc.waiting)
+      voc.removeEventListener('playing', handlers.voc.playing)
+      voc.removeEventListener('error', handlers.voc.error)
+    }
+  }, [primaryUrl, retryKey])
+
   // Sync Volume Levels
   useEffect(() => {
     if (bgAudioRef.current) {
@@ -195,12 +314,19 @@ export function MusicEditor({
     }
   }, [masterVol, bgVol, vocalVol, bgMuted, vocalMuted])
 
-  // Track Time Update via RequestAnimationFrame for smooth UI
+  // Precise Time Tracker & Sync Engine
   useEffect(() => {
     let frameId: number
     const updatePlayhead = () => {
-      if (bgAudioRef.current) {
-        setCurrentTime(bgAudioRef.current.currentTime)
+      if (bgAudioRef.current && vocalAudioRef.current) {
+        const bgTime = bgAudioRef.current.currentTime
+        setCurrentTime(bgTime)
+
+        // Strict synchronization guard
+        const vocTime = vocalAudioRef.current.currentTime
+        if (isPlaying && Math.abs(bgTime - vocTime) > 0.1) {
+          vocalAudioRef.current.currentTime = bgTime
+        }
       }
       if (isPlaying) {
         frameId = requestAnimationFrame(updatePlayhead)
@@ -210,7 +336,6 @@ export function MusicEditor({
     if (isPlaying) {
       frameId = requestAnimationFrame(updatePlayhead)
     } else {
-      // Sync one last time when paused
       if (bgAudioRef.current) {
         setCurrentTime(bgAudioRef.current.currentTime)
       }
@@ -219,7 +344,7 @@ export function MusicEditor({
     return () => cancelAnimationFrame(frameId)
   }, [isPlaying])
 
-  // Clean up audio on unmount to prevent memory leaks or stray playing audio
+  // Cleanup to prevent ghost playing tracks on unmount
   useEffect(() => {
     return () => {
       if (bgAudioRef.current) bgAudioRef.current.pause()
@@ -236,18 +361,19 @@ export function MusicEditor({
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
-      {/* Hidden Audio Elements for Playback Mock */}
       <audio
         ref={bgAudioRef}
-        src="https://actions.google.com/sounds/v1/water/rain_on_roof.ogg"
+        src={primaryUrl}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         preload="auto"
+        crossOrigin="anonymous"
       />
       <audio
         ref={vocalAudioRef}
-        src="https://actions.google.com/sounds/v1/human_voices/human_singing_choir.ogg"
+        src={vocalUrl}
         preload="auto"
+        crossOrigin="anonymous"
       />
 
       {/* Header */}
@@ -439,7 +565,6 @@ export function MusicEditor({
                   </div>
 
                   <div className="space-y-4">
-                    {/* Master Channel */}
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-4 shadow-sm">
                       <div className="flex items-center justify-between">
                         <Label className="font-bold flex items-center gap-2">
@@ -458,7 +583,6 @@ export function MusicEditor({
                       />
                     </div>
 
-                    {/* Vocals Channel */}
                     <div className="bg-card p-4 rounded-xl border shadow-sm space-y-4">
                       <div className="flex items-center justify-between">
                         <Label className="font-semibold flex items-center gap-2">
@@ -492,7 +616,6 @@ export function MusicEditor({
                       />
                     </div>
 
-                    {/* Background Channel */}
                     <div className="bg-card p-4 rounded-xl border shadow-sm space-y-4">
                       <div className="flex items-center justify-between">
                         <Label className="font-semibold flex items-center gap-2">
@@ -528,7 +651,7 @@ export function MusicEditor({
                   </div>
                 </TabsContent>
 
-                {/* Tab: Ativos (Tracks/Stems) */}
+                {/* Tab: Ativos */}
                 <TabsContent value="tracks" className="m-0 space-y-6">
                   <div>
                     <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-1">
@@ -586,6 +709,25 @@ export function MusicEditor({
           <div className="flex-1 flex flex-col items-center justify-center relative p-8">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-zinc-950 to-zinc-950 pointer-events-none" />
 
+            {/* Error Overlay */}
+            {audioStatus === 'error' && (
+              <div className="absolute inset-0 z-50 bg-zinc-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+                <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Erro na Reprodução
+                </h3>
+                <p className="text-zinc-400 mb-6 max-w-md leading-relaxed">
+                  {audioErrorMsg}
+                </p>
+                <Button
+                  onClick={handleRetry}
+                  className="bg-white text-black hover:bg-zinc-200 shadow-xl px-8 h-12"
+                >
+                  <RefreshCw className="w-5 h-5 mr-2" /> Tentar Novamente
+                </Button>
+              </div>
+            )}
+
             <div className="relative z-10 flex flex-col items-center w-full max-w-4xl space-y-12">
               {/* Central Track Info */}
               <div className="text-center space-y-4">
@@ -593,19 +735,31 @@ export function MusicEditor({
                   {isPlaying && (
                     <div className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping opacity-50" />
                   )}
-                  <Music className="w-12 h-12 text-indigo-400 relative z-10" />
+                  {audioStatus === 'loading' ? (
+                    <Loader2 className="w-12 h-12 text-indigo-400 animate-spin relative z-10" />
+                  ) : (
+                    <Music className="w-12 h-12 text-indigo-400 relative z-10" />
+                  )}
                 </div>
                 <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-sm">
                   {project.audioTrack?.name || 'Música do Projeto'}
                 </h3>
                 <p className="text-sm text-zinc-400 max-w-md mx-auto">
-                  {prompt || 'Estúdio de Composição e Mixagem'}
+                  {audioStatus === 'loading'
+                    ? 'Carregando recursos de áudio...'
+                    : prompt || 'Estúdio de Composição e Mixagem'}
                 </p>
               </div>
 
               {/* Interactive Waveform Display */}
               <div
-                className="w-full h-32 flex items-center justify-between gap-[2px] sm:gap-1 px-4 cursor-pointer group relative"
+                className={cn(
+                  'w-full h-32 flex items-center justify-between gap-[2px] sm:gap-1 px-4 group relative transition-opacity',
+                  audioStatus === 'error'
+                    ? 'opacity-30 cursor-not-allowed'
+                    : 'cursor-pointer',
+                  audioStatus === 'loading' && 'opacity-50',
+                )}
                 onClick={handleWaveformClick}
               >
                 {waveform.map((val, i) => {
@@ -618,9 +772,10 @@ export function MusicEditor({
                       key={i}
                       className={cn(
                         'flex-1 rounded-full transition-all duration-100',
-                        isPlayed
+                        isPlayed && audioStatus !== 'loading'
                           ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]'
-                          : 'bg-zinc-800 group-hover:bg-zinc-700',
+                          : 'bg-zinc-800',
+                        audioStatus !== 'error' && 'group-hover:bg-zinc-700',
                       )}
                       style={{ height: `${val}%` }}
                     />
@@ -634,7 +789,7 @@ export function MusicEditor({
           <div className="h-32 bg-zinc-900 border-t border-white/10 shrink-0 flex flex-col px-6 py-4 z-20">
             {/* Seek Bar and Time Display */}
             <div className="flex items-center gap-4 w-full max-w-5xl mx-auto mb-4 group">
-              <span className="text-sm font-mono font-medium text-zinc-300 min-w-[120px] text-right">
+              <span className="text-sm font-mono font-medium text-zinc-300 min-w-[120px] text-right tabular-nums">
                 {formatTime(currentTime)}{' '}
                 <span className="text-zinc-500 mx-1">/</span>{' '}
                 {formatTime(duration)}
@@ -645,6 +800,7 @@ export function MusicEditor({
                   max={duration}
                   step={0.1}
                   onValueChange={([v]) => handleSeek(v)}
+                  disabled={audioStatus === 'error'}
                   className="cursor-pointer py-2 [&_[role=slider]]:bg-white [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:shadow-md"
                 />
               </div>
@@ -655,18 +811,31 @@ export function MusicEditor({
               <Button
                 size="icon"
                 variant="outline"
-                className="w-12 h-12 rounded-full border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700 text-white transition-colors"
+                className="w-12 h-12 rounded-full border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700 text-white transition-colors disabled:opacity-50"
                 onClick={handleStop}
+                disabled={audioStatus === 'error' || audioStatus === 'loading'}
                 title="Stop"
               >
                 <Square className="w-5 h-5 fill-current" />
               </Button>
               <Button
                 size="icon"
-                className="w-16 h-16 rounded-full bg-white text-black hover:bg-zinc-200 shadow-xl transition-transform hover:scale-105 active:scale-95"
+                className={cn(
+                  'w-16 h-16 rounded-full bg-white text-black shadow-xl transition-all',
+                  audioStatus === 'loading' || isBuffering
+                    ? 'opacity-80 scale-95 pointer-events-none'
+                    : 'hover:bg-zinc-200 hover:scale-105 active:scale-95',
+                )}
                 onClick={togglePlay}
+                disabled={
+                  audioStatus === 'error' ||
+                  audioStatus === 'loading' ||
+                  isBuffering
+                }
               >
-                {isPlaying ? (
+                {audioStatus === 'loading' || isBuffering ? (
+                  <Loader2 className="w-7 h-7 text-zinc-800 animate-spin" />
+                ) : isPlaying ? (
                   <Pause className="w-7 h-7 fill-current" />
                 ) : (
                   <Play className="w-7 h-7 ml-1.5 fill-current" />
