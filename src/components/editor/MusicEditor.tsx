@@ -163,8 +163,11 @@ export function MusicEditor({
         if (p1) await p1
         if (p2) await p2
         setIsPlaying(true)
-      } catch (err) {
-        console.error('Playback failed:', err)
+      } catch (err: any) {
+        console.error(
+          'Playback failed:',
+          err instanceof Error ? err.message : 'Unknown error',
+        )
         setAudioStatus('error')
         setAudioErrorMsg(
           'Falha ao iniciar a reprodução. O navegador bloqueou ou a rede falhou.',
@@ -246,8 +249,10 @@ export function MusicEditor({
         },
         waiting: () => setIsBuffering(true),
         playing: () => setIsBuffering(false),
-        error: (e: any) => {
-          console.error('BG Track Error:', e)
+        error: (e: Event) => {
+          const audioEl = e.target as HTMLAudioElement
+          const errorMsg = audioEl?.error?.message || 'Media loading failed'
+          console.error('BG Track Error:', errorMsg)
           setAudioStatus('error')
           setAudioErrorMsg(
             'Erro ao carregar a faixa principal. Verifique sua conexão.',
@@ -262,8 +267,10 @@ export function MusicEditor({
         },
         waiting: () => setIsBuffering(true),
         playing: () => setIsBuffering(false),
-        error: (e: any) => {
-          console.error('Vocal Track Error:', e)
+        error: (e: Event) => {
+          const audioEl = e.target as HTMLAudioElement
+          const errorMsg = audioEl?.error?.message || 'Media loading failed'
+          console.error('Vocal Track Error:', errorMsg)
           setAudioStatus('error')
           setAudioErrorMsg(
             'Erro ao carregar a faixa de vocais. O servidor pode estar indisponível.',
@@ -298,7 +305,7 @@ export function MusicEditor({
       voc.removeEventListener('playing', handlers.voc.playing)
       voc.removeEventListener('error', handlers.voc.error)
     }
-  }, [primaryUrl, retryKey])
+  }, [primaryUrl, vocalUrl, retryKey])
 
   // Sync Volume Levels
   useEffect(() => {
