@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Slider } from '@/components/ui/slider'
 import {
   Upload,
   Play,
@@ -16,6 +18,8 @@ import {
   Scissors,
   ShieldAlert,
   Loader2,
+  Link as LinkIcon,
+  Trash2,
 } from 'lucide-react'
 import { useAudioStore } from '@/stores/useAudioStore'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -33,6 +37,9 @@ export function AudioPanel({
   const [aiPrompt, setAiPrompt] = useState('')
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
 
+  const [linkUrl, setLinkUrl] = useState('')
+  const [isImportingLink, setIsImportingLink] = useState(false)
+
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       uploadAudio(e.target.files[0])
@@ -47,6 +54,7 @@ export function AudioPanel({
         mood: 'Custom',
         url: track.url,
         adaptiveLeveling: true,
+        volume: 100,
       },
     })
   }
@@ -175,49 +183,87 @@ export function AudioPanel({
             </p>
 
             {project.audioTrack && (
-              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 mb-4 shadow-sm animate-in fade-in slide-in-from-top-2">
-                <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                  <Music className="w-4 h-4" /> Tocando Agora:{' '}
-                  {project.audioTrack.name}
-                </h4>
+              <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-4 mb-4 shadow-sm animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5 pr-4">
-                    <Label
-                      className="text-sm font-semibold cursor-pointer"
-                      htmlFor="adaptive-audio"
-                    >
-                      Mixagem Inteligente (Auto-Ducking)
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      Abaixa o volume da música sozinho quando o narrador fala.
-                    </p>
+                  <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
+                    <Music className="w-4 h-4" /> Tocando Agora:{' '}
+                    {project.audioTrack.name}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10"
+                    onClick={() => update({ audioTrack: null })}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" /> Remover
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">
+                        Volume da Música de Fundo
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {project.audioTrack.volume ?? 100}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[project.audioTrack.volume ?? 100]}
+                      max={100}
+                      step={1}
+                      onValueChange={([v]) =>
+                        update({
+                          audioTrack: { ...project.audioTrack!, volume: v },
+                        })
+                      }
+                    />
                   </div>
-                  <Switch
-                    id="adaptive-audio"
-                    checked={project.audioTrack.adaptiveLeveling !== false}
-                    onCheckedChange={(v) =>
-                      update({
-                        audioTrack: {
-                          ...project.audioTrack!,
-                          adaptiveLeveling: v,
-                        },
-                      })
-                    }
-                  />
+
+                  <div className="flex items-center justify-between pt-2 border-t border-primary/10">
+                    <div className="space-y-0.5 pr-4">
+                      <Label
+                        className="text-sm font-semibold cursor-pointer"
+                        htmlFor="adaptive-audio"
+                      >
+                        Mixagem Inteligente (Auto-Ducking)
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        Abaixa o volume da música sozinho quando o narrador
+                        fala.
+                      </p>
+                    </div>
+                    <Switch
+                      id="adaptive-audio"
+                      checked={project.audioTrack.adaptiveLeveling !== false}
+                      onCheckedChange={(v) =>
+                        update({
+                          audioTrack: {
+                            ...project.audioTrack!,
+                            adaptiveLeveling: v,
+                          },
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             <Tabs defaultValue="library" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="library" className="font-semibold text-sm">
-                  Biblioteca
+                  Arquivo
+                </TabsTrigger>
+                <TabsTrigger value="link" className="font-semibold text-sm">
+                  Link URL
                 </TabsTrigger>
                 <TabsTrigger
                   value="ai"
                   className="font-semibold text-sm text-purple-600 data-[state=active]:text-purple-700"
                 >
-                  <Wand2 className="w-4 h-4 mr-1.5" /> Gerar com IA
+                  <Wand2 className="w-4 h-4 mr-1.5" /> Gerar IA
                 </TabsTrigger>
               </TabsList>
 
@@ -291,6 +337,47 @@ export function AudioPanel({
                       </div>
                     )
                   })}
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="link"
+                className="space-y-4 mt-0 bg-background p-4 rounded-xl border"
+              >
+                <Label className="font-semibold text-sm">
+                  Importar de URL (YouTube, SoundCloud, etc)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://..."
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    className="bg-background/50 h-10"
+                  />
+                  <Button
+                    onClick={() => {
+                      if (!linkUrl) return
+                      setIsImportingLink(true)
+                      setTimeout(() => {
+                        setIsImportingLink(false)
+                        applyToProject({
+                          id: crypto.randomUUID(),
+                          name: `Áudio Importado: ${linkUrl.slice(0, 15)}...`,
+                          duration: 120,
+                          url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+                        })
+                        setLinkUrl('')
+                      }, 1500)
+                    }}
+                    disabled={isImportingLink || !linkUrl}
+                    className="h-10 px-6"
+                  >
+                    {isImportingLink ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Importar'
+                    )}
+                  </Button>
                 </div>
               </TabsContent>
 

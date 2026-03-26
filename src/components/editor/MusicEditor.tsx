@@ -3,6 +3,13 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -13,6 +20,7 @@ import {
   Loader2,
   Download,
   Save,
+  Video,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Slider } from '@/components/ui/slider'
@@ -25,7 +33,8 @@ export function MusicEditor({
   update: (p: Partial<Project>) => void
 }) {
   const [prompt, setPrompt] = useState(project.musicPrompt || '')
-  const [lyrics, setLyrics] = useState(project.draftPrompt || '') // Using draftPrompt to store lyrics for standalone music
+  const [lyrics, setLyrics] = useState(project.draftPrompt || '')
+  const [genre, setGenre] = useState(project.musicGenre || 'pop')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -44,6 +53,7 @@ export function MusicEditor({
         update({
           musicPrompt: prompt,
           draftPrompt: lyrics,
+          musicGenre: genre,
           audioTrack: {
             id: crypto.randomUUID(),
             name: prompt
@@ -60,9 +70,7 @@ export function MusicEditor({
     }, 500)
   }
 
-  const handleTimeUpdate = () => {
-    // Allows updating a slider or progress visual if desired
-  }
+  const handleTimeUpdate = () => {}
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground">
@@ -87,6 +95,25 @@ export function MusicEditor({
               <Music className="w-3 h-3" /> Studio Musical
             </span>
           </div>
+
+          <div className="hidden md:flex items-center bg-muted/50 p-1 rounded-lg ml-4">
+            <Button
+              variant={project.projectType !== 'music' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => update({ projectType: 'video' })}
+              className="h-7 text-xs font-semibold px-3"
+            >
+              <Video className="w-3.5 h-3.5 mr-1.5" /> Vídeo
+            </Button>
+            <Button
+              variant={project.projectType === 'music' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => update({ projectType: 'music' })}
+              className="h-7 text-xs font-semibold px-3"
+            >
+              <Music className="w-3.5 h-3.5 mr-1.5" /> Música
+            </Button>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -109,7 +136,6 @@ export function MusicEditor({
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Prompt & Lyrics Setup */}
         <div className="w-[400px] border-r flex flex-col bg-muted/5 z-10 shadow-sm overflow-y-auto">
           <div className="p-6 space-y-6">
             <div>
@@ -120,6 +146,23 @@ export function MusicEditor({
                 Descreva o que você quer ouvir e a Inteligência Artificial fará
                 toda a produção musical.
               </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="font-semibold text-sm">Gênero Musical</Label>
+              <Select value={genre} onValueChange={setGenre}>
+                <SelectTrigger className="bg-background h-10 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pop">Pop Comercial</SelectItem>
+                  <SelectItem value="rock">Rock / Indie</SelectItem>
+                  <SelectItem value="hiphop">Hip Hop / Rap</SelectItem>
+                  <SelectItem value="eletronic">Eletrônica / EDM</SelectItem>
+                  <SelectItem value="lofi">Lo-Fi / Chill</SelectItem>
+                  <SelectItem value="acoustic">Acústico / Folk</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-3">
@@ -174,10 +217,8 @@ export function MusicEditor({
           </div>
         </div>
 
-        {/* Right Panel: Player */}
         <div className="flex-1 flex flex-col items-center justify-center p-8 bg-black/5 dark:bg-white/5 relative min-w-0">
           <div className="w-full max-w-2xl bg-card rounded-3xl shadow-2xl border p-8 relative overflow-hidden group min-h-[400px] flex items-center justify-center">
-            {/* Ambient Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-indigo-500/10 pointer-events-none" />
 
             {project.audioTrack ? (

@@ -86,6 +86,7 @@ export interface AudioTrack {
   mood: string
   url?: string
   adaptiveLeveling?: boolean
+  volume?: number
 }
 export interface SFXTrack {
   id: string
@@ -176,6 +177,7 @@ export interface Project {
   id: string
   name: string
   projectType?: ProjectType
+  musicGenre?: string
   draftPrompt?: string
   musicPrompt?: string
   videoUrl: string | null

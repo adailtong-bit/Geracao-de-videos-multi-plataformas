@@ -347,6 +347,29 @@ export default function Editor() {
                   Salvo automaticamente
                 </div>
               </div>
+
+              <div className="hidden md:flex items-center bg-muted/50 p-1 rounded-lg ml-4">
+                <Button
+                  variant={
+                    project.projectType !== 'music' ? 'secondary' : 'ghost'
+                  }
+                  size="sm"
+                  onClick={() => update({ projectType: 'video' })}
+                  className="h-7 text-xs font-semibold px-3"
+                >
+                  <Video className="w-3.5 h-3.5 mr-1.5" /> Vídeo
+                </Button>
+                <Button
+                  variant={
+                    project.projectType === 'music' ? 'secondary' : 'ghost'
+                  }
+                  size="sm"
+                  onClick={() => update({ projectType: 'music' })}
+                  className="h-7 text-xs font-semibold px-3"
+                >
+                  <Music className="w-3.5 h-3.5 mr-1.5" /> Música
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">

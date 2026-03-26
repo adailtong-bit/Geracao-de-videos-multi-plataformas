@@ -330,10 +330,11 @@ export function PreviewCanvas({
             : 0.25
 
       const isAdaptive = project.audioTrack?.adaptiveLeveling !== false
+      const trackVol = (project.audioTrack?.volume ?? 100) / 100
       const targetVolume =
         speaking && isAdaptive
-          ? volume * (baseVolume * 0.2)
-          : volume * baseVolume
+          ? volume * trackVol * (baseVolume * 0.2)
+          : volume * trackVol * baseVolume
 
       const currentVol = audioRef.current.volume
 
@@ -348,6 +349,7 @@ export function PreviewCanvas({
     project.mood,
     hasSourceAudio,
     project.audioTrack?.adaptiveLeveling,
+    project.audioTrack?.volume,
   ])
 
   const prevIsPlayingRef = useRef(isPlaying)
