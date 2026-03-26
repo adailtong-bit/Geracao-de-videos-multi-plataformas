@@ -1,7 +1,7 @@
 import { Project, GlossaryTerm } from '@/types'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
-import { FileText, AlertTriangle } from 'lucide-react'
+import { FileText, AlertTriangle, Music } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -106,35 +106,53 @@ export function ScriptEditorPanel({
     <div className="flex-1 flex flex-col h-full bg-background animate-in fade-in slide-in-from-left-4">
       <div className="h-14 border-b flex items-center px-4 bg-card shrink-0 shadow-sm">
         <h2 className="font-bold text-sm flex items-center gap-2 text-primary">
-          <FileText className="w-4 h-4" /> Script / Legendas
+          <FileText className="w-4 h-4" /> Textos do Vídeo
         </h2>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-8 max-w-3xl mx-auto">
           <div className="space-y-3">
-            <Label className="text-base font-bold">Roteiro Principal</Label>
+            <Label className="text-base font-bold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-500" /> Roteiro / Narração
+            </Label>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Edite a base da sua história. Palavras do Glossário são
-              destacadas. Alterações feitas no roteiro principal exigirão uma
-              nova geração na aba "Criar".
+              Altere o texto principal. Se mudar aqui, você precisará ir na aba
+              "Criar" e gerar novamente para que o áudio atualize.
             </p>
             <HighlightedTextarea
               className="min-h-[150px]"
               value={project.draftPrompt || ''}
               onChange={(val) => update({ draftPrompt: val })}
-              placeholder="Escreva a base da sua história aqui..."
+              placeholder="Escreva a narração..."
               glossary={project.glossary || []}
+            />
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <Label className="text-base font-bold flex items-center gap-2">
+              <Music className="w-4 h-4 text-pink-500" /> Música / Letra
+            </Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Descreva o estilo musical ou insira a letra da música para a
+              trilha sonora.
+            </p>
+            <HighlightedTextarea
+              className="min-h-[100px]"
+              value={project.musicPrompt || ''}
+              onChange={(val) => update({ musicPrompt: val })}
+              placeholder="Ex: Música pop animada com vocais..."
+              glossary={[]}
             />
           </div>
 
           <div className="space-y-4 pt-4 border-t">
             <div className="space-y-1">
               <Label className="text-base font-bold">
-                Ajuste Fino de Legendas
+                Correção de Legendas
               </Label>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                As alterações feitas nos trechos refletem imediatamente no
-                visualizador.
+                Mude os textos que aparecem na tela (as alterações refletem
+                imediatamente no vídeo ao lado).
               </p>
             </div>
 
@@ -177,8 +195,8 @@ export function ScriptEditorPanel({
                       {isTooShort && (
                         <div className="flex items-center text-[10px] font-semibold text-red-500 px-1 animate-in fade-in">
                           <AlertTriangle className="w-3 h-3 mr-1" />
-                          Atenção: A duração ({duration.toFixed(1)}s) é muito
-                          curta para a leitura de {sub.text.length} caracteres.
+                          Atenção: Esse texto está muito grande para o tempo que
+                          fica na tela. Considere encurtar.
                         </div>
                       )}
                     </div>
@@ -188,11 +206,9 @@ export function ScriptEditorPanel({
               {(!project.aiClips || project.aiClips.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-card/50">
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p className="text-sm font-medium">
-                    Nenhuma legenda encontrada.
-                  </p>
+                  <p className="text-sm font-medium">Nenhuma legenda gerada.</p>
                   <p className="text-xs mt-1">
-                    Gere o vídeo primeiro para ver as legendas sincronizadas.
+                    Volte à aba Criar para gerar seu vídeo.
                   </p>
                 </div>
               )}

@@ -65,17 +65,18 @@ export function AudioPanel({
     <div className="space-y-6 animate-fade-in-up pb-8 flex flex-col h-full">
       <div className="space-y-4 shrink-0">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Music className="w-5 h-5 text-green-500" /> Trilha Sonora (Fundo)
+          <Music className="w-5 h-5 text-green-500" /> Trilha Sonora
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Faça upload de suas próprias trilhas. O sistema pode aplicar ducking
-          inteligente para equilibrar o volume com a narração de forma
-          automática.
+          O sistema ajustará o volume da música de fundo automaticamente
+          enquanto a narração estiver tocando.
         </p>
 
         <Label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors bg-background">
           <Upload className="w-6 h-6 text-muted-foreground mb-2" />
-          <span className="text-sm font-semibold">Upload MP3/WAV</span>
+          <span className="text-sm font-semibold">
+            Enviar meu próprio Áudio
+          </span>
           <input
             type="file"
             className="hidden"
@@ -90,11 +91,11 @@ export function AudioPanel({
           <div className="space-y-3 bg-secondary/20 p-4 rounded-xl border border-secondary/30">
             <div className="flex flex-col gap-1 mb-2">
               <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                <Mic className="w-4 h-4" /> Qualidade da Voz / Narração
+                <Mic className="w-4 h-4" /> Qualidade da Voz
               </h4>
               <p className="text-[10px] text-muted-foreground">
-                Ajustes de alta fidelidade e limpeza de ruídos para resultados
-                profissionais.
+                Ajustes automáticos para deixar a voz com qualidade de estúdio
+                profissional.
               </p>
             </div>
 
@@ -105,12 +106,12 @@ export function AudioPanel({
                     className="text-sm font-semibold flex items-center gap-1.5 cursor-pointer"
                     htmlFor="organic-prosody"
                   >
-                    <Wand2 className="w-3.5 h-3.5 text-fuchsia-500" /> Prósodia
-                    Orgânica
+                    <Wand2 className="w-3.5 h-3.5 text-fuchsia-500" /> Voz
+                    Natural Humana
                   </Label>
                   <p className="text-[10px] text-muted-foreground leading-tight">
-                    Aplica modelos neurais para entonação humana, evitando vozes
-                    robóticas.
+                    Deixa a narração com emoção, evitando que pareça a voz de um
+                    robô.
                   </p>
                 </div>
                 <Switch
@@ -126,12 +127,11 @@ export function AudioPanel({
                     className="text-sm font-semibold flex items-center gap-1.5 cursor-pointer"
                     htmlFor="tail-silence"
                   >
-                    <Scissors className="w-3.5 h-3.5 text-blue-500" /> Tail
-                    Trimming (0dB)
+                    <Scissors className="w-3.5 h-3.5 text-blue-500" /> Corte de
+                    Silêncio
                   </Label>
                   <p className="text-[10px] text-muted-foreground leading-tight">
-                    Remove ruídos e impõe silêncio absoluto após o fim do
-                    roteiro narrado.
+                    Remove pausas muito longas ou silêncio no final do vídeo.
                   </p>
                 </div>
                 <Switch
@@ -150,11 +150,10 @@ export function AudioPanel({
                     htmlFor="remove-artifacts"
                   >
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />{' '}
-                    Isolamento de Buffer
+                    Limpar Ruídos
                   </Label>
                   <p className="text-[10px] text-muted-foreground leading-tight">
-                    Limpa o cache entre segmentos para evitar "vozes de fundo"
-                    vazadas.
+                    Remove chiados e barulhos indesejados da gravação.
                   </p>
                 </div>
                 <Switch
@@ -168,13 +167,13 @@ export function AudioPanel({
 
           <div className="space-y-4 pt-2">
             <h4 className="font-semibold text-lg flex items-center gap-2">
-              <Music className="w-5 h-5 text-green-500" /> Biblioteca de Áudio
+              <Music className="w-5 h-5 text-green-500" /> Músicas Prontas
             </h4>
 
             {project.audioTrack && (
               <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3 mb-4 shadow-sm animate-in fade-in slide-in-from-top-2">
                 <h4 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                  <Music className="w-4 h-4" /> Trilha Ativa:{' '}
+                  <Music className="w-4 h-4" /> Tocando Agora:{' '}
                   {project.audioTrack.name}
                 </h4>
                 <div className="flex items-center justify-between">
@@ -183,11 +182,10 @@ export function AudioPanel({
                       className="text-sm font-semibold cursor-pointer"
                       htmlFor="adaptive-audio"
                     >
-                      Adaptive Leveling
+                      Mixagem Inteligente (Auto-Ducking)
                     </Label>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      Abaixa automaticamente o volume da música de fundo durante
-                      a narração.
+                      Abaixa o volume da música sozinho quando o narrador fala.
                     </p>
                   </div>
                   <Switch
@@ -242,7 +240,7 @@ export function AudioPanel({
                     <div className="shrink-0 ml-4">
                       {isApplied ? (
                         <span className="flex items-center text-xs font-bold text-green-600 bg-green-500/10 px-2 py-1 rounded-md">
-                          <CheckCircle2 className="w-3 h-3 mr-1" /> Aplicado
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Usando
                         </span>
                       ) : (
                         <Button
@@ -251,7 +249,7 @@ export function AudioPanel({
                           className="h-8 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => applyToProject(track)}
                         >
-                          Usar
+                          Usar Música
                         </Button>
                       )}
                     </div>

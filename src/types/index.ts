@@ -174,6 +174,7 @@ export interface Project {
   id: string
   name: string
   draftPrompt?: string
+  musicPrompt?: string
   videoUrl: string | null
   videoDuration: number
   trimStart: number

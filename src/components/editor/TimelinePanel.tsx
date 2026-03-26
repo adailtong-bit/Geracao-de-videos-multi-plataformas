@@ -1,26 +1,22 @@
 import { Project, CutSegment } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Clock,
   Film,
   Eye,
   Image as ImageIcon,
   CheckCircle2,
-  Scissors,
   Video,
-  Settings2,
   AlertTriangle,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { VIDEO_FORMATS } from '@/lib/video-formats'
 import {
   Tooltip,
@@ -35,112 +31,17 @@ interface Props {
   update?: (updates: Partial<Project>) => void
 }
 
-function formatTimecode(seconds: number) {
-  if (isNaN(seconds)) return '00:00:00.000'
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toFixed(3).padStart(6, '0')}`
-}
-
-function parseTimecode(str: string) {
-  const parts = str.split(':')
-  if (parts.length === 3) {
-    return (
-      parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(parts[2])
-    )
-  }
-  return parseFloat(str)
-}
-
-function ManualTrimEditor({
-  cut,
-  updateCut,
-}: {
-  cut: CutSegment
-  updateCut: (id: string, start: number, end: number) => void
-}) {
-  const [localStartStr, setLocalStartStr] = useState(formatTimecode(cut.start))
-  const [localEndStr, setLocalEndStr] = useState(formatTimecode(cut.end))
-
-  useEffect(() => {
-    setLocalStartStr(formatTimecode(cut.start))
-    setLocalEndStr(formatTimecode(cut.end))
-  }, [cut.start, cut.end])
-
-  const handleStartChange = (val: string) => {
-    setLocalStartStr(val)
-  }
-
-  const handleStartBlur = () => {
-    const s = parseTimecode(localStartStr)
-    const e = parseTimecode(localEndStr)
-    if (!isNaN(s) && !isNaN(e) && e > s) {
-      updateCut(cut.id, s, e)
-    } else {
-      setLocalStartStr(formatTimecode(cut.start))
-    }
-  }
-
-  const handleEndChange = (val: string) => {
-    setLocalEndStr(val)
-  }
-
-  const handleEndBlur = () => {
-    const s = parseTimecode(localStartStr)
-    const e = parseTimecode(localEndStr)
-    if (!isNaN(e) && !isNaN(s) && e > s) {
-      updateCut(cut.id, s, e)
-    } else {
-      setLocalEndStr(formatTimecode(cut.end))
-    }
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
-      <div className="space-y-1.5">
-        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Início (HH:MM:SS.mmm)
-        </Label>
-        <Input
-          className="h-8 text-xs bg-muted/50 font-mono focus-visible:ring-indigo-500"
-          value={localStartStr}
-          onChange={(e) => handleStartChange(e.target.value)}
-          onBlur={handleStartBlur}
-          placeholder="00:00:00.000"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-          Fim (HH:MM:SS.mmm)
-        </Label>
-        <Input
-          className="h-8 text-xs bg-muted/50 font-mono focus-visible:ring-indigo-500"
-          value={localEndStr}
-          onChange={(e) => handleEndChange(e.target.value)}
-          onBlur={handleEndBlur}
-          placeholder="00:00:00.000"
-        />
-      </div>
-    </div>
-  )
-}
-
 const ASSET_CATEGORIES: Record<string, string[]> = {
   Sombrio: [
     'dark,spooky,night',
     'creepy,forest',
     'abandoned,house',
     'fog,dark',
-    'cemetery,night',
-    'shadow,street',
   ],
   Floresta: [
     'forest,nature,trees',
     'jungle,green',
     'woods,sunlight',
-    'pine,forest',
-    'autumn,woods',
     'river,forest',
   ],
   Urbano: [
@@ -148,21 +49,17 @@ const ASSET_CATEGORIES: Record<string, string[]> = {
     'cyberpunk,city',
     'urban,alley',
     'skyscraper,night',
-    'traffic,city',
-    'subway,station',
   ],
 }
 
 export function TimelinePanel({ project, onNext, update }: Props) {
-  const [editingCutId, setEditingCutId] = useState<string | null>(null)
   const { toast } = useToast()
 
-  // Asset Library State
   const [assetLibOpenFor, setAssetLibOpenFor] = useState<{
     start: number
     end: number
   } | null>(null)
-  const [assetCategory, setAssetCategory] = useState('Sombrio')
+  const [assetCategory, setAssetCategory] = useState('Floresta')
 
   const bRolls = project.bRolls || []
   const subtitles = project.aiClips?.[0]?.subtitles || []
@@ -176,9 +73,6 @@ export function TimelinePanel({ project, onNext, update }: Props) {
     project.videoDuration ||
     0
 
-  const isExceedingMax = format?.max !== undefined && totalDuration > format.max
-  const isBelowMin = format?.min !== undefined && totalDuration < format.min
-
   const segments = isVideoSource
     ? project.cuts!.map((c) => {
         const sub =
@@ -186,7 +80,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
           subtitles.find((s) => s.start >= c.start)
         return {
           id: c.id,
-          text: sub?.text || 'Trecho de entrevista capturado',
+          text: sub?.text || 'Trecho de fala extraído',
           start: c.start,
           end: c.end,
           imageUrl: '',
@@ -239,25 +133,11 @@ export function TimelinePanel({ project, onNext, update }: Props) {
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const handleUpdateCut = (id: string, start: number, end: number) => {
-    if (!update || !project.cuts) return
-    const updatedCuts = project.cuts.map((c) =>
-      c.id === id
-        ? { ...c, start, end, sourceStart: start, sourceEnd: end }
-        : c,
-    )
-    update({
-      cuts: updatedCuts,
-      videoDuration: updatedCuts.reduce((sum, c) => sum + (c.end - c.start), 0),
-    })
-  }
-
   const handleAdjustIdealDuration = () => {
     if (!project.aiClips?.[0]?.subtitles || !project.bRolls) return
 
     let currentStart = 0
     const newSubtitles = project.aiClips[0].subtitles.map((sub) => {
-      // Calculo do tempo ideal de leitura baseado em caracteres
       const idealDuration = Math.max(2.0, sub.text.length * 0.065)
       const start = currentStart
       const end = start + idealDuration
@@ -285,9 +165,9 @@ export function TimelinePanel({ project, onNext, update }: Props) {
         videoDuration: currentStart,
       })
       toast({
-        title: 'Duração Ajustada',
+        title: 'Tempo Ajustado',
         description:
-          'O tempo de cada cena foi recalculado automaticamente para leitura ideal.',
+          'Os tempos das cenas foram arrumados para combinar certinho com a fala.',
       })
     }
   }
@@ -297,11 +177,10 @@ export function TimelinePanel({ project, onNext, update }: Props) {
       <div className="flex flex-col items-center justify-center h-48 text-muted-foreground p-4 text-center">
         <ImageIcon className="w-10 h-10 mb-3 opacity-20" />
         <p className="text-sm font-semibold text-foreground">
-          Nenhuma sequência visual gerada
+          Nenhuma cena criada
         </p>
         <p className="text-xs mt-1 max-w-[200px] leading-relaxed">
-          Crie ou importe sua história na aba anterior para ver a correlação
-          visual limpa.
+          Volte na aba "Criar" para gerar a primeira versão do seu vídeo.
         </p>
       </div>
     )
@@ -311,37 +190,16 @@ export function TimelinePanel({ project, onNext, update }: Props) {
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-3">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          {isVideoSource ? (
-            <Scissors className="w-5 h-5 text-indigo-500" />
-          ) : (
-            <Film className="w-5 h-5 text-indigo-500" />
-          )}
-          {isVideoSource ? 'Cortes Multicâmera' : 'Sequência Visual'}
+          <Film className="w-5 h-5 text-indigo-500" /> Cenas do Vídeo
         </h3>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-green-600 bg-green-500/10 p-2 rounded-md border border-green-500/20">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             {isVideoSource
-              ? 'Apenas cortes originais baseados no fluxo de diálogo.'
-              : 'Textos removidos do centro da tela. Transições orgânicas aplicadas.'}
+              ? 'Vídeo cortado com base nas falas importantes.'
+              : 'As imagens e os textos foram colocados em ordem para você.'}
           </div>
-
-          {isExceedingMax && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-red-600 bg-red-500/10 p-2 rounded-md border border-red-500/20 animate-in slide-in-from-top-1">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              Limite do {format?.label} ({format?.max}s) excedido. Ajuste a
-              duração.
-            </div>
-          )}
-
-          {isBelowMin && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 bg-amber-500/10 p-2 rounded-md border border-amber-500/20 animate-in slide-in-from-top-1">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              Aviso: Para monetização no {format?.label}, o mínimo é{' '}
-              {format?.min}s.
-            </div>
-          )}
 
           {!isVideoSource && (
             <Button
@@ -351,7 +209,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
               className="w-full sm:w-max mt-2 font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
             >
               <Clock className="w-4 h-4 mr-2" />
-              Ajustar para Duração Ideal
+              Arrumar Tempo das Imagens
             </Button>
           )}
         </div>
@@ -371,7 +229,14 @@ export function TimelinePanel({ project, onNext, update }: Props) {
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors z-10" />
 
               <div className="flex gap-4 p-3">
-                <div className="w-20 h-28 sm:w-24 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-muted relative border border-border/50 flex items-center justify-center">
+                <div
+                  className="w-20 h-28 sm:w-24 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-muted relative border border-border/50 flex items-center justify-center cursor-pointer"
+                  onClick={() =>
+                    !seg.isCut &&
+                    update &&
+                    setAssetLibOpenFor({ start: seg.start, end: seg.end })
+                  }
+                >
                   {seg.imageUrl ? (
                     <img
                       src={seg.imageUrl}
@@ -386,97 +251,53 @@ export function TimelinePanel({ project, onNext, update }: Props) {
                       ) : (
                         <ImageIcon className="w-6 h-6" />
                       )}
-                      {seg.isCut && (
-                        <span className="text-[9px] font-bold">
-                          Corte Fonte
-                        </span>
-                      )}
                     </div>
                   )}
                   <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded backdrop-blur-sm flex items-center gap-1 shadow-sm">
-                    <Clock className="w-3 h-3" />
                     {formatTime(seg.start)}
                   </div>
-                </div>
-                <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                        {seg.isCut ? (
-                          <Scissors className="w-3 h-3" />
-                        ) : (
-                          <Film className="w-3 h-3" />
-                        )}
-                        {seg.isCut
-                          ? `Corte Inteligente ${idx + 1}`
-                          : `Cena Visual ${idx + 1}`}
-                      </p>
-
-                      <div className="flex items-center gap-2">
-                        {isTooShort && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertTriangle className="w-4 h-4 text-red-500 cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              className="bg-destructive text-destructive-foreground"
-                            >
-                              <p>
-                                O tempo na tela é muito curto para a leitura
-                                deste texto.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
-                          {(seg.end - seg.start).toFixed(2)}s
-                        </span>
-                        {seg.isCut && update && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-6 w-6 rounded-md ${editingCutId === seg.id ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-muted-foreground hover:text-foreground'}`}
-                            onClick={() =>
-                              setEditingCutId(
-                                editingCutId === seg.id ? null : seg.id,
-                              )
-                            }
-                          >
-                            <Settings2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
+                  {!seg.isCut && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
+                      <span className="text-[10px] font-bold text-white uppercase tracking-wider bg-black/60 px-2 py-1 rounded">
+                        Trocar Imagem
+                      </span>
                     </div>
-                    <p className="text-sm font-medium leading-relaxed text-foreground text-pretty italic border-l-2 border-muted pl-2 line-clamp-2">
-                      "{seg.text}"
-                    </p>
-                  </div>
-
-                  {!seg.isCut && update && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs w-max mt-2 text-muted-foreground hover:text-foreground"
-                      onClick={() =>
-                        setAssetLibOpenFor({ start: seg.start, end: seg.end })
-                      }
-                    >
-                      <ImageIcon className="w-3.5 h-3.5 mr-1.5" /> Biblioteca de
-                      Assets
-                    </Button>
                   )}
                 </div>
-              </div>
+                <div className="flex-1 min-w-0 py-1 flex flex-col justify-start gap-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-indigo-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <Film className="w-3 h-3" />
+                      Cena {idx + 1}
+                    </p>
 
-              {editingCutId === seg.id && seg.isCut && seg.originalCut && (
-                <div className="px-3 pb-3 pt-1 bg-muted/10">
-                  <ManualTrimEditor
-                    cut={seg.originalCut}
-                    updateCut={handleUpdateCut}
-                  />
+                    <div className="flex items-center gap-2">
+                      {isTooShort && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertTriangle className="w-4 h-4 text-red-500 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            className="bg-destructive text-destructive-foreground"
+                          >
+                            <p>
+                              A imagem some rápido demais para a pessoa ler o
+                              texto.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      <span className="text-[10px] text-muted-foreground font-medium bg-muted px-1.5 py-0.5 rounded">
+                        Duração: {(seg.end - seg.start).toFixed(1)}s
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium leading-relaxed text-foreground text-pretty border-l-2 border-muted pl-2">
+                    "{seg.text}"
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           )
         })}
@@ -490,7 +311,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-indigo-500" />
-              Biblioteca de Assets de Imagem
+              Escolher Nova Imagem
             </DialogTitle>
           </DialogHeader>
           <div className="pt-4">
@@ -530,7 +351,7 @@ export function TimelinePanel({ project, onNext, update }: Props) {
                           )
                         }
                       >
-                        Aplicar
+                        Usar Imagem
                       </Button>
                     </div>
                   </div>
@@ -545,19 +366,8 @@ export function TimelinePanel({ project, onNext, update }: Props) {
         <Button
           className="w-full font-bold h-12 shadow-md transition-all relative overflow-hidden"
           onClick={onNext}
-          disabled={isExceedingMax}
-          variant={isExceedingMax ? 'secondary' : 'default'}
         >
-          {isExceedingMax ? (
-            <span className="text-red-500 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 mr-2" /> Bloqueado: Excede{' '}
-              {format?.max}s
-            </span>
-          ) : (
-            <>
-              <Eye className="w-4 h-4 mr-2" /> Avançar para Revisão
-            </>
-          )}
+          <Eye className="w-4 h-4 mr-2" /> Avançar para Efeitos e Avatar
         </Button>
       </div>
     </div>

@@ -43,8 +43,6 @@ import {
   Clock,
   Scissors,
   MonitorPlay,
-  ShieldAlert,
-  AlertCircle,
   Play,
   Image as ImageIcon,
 } from 'lucide-react'
@@ -127,6 +125,7 @@ export function AiCreatorPanel({
     initialSourceType,
   )
   const [prompt, setPrompt] = useState(project.draftPrompt || '')
+  const [musicPrompt, setMusicPrompt] = useState(project.musicPrompt || '')
   const [videoUrl, setVideoUrl] = useState(
     initialSourceType === 'video' ? project.videoUrl || '' : '',
   )
@@ -212,18 +211,12 @@ export function AiCreatorPanel({
   }
 
   const selectedFormatObj = VIDEO_FORMATS.find((f) => f.id === targetFormat)
-  const isExceedingMax =
-    selectedFormatObj?.max !== undefined &&
-    targetDuration > selectedFormatObj.max
-  const isBelowMin =
-    selectedFormatObj?.min !== undefined &&
-    targetDuration < selectedFormatObj.min
 
   const handleGenerate = () => {
-    if (sourceType === 'text' && !prompt.trim()) {
+    if (sourceType === 'text' && !prompt.trim() && !musicPrompt.trim()) {
       return toast({
         title: 'Faltando informações',
-        description: 'Descreva o texto ou tema da sua história primeiro.',
+        description: 'Descreva o texto da narração ou a música primeiro.',
         variant: 'destructive',
       })
     }
@@ -253,32 +246,17 @@ export function AiCreatorPanel({
     }
 
     let finalDuration = targetDuration
-    if (isExceedingMax && selectedFormatObj?.max) {
+    if (
+      selectedFormatObj?.max !== undefined &&
+      targetDuration > selectedFormatObj.max
+    ) {
       finalDuration = selectedFormatObj.max
       setTargetDuration(finalDuration)
       update({ videoDuration: finalDuration })
       toast({
-        title: 'Duração Ajustada',
-        description: `Duração reduzida para o máximo permitido pelo ${selectedFormatObj.label} (${finalDuration}s).`,
+        title: 'Tempo Ajustado',
+        description: `O tempo foi ajustado para o máximo permitido do ${selectedFormatObj.label} (${finalDuration}s).`,
       })
-    }
-
-    if (sourceType === 'text' && prompt.toLowerCase().includes('erro')) {
-      setStatus('generating')
-      if (onStatusChange) onStatusChange('generating')
-      setStatusText('Processando semântica e analisando falhas de rede...')
-
-      setTimeout(() => {
-        setStatus('idle')
-        if (onStatusChange) onStatusChange('idle')
-        toast({
-          title: 'Erro na Geração',
-          description:
-            'A conexão de rede falhou, mas seu texto foi preservado no rascunho com segurança.',
-          variant: 'destructive',
-        })
-      }, 2000)
-      return
     }
 
     setStatus('generating')
@@ -287,24 +265,29 @@ export function AiCreatorPanel({
 
     const initialText =
       sourceType === 'video' || sourceType === 'upload'
-        ? 'Acessando arquivo e aplicando Hard Reset no editor...'
-        : 'Extraindo contexto semântico...'
+        ? 'Analisando vídeo...'
+        : 'Criando voz e música...'
     setStatusText(initialText)
 
     const steps =
       sourceType === 'video' || sourceType === 'upload'
         ? [
-            { p: 20, t: `Ingerindo mídia original (Modo Edição Pura)...` },
-            { p: 40, t: `IA detectando ângulos e alternância de locutores...` },
-            { p: 60, t: `Extraindo cortes focados no diálogo...` },
-            { p: 80, t: `Sincronizando avatares e audiência reativa...` },
-            { p: 100, t: 'Limpando estado anterior e aplicando sequência...' },
+            { p: 20, t: `Analisando o áudio original...` },
+            { p: 40, t: `Encontrando as melhores partes...` },
+            { p: 60, t: `Criando cortes automáticos...` },
+            { p: 80, t: `Sincronizando...` },
+            { p: 100, t: 'Finalizando o vídeo...' },
           ]
         : [
-            { p: 25, t: `Ajustando emoção para modo ${mood}...` },
-            { p: 50, t: `Aplicando estilo visual ${visualStyle}...` },
-            { p: 75, t: `Sincronizando áudio e expressões faciais...` },
-            { p: 100, t: 'Garantindo transições orgânicas e cenários...' },
+            { p: 25, t: `Gerando narração humana...` },
+            {
+              p: 50,
+              t: musicPrompt
+                ? `Compondo música com IA...`
+                : `Buscando imagens relacionadas...`,
+            },
+            { p: 75, t: `Sincronizando áudio e imagens...` },
+            { p: 100, t: 'Pronto para revisão...' },
           ]
 
     let currentStep = 0
@@ -335,18 +318,18 @@ export function AiCreatorPanel({
       const interviewTexts =
         sourceLanguage === 'pt-BR'
           ? [
-              'Para mim, a grande virada de chave foi focar no que realmente importa.',
-              'Quando começamos, não tínhamos os recursos, mas tínhamos a visão.',
-              'O mercado estava saturado, então criamos nossa própria categoria.',
-              'Muitos duvidaram da viabilidade desse modelo no início.',
-              'Hoje, os resultados mostram que tomamos a decisão certa.',
+              'A grande virada foi focar no que importa.',
+              'Não tínhamos recursos, mas tínhamos a visão.',
+              'Criamos nossa própria categoria no mercado.',
+              'Muitos duvidaram no início.',
+              'Hoje os resultados mostram que estávamos certos.',
             ]
           : [
-              'For me, the big turning point was focusing on what really matters.',
-              "When we started, we didn't have the resources, but we had the vision.",
-              'The market was saturated, so we created our own category.',
-              'Many doubted the viability of this model at first.',
-              'Today, the results show that we made the right decision.',
+              'The big turning point was focusing on what matters.',
+              "We didn't have resources, but we had vision.",
+              'We created our own category.',
+              'Many doubted at first.',
+              'Today the results show we were right.',
             ]
 
       let currentStartTime = 0
@@ -441,9 +424,9 @@ export function AiCreatorPanel({
       title: `${titleWords}...`,
       description:
         sourceType === 'video' || sourceType === 'upload'
-          ? `Cortes extraídos e formatados da fonte original em ${sourceLanguage}.`
-          : `Vídeo dinâmico processado com IA em ${sourceLanguage}.`,
-      hashtags: `#historia #ia #cinematic`,
+          ? `Cortes criados a partir do vídeo original.`
+          : `Vídeo gerado a partir de texto com inteligência artificial.`,
+      hashtags: `#video #ia #criador`,
     }
 
     const aiClips: AiClip[] = [
@@ -498,9 +481,10 @@ export function AiCreatorPanel({
             ? null
             : {
                 id: crypto.randomUUID(),
-                name: 'Cinematic Ambient',
-                mood: 'Ambient',
+                name: musicPrompt ? 'Trilha Gerada com IA' : 'Trilha Ambiente',
+                mood: mood,
                 url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+                adaptiveLeveling: true,
               },
         sourceLanguage,
         subtitleLanguage,
@@ -509,6 +493,8 @@ export function AiCreatorPanel({
         mood,
         mediaType,
         imageCategory,
+        draftPrompt: prompt,
+        musicPrompt: musicPrompt,
         avatar: project.avatar || {
           enabled: false,
           mode: 'preset',
@@ -552,6 +538,8 @@ export function AiCreatorPanel({
       imageCategory: newDraft.snapshot.imageCategory,
       avatar: newDraft.snapshot.avatar,
       subtitleStyle: newDraft.snapshot.subtitleStyle,
+      draftPrompt: newDraft.snapshot.draftPrompt,
+      musicPrompt: newDraft.snapshot.musicPrompt,
       drafts: [...(project.drafts || []), newDraft],
       activeDraftId: newDraft.id,
       glossary: newDraft.snapshot.glossary,
@@ -560,7 +548,7 @@ export function AiCreatorPanel({
     setResult(generatedResult)
     setStatus('success')
     if (onStatusChange) onStatusChange('success')
-    toast({ title: 'Processamento de Mídia Concluído!' })
+    toast({ title: 'Vídeo Gerado com Sucesso!' })
   }
 
   if (status === 'generating') {
@@ -574,11 +562,7 @@ export function AiCreatorPanel({
           )}
         </div>
         <div className="space-y-2 w-full max-w-xs">
-          <h3 className="font-bold text-lg">
-            {sourceType === 'video' || sourceType === 'upload'
-              ? 'Cortes Inteligentes'
-              : 'Processamento Inteligente'}
-          </h3>
+          <h3 className="font-bold text-lg">Criando seu vídeo...</h3>
           <p className="text-sm text-muted-foreground">{statusText}</p>
           <Progress value={progress} className="h-2 w-full mt-4" />
         </div>
@@ -596,7 +580,7 @@ export function AiCreatorPanel({
             ) : (
               <Wand2 className="w-5 h-5" />
             )}
-            <span className="font-bold">Mídia Processada</span>
+            <span className="font-bold">Vídeo Pronto!</span>
           </div>
           <Button
             variant="ghost"
@@ -607,13 +591,13 @@ export function AiCreatorPanel({
             }}
             className="h-8 hover:bg-green-500/20 text-green-800 dark:text-green-300"
           >
-            <RefreshCcw className="w-4 h-4 mr-2" /> Novo Projeto
+            <RefreshCcw className="w-4 h-4 mr-2" /> Fazer Outro
           </Button>
         </div>
 
         <div className="space-y-4 bg-muted/30 p-4 rounded-xl border">
           <h4 className="font-bold flex items-center gap-2 text-sm">
-            <FileText className="w-4 h-4 text-primary" /> Título Semântico
+            <FileText className="w-4 h-4 text-primary" /> Título Sugerido
           </h4>
           <p className="font-medium text-foreground text-sm">{result.title}</p>
           <h4 className="font-bold flex items-center gap-2 text-sm mt-4">
@@ -626,7 +610,7 @@ export function AiCreatorPanel({
           className="w-full font-bold h-12 shadow-md bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:-translate-y-0.5"
           onClick={onNext}
         >
-          <Film className="w-5 h-5 mr-2" /> Revisar Sequência
+          <Film className="w-5 h-5 mr-2" /> Continuar Edição
         </Button>
       </div>
     )
@@ -636,12 +620,11 @@ export function AiCreatorPanel({
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="space-y-4">
         <h3 className="font-semibold text-lg flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-blue-500" /> Pipeline de Mídia
+          <Wand2 className="w-5 h-5 text-blue-500" /> Criar Vídeo
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Gere conteúdo a partir de texto ou importe uma URL. Para adicionar e
-          animar avatares, acesse a aba <strong>Studio</strong> (Revisão) após a
-          geração.
+          Crie seu vídeo digitando um texto, ou importando um arquivo. A
+          inteligência artificial fará todo o trabalho pesado.
         </p>
 
         <Tabs
@@ -652,24 +635,26 @@ export function AiCreatorPanel({
           <TabsList className="grid w-full grid-cols-3 mb-4 h-auto p-1">
             <TabsTrigger value="text" className="text-xs font-semibold py-2">
               <Type className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Texto</span>
+              <span className="hidden sm:inline">Texto e Áudio</span>
             </TabsTrigger>
             <TabsTrigger value="video" className="text-xs font-semibold py-2">
               <Youtube className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Link</span>
+              <span className="hidden sm:inline">Link de Vídeo</span>
             </TabsTrigger>
             <TabsTrigger value="upload" className="text-xs font-semibold py-2">
               <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Upload</span>
+              <span className="hidden sm:inline">Arquivo</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="text" className="space-y-4 mt-0">
             <div className="space-y-3">
-              <Label className="font-semibold text-sm">Texto da Narração</Label>
+              <Label className="font-semibold text-sm">
+                Roteiro / Narração
+              </Label>
               <Textarea
-                placeholder="Cole seu texto longo aqui..."
-                className="min-h-[120px] resize-none text-sm bg-background/50"
+                placeholder="Escreva a história ou o texto que a voz irá narrar..."
+                className="min-h-[100px] resize-none text-sm bg-background/50"
                 value={prompt}
                 onChange={(e) => {
                   setPrompt(e.target.value)
@@ -678,10 +663,25 @@ export function AiCreatorPanel({
               />
             </div>
 
+            <div className="space-y-3">
+              <Label className="font-semibold text-sm">
+                Música / Letra (Opcional)
+              </Label>
+              <Textarea
+                placeholder="Descreva o estilo musical (ex: Pop animado) ou cole a letra da música para a IA cantar..."
+                className="min-h-[80px] resize-none text-sm bg-background/50"
+                value={musicPrompt}
+                onChange={(e) => {
+                  setMusicPrompt(e.target.value)
+                  update({ musicPrompt: e.target.value })
+                }}
+              />
+            </div>
+
             <div className="space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
               <Label className="font-semibold text-sm flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-primary" /> Tema Visual de
-                Fundo
+                <ImageIcon className="w-4 h-4 text-primary" /> Estilo das
+                Imagens
               </Label>
               <Select
                 value={imageCategory}
@@ -710,14 +710,14 @@ export function AiCreatorPanel({
                 Link do Vídeo Completo
               </Label>
               <Input
-                placeholder="Ex: Link do YouTube, Podcast longo..."
+                placeholder="Ex: Link do YouTube, Podcast..."
                 className="bg-background/50 h-11"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Modo Edição Pura: O motor ingerirá o vídeo aplicando Hard Reset.
-                Cortes multicâmera serão gerados baseados em diálogo.
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Nós vamos assistir seu vídeo longo e criar clipes curtos
+                perfeitos para as redes sociais automaticamente.
               </p>
             </div>
           </TabsContent>
@@ -736,46 +736,12 @@ export function AiCreatorPanel({
         </Tabs>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border/50">
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-3 bg-muted/30 p-4 rounded-xl border border-border/50">
-            <Label className="font-semibold text-sm flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-primary" /> Estilo de Mídia
-              Visual
-            </Label>
-            <RadioGroup
-              value={mediaType}
-              onValueChange={(v) => {
-                setMediaType(v as MediaType)
-                update({ mediaType: v as MediaType })
-              }}
-              className="flex flex-col space-y-2 mt-2 ml-1"
-            >
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="image-sequence" id="media-image" />
-                <Label
-                  htmlFor="media-image"
-                  className="cursor-pointer font-medium text-sm text-foreground"
-                >
-                  Sequência de Imagens
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="context-video" id="media-video" />
-                <Label
-                  htmlFor="media-video"
-                  className="cursor-pointer font-medium text-sm text-foreground"
-                >
-                  Vídeo com Imagens Relacionadas
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-4 bg-primary/5 p-4 rounded-xl border border-primary/20">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 space-y-3">
                 <Label className="font-semibold text-sm flex items-center gap-2">
-                  <MonitorPlay className="w-4 h-4 text-primary" /> Destino
-                  (Plataforma)
+                  <MonitorPlay className="w-4 h-4 text-primary" /> Onde você vai
+                  postar?
                 </Label>
                 <Select value={targetFormat} onValueChange={handleFormatChange}>
                   <SelectTrigger className="bg-background/50 h-10">
@@ -801,7 +767,7 @@ export function AiCreatorPanel({
               </div>
               <div className="w-full sm:w-32 space-y-3 shrink-0">
                 <Label className="font-semibold text-sm flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" /> Duração (s)
+                  <Clock className="w-4 h-4 text-primary" /> Duração (segundos)
                 </Label>
                 <Input
                   type="number"
@@ -816,34 +782,11 @@ export function AiCreatorPanel({
                 />
               </div>
             </div>
-
-            {isExceedingMax && selectedFormatObj && (
-              <Alert
-                variant="destructive"
-                className="py-2 px-3 animate-in slide-in-from-top-2"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                <AlertDescription className="text-xs ml-2">
-                  O formato <strong>{selectedFormatObj.label}</strong> exige
-                  duração máxima de {selectedFormatObj.max}s. O sistema irá
-                  ajustar automaticamente.
-                </AlertDescription>
-              </Alert>
-            )}
-            {isBelowMin && selectedFormatObj && (
-              <Alert className="py-2 px-3 bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:text-emerald-400 animate-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 text-emerald-600" />
-                <AlertDescription className="text-xs ml-2 font-medium">
-                  Para monetização no <strong>{selectedFormatObj.label}</strong>
-                  , a duração ideal deve ultrapassar {selectedFormatObj.min}s.
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
 
           <div className="col-span-1 sm:col-span-2 lg:col-span-3 space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
-              <Mic className="w-4 h-4 text-primary" /> Voz Global / Regional
+              <Mic className="w-4 h-4 text-primary" /> Voz do Narrador
             </Label>
             <div className="flex gap-2">
               <Select
@@ -885,19 +828,16 @@ export function AiCreatorPanel({
                   const v = VOICES.find((x) => x.id === voiceProfile)
                   if (v && v.sampleUrl) playSample(v.sampleUrl)
                 }}
-                title="Ouvir Amostra"
+                title="Ouvir Exemplo"
               >
                 <Play className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Biblioteca expandida com sotaques regionais e idiomas globais.
-            </p>
           </div>
 
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" /> Idioma Original
+              <Globe className="w-4 h-4 text-primary" /> Idioma Principal
             </Label>
             <Select
               value={sourceLanguage}
@@ -935,7 +875,7 @@ export function AiCreatorPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sem Legenda (Padrão)</SelectItem>
+                <SelectItem value="none">Nenhuma (Apenas Principal)</SelectItem>
                 <SelectItem value="pt-BR">Português (BR)</SelectItem>
                 <SelectItem value="en-US">English (US)</SelectItem>
                 <SelectItem value="es-ES">Español</SelectItem>
@@ -948,30 +888,7 @@ export function AiCreatorPanel({
 
           <div className="space-y-3">
             <Label className="font-semibold text-sm flex items-center gap-2">
-              <Palette className="w-4 h-4 text-primary" /> Estilo Visual
-            </Label>
-            <Select
-              value={visualStyle}
-              onValueChange={(v) => {
-                setVisualStyle(v as VisualStyle)
-                update({ visualStyle: v as VisualStyle })
-              }}
-              disabled={sourceType === 'video' || sourceType === 'upload'}
-            >
-              <SelectTrigger className="bg-background/50 h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="realistic">Realista</SelectItem>
-                <SelectItem value="cinematic-dark">Cinemático Dark</SelectItem>
-                <SelectItem value="artistic">Pintura Artística</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" /> Clima Emocional
+              <Activity className="w-4 h-4 text-primary" /> Emoção do Vídeo
             </Label>
             <Select
               value={mood}
@@ -984,9 +901,11 @@ export function AiCreatorPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="inspirational">Inspirador</SelectItem>
-                <SelectItem value="dramatic">Dramático / Suspense</SelectItem>
-                <SelectItem value="calm">Calmo / Relaxante</SelectItem>
+                <SelectItem value="inspirational">
+                  Inspirador e Feliz
+                </SelectItem>
+                <SelectItem value="dramatic">Dramático e Mistério</SelectItem>
+                <SelectItem value="calm">Calmo e Relaxante</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1002,8 +921,8 @@ export function AiCreatorPanel({
             <Wand2 className="w-5 h-5 mr-2" />
           )}
           {sourceType === 'video' || sourceType === 'upload'
-            ? 'Processar Cortes Originais'
-            : 'Gerar Sequência HD'}
+            ? 'Cortar Vídeo Automaticamente'
+            : 'Gerar Vídeo Agora'}
         </Button>
       </div>
     </div>
