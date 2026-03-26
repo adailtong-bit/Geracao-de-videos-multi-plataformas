@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import useAdminStore from '@/stores/useAdminStore'
 import { useToast } from '@/hooks/use-toast'
 import { Save, KeyRound, Globe, ShieldCheck } from 'lucide-react'
-import { GatewayConfig } from '@/types'
+import type { GatewayConfig } from '@/types'
 
 export default function AdminSettings() {
   const { settings, updateSettings } = useAdminStore()

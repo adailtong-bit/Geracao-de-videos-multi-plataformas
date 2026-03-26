@@ -55,7 +55,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Project, Draft } from '@/types'
+import type { Project, Draft } from '@/types'
 import { usePlayerControls } from '@/stores/usePlayerStore'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'

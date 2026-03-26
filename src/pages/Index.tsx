@@ -16,7 +16,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Project } from '@/types'
+import type { Project } from '@/types'
 import { getProjects, createProject, deleteProject } from '@/lib/storage'
 import useAuthStore from '@/stores/useAuthStore'
 import useAdminStore from '@/stores/useAdminStore'

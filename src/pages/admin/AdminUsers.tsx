@@ -26,7 +26,7 @@ import {
 import { Ban, Unlock, Eye, Calendar, Film, DollarSign } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 import useAdminStore from '@/stores/useAdminStore'
-import { User } from '@/types'
+import type { User } from '@/types'
 
 const mockUsers: User[] = [
   {

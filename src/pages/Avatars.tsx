@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import useAvatarStore from '@/stores/useAvatarStore'
 import { useToast } from '@/hooks/use-toast'
-import { AvatarModel } from '@/types'
+import type { AvatarModel } from '@/types'
 import { cn, CHECKERBOARD_BG } from '@/lib/utils'
 
 export default function Avatars() {

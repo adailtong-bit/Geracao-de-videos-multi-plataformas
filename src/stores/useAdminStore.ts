@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { PlatformSettings, CostEntry } from '@/types'
+import type { PlatformSettings, CostEntry } from '@/types'
 
 const ADMIN_SETTINGS_KEY = 'multiproject_admin_settings'
 

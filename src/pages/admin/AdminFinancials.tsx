@@ -43,7 +43,7 @@ import {
 } from 'lucide-react'
 import useAdminStore from '@/stores/useAdminStore'
 import { useToast } from '@/hooks/use-toast'
-import { AdminTransaction } from '@/types'
+import type { AdminTransaction } from '@/types'
 
 const mockRevenues: AdminTransaction[] = [
   {
