@@ -146,7 +146,7 @@ export default function Layout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-muted/20 min-h-screen w-full flex flex-col">
+      <SidebarInset className="bg-muted/20 min-h-screen w-full max-w-full overflow-x-hidden flex flex-col">
         {/* Mobile Header with safe area support */}
         <header className="flex min-h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:hidden sticky top-0 z-40 shadow-sm pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] box-content">
           <SidebarTrigger className="-ml-2" />
@@ -156,7 +156,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 w-full overflow-x-hidden pb-[env(safe-area-inset-bottom)]">
+        <main className="flex-1 w-full max-w-full overflow-x-hidden pb-[env(safe-area-inset-bottom)] px-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           <Outlet />
         </main>
       </SidebarInset>

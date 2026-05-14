@@ -54,7 +54,7 @@ export function AudioPanel({
         mood: 'Custom',
         url: track.url,
         adaptiveLeveling: true,
-        volume: 100,
+        volume: 25, // 20% to 30% relative to main
       },
     })
   }
@@ -247,9 +247,30 @@ export function AudioPanel({
                       }
                     />
                   </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-primary/10">
+                    <div className="space-y-0.5 pr-4">
+                      <Label
+                        className="text-sm font-semibold cursor-pointer"
+                        htmlFor="fade-audio"
+                      >
+                        Fade In / Fade Out
+                      </Label>
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        Transição suave no início e fim da trilha sonora.
+                      </p>
+                    </div>
+                    <Switch id="fade-audio" defaultChecked={true} />
+                  </div>
                 </div>
               </div>
             )}
+
+            <div className="bg-muted p-3 rounded-lg border flex items-center justify-between text-[10px] text-muted-foreground font-mono mb-4">
+              <span>Codec: AAC</span>
+              <span>Sample: 44.1kHz</span>
+              <span>Stereo Mix</span>
+            </div>
 
             <Tabs defaultValue="library" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-4">

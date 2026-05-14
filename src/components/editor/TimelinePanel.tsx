@@ -136,11 +136,14 @@ export function TimelinePanel({ project, onNext, update }: Props) {
   const handleAdjustIdealDuration = () => {
     if (!project.aiClips?.[0]?.subtitles || !project.bRolls) return
 
+    const WPM = 140 // Standard reading speed
     let currentStart = 0
     const newSubtitles = project.aiClips[0].subtitles.map((sub) => {
-      const idealDuration = Math.max(2.0, sub.text.length * 0.065)
+      const wordCount = sub.text.trim().split(/\s+/).length
+      // duration_seconds = (word_count / words_per_minute) * 60
+      const duration = Math.max(2.0, (wordCount / WPM) * 60)
       const start = currentStart
-      const end = start + idealDuration
+      const end = start + duration
       currentStart = end
       return { ...sub, start, end }
     })
@@ -202,15 +205,90 @@ export function TimelinePanel({ project, onNext, update }: Props) {
           </div>
 
           {!isVideoSource && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleAdjustIdealDuration}
-              className="w-full sm:w-max mt-2 font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              Arrumar Tempo das Imagens
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 mt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleAdjustIdealDuration}
+                className="w-full sm:w-max font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Sincronizar (140 WPM)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!project.aiClips?.[0]?.subtitles) return
+                  const allText = project.aiClips[0].subtitles
+                    .map((s) => s.text)
+                    .join(' ')
+                  const words = allText.split(/\s+/)
+                  const newSubtitles = []
+                  let currentChunk = []
+                  let currentStart = 0
+                  const WPM = 140
+
+                  for (let i = 0; i < words.length; i++) {
+                    currentChunk.push(words[i])
+                    if (currentChunk.length >= 6 || i === words.length - 1) {
+                      const text = currentChunk.join(' ')
+                      const duration = Math.max(
+                        2.0,
+                        (currentChunk.length / WPM) * 60,
+                      )
+                      newSubtitles.push({
+                        id: crypto.randomUUID(),
+                        text,
+                        start: currentStart,
+                        end: currentStart + duration,
+                      })
+                      currentStart += duration
+                      currentChunk = []
+                    }
+                  }
+
+                  // Adjust bRolls if possible
+                  const newBRolls = [...(project.bRolls || [])]
+                  while (
+                    newBRolls.length < newSubtitles.length &&
+                    newBRolls.length > 0
+                  ) {
+                    newBRolls.push({
+                      ...newBRolls[newBRolls.length - 1],
+                      id: crypto.randomUUID(),
+                    })
+                  }
+
+                  const syncedBRolls = newBRolls
+                    .slice(0, newSubtitles.length)
+                    .map((br, i) => ({
+                      ...br,
+                      start: newSubtitles[i].start,
+                      end: newSubtitles[i].end,
+                    }))
+
+                  if (update) {
+                    update({
+                      aiClips: [
+                        { ...project.aiClips[0], subtitles: newSubtitles },
+                      ],
+                      bRolls: syncedBRolls,
+                      videoDuration: currentStart,
+                    })
+                    toast({
+                      title: 'Legendas Otimizadas',
+                      description:
+                        'Textos divididos em trechos de ~6 palavras para leitura.',
+                    })
+                  }
+                }}
+                className="w-full sm:w-max font-semibold"
+              >
+                <Film className="w-4 h-4 mr-2" />
+                Otimizar Leitura
+              </Button>
+            </div>
           )}
         </div>
       </div>

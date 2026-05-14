@@ -119,6 +119,38 @@ export function PublishPanel({ project, update }: Props) {
       })
     }
 
+    // Pipeline Validation
+    const bRollCount = project.bRolls?.length || 0
+    const textCount = project.aiClips?.[0]?.subtitles?.length || 0
+    const hasMusic = !!project.audioTrack
+
+    if (bRollCount < 3 || textCount < 3 || !hasMusic) {
+      return toast({
+        title: 'Validação de Pipeline Falhou',
+        description:
+          'O vídeo requer pelo menos 3 imagens, 3 trechos de texto e 1 trilha musical para garantir a sincronia.',
+        variant: 'destructive',
+      })
+    }
+
+    // Platform Duration Limits
+    const maxDurations: Record<string, number> = {
+      tiktok: 60,
+      instagram: 90, // Reels
+      youtube: 60, // Shorts
+    }
+
+    const duration = project.videoDuration || 0
+    for (const p of project.targetPlatforms) {
+      if (maxDurations[p] && duration > maxDurations[p]) {
+        return toast({
+          title: 'Duração Excedida',
+          description: `O vídeo (${duration.toFixed(1)}s) excede o limite do ${p} (${maxDurations[p]}s).`,
+          variant: 'destructive',
+        })
+      }
+    }
+
     if (publishMode === 'schedule') {
       if (!isPro)
         return toast({
@@ -152,8 +184,8 @@ export function PublishPanel({ project, update }: Props) {
     })
     setStatuses(newStatuses)
     toast({
-      title: 'Publicando Vídeo',
-      description: `Enviando para as plataformas selecionadas...`,
+      title: 'Renderizando Vídeo (H.264/30FPS)',
+      description: `Formato: MP4. Exportando para as plataformas selecionadas...`,
     })
 
     setTimeout(() => {
@@ -164,7 +196,7 @@ export function PublishPanel({ project, update }: Props) {
       setStatuses(finalStatuses)
       toast({
         title: 'Sucesso! 🚀',
-        description: `Vídeo renderizado no frame atual e enviado com sucesso para: ${project.targetPlatforms.join(', ')}.`,
+        description: `Vídeo renderizado no formato H.264 e enviado com sucesso para: ${project.targetPlatforms.join(', ')}.`,
       })
     }, 3000)
   }
@@ -222,9 +254,16 @@ export function PublishPanel({ project, update }: Props) {
         <h3 className="font-semibold text-base flex items-center gap-2">
           <LinkIcon className="w-5 h-5 text-blue-500" /> Contas Sociais
         </h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          Conecte suas contas para publicar ou agendar diretamente.
-        </p>
+        <div className="flex flex-col gap-1 mb-4">
+          <p className="text-xs text-muted-foreground">
+            Conecte suas contas para publicar ou agendar diretamente.
+          </p>
+          <div className="text-[10px] text-muted-foreground bg-muted p-2 rounded-md font-mono flex items-center justify-between">
+            <span>Formato: MP4 / H.264</span>
+            <span>Res: Auto (1080p)</span>
+            <span>FPS: 30</span>
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-3">
           {(
             [
@@ -300,7 +339,7 @@ export function PublishPanel({ project, update }: Props) {
               className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
             >
               <Label
-                className="capitalize cursor-pointer flex items-center gap-3 text-base"
+                className="capitalize cursor-pointer flex items-center gap-3 text-base flex-1 mr-4"
                 htmlFor={`check-${p}`}
               >
                 {p === 'instagram' && (
@@ -321,6 +360,13 @@ export function PublishPanel({ project, update }: Props) {
                   <Linkedin className="w-5 h-5 text-blue-700" />
                 )}
                 {p}
+                <span className="text-[10px] text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded font-mono shrink-0">
+                  {p === 'youtube'
+                    ? '1920x1080'
+                    : p === 'facebook' || p === 'linkedin'
+                      ? '1080x1080'
+                      : '1080x1920'}
+                </span>
               </Label>
               <Checkbox
                 id={`check-${p}`}
